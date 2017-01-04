@@ -1,0 +1,424 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Library           Selenium2Library
+Resource          ../../../Resource/常用操作.robot
+Resource          ../../../Resource/功能菜单.robot
+Resource          ../../../Resource/配置参数.robot
+Library           AutoItLibrary
+
+*** Test Cases ***
+添加商品
+    [Tags]    pass
+    [Setup]    点击链接菜单    微店铺
+    点击链接菜单    商品列表
+    #获取未添加商品前商品的总数
+    Wait Until Element Contains    xpath=//form/div[1]/div[1]/div[2]/div    商品数
+    sleep    0.5
+    ${商品名称}    随机字符    【自动化测试商品】    15
+    ${销售量上限}    Set Variable    9999999
+    ${销售量}    Evaluate    random.randint(0,${销售量上限})    random
+    ${商品详情}    Set Variable    1、经典香草肉酱直条面8盒装，常温保存12个月，零添加，备餐精选 2、子初婴儿葫芦头棉签56只
+    ${产品重量}    Set Variable    100
+    ${每人限购}    Set Variable    0
+    ${排序}    Set Variable    0
+    ${商品数}    Get Text    xpath=//form/div[1]/div[1]/div[2]/a
+    ${商品数加1}    Evaluate    int(${商品数}+1)
+    log    ${商品数加1}
+    点击链接菜单    添加商品
+    等待时间    1
+    随机选择下拉框    //tbody/tr[1]/td[2]/div[1]/select
+    等待时间    1
+    随机选择下拉框    //tbody/tr[1]/td[2]/div[2]/select
+    等待时间    1
+    随机选择下拉框    //tbody/tr[1]/td[2]/div[3]/select
+    等待时间    0.5
+    Input Text    xpath=//input[@ng-model="product.name"]    ${商品名称}
+    Input Text    xpath=//input[@ng-model="product.sales"]    ${销售量}    #随机输入一个销售量（0-9999999）
+    等待时间    0.5
+    #添加图片广告
+    Click Element    xpath=//div/a/label[@data-title="选择"]
+    sleep    0.5
+    ${图片数}    Get Matching Xpath Count    xpath=//ul[@class="ul_pic clearfix"]/li    #获取当前页面图片数
+    log    ${图片数}
+    sleep    1
+    ${随机图}    Evaluate    random.randint(1,${图片数})    random
+    Wait Until Page Contains Element    xpath=//ul[@class="ul_pic clearfix"]/li[${随机图}]/a/img    10s
+    Click Element    xpath=//ul[@class="ul_pic clearfix"]/li[1]/a/img    #选取第一张图片，随机选择图片，下面语句取消注释即可
+    #Click Element    xpath=//ul[@class="ul_pic clearfix"]/li[${随机图}]/a/img    #随机选取一张图片
+    sleep    1
+    Click Element    id=submitImage    #确认选择的图片
+    sleep    0.5
+    随机选择下拉框    //tbody/tr[9]/td[2]/div/select    #随机选择一个库存规格
+    sleep    1
+    ${规格数}    Get Matching Xpath Count    xpath=//tbody/tr[9]/td[2]/div/div[3]/div/ul/*
+    log    ${规格数}
+    ${y}    Run Keyword If    ${规格数}>0    Evaluate    random.randint(1,${规格数})    random
+    ...    ELSE    Evaluate    1
+    #以下步骤是库存规则，选择的下拉规格中规格值为空，则新增一个规格值，然后输入规格参数，否则直接输入规格参数
+    sleep    0.5
+    Run Keyword If    ${规格数}>0    商品规格    xpath=//table/tbody/tr[9]/td[2]/div/div[3]/div/ul/li[${y}]/input
+    ...    ELSE    添加规格值    xpath=//div/a[@class="btn btn-xs btn-primary margin-left20"]/i
+    sleep    0.5
+    Click Element    //*[text()="下一步"]
+    sleep    1
+    Input Text    name=weigh    ${产品重量}    #产品重量
+    Input Text    name=buy    ${每人限购}    #每人限购
+    Input Text    name=sort    ${排序}    #排序
+    Select Frame    id=ueditor_0    #商品详情
+    sleep    0.5
+    Input Text    xpath=//body    ${商品详情}    #输入内容
+    Unselect Frame
+    sleep    0.3
+    Click Element    //div/div[@ng-show="taba==2"]/a[2]
+    弹出窗信息校验    添加成功
+    sleep    1
+    #以下步骤预期结果校验
+    Wait Until Element Contains    xpath=//form/div[1]/div[1]/div[2]/div    商品数
+    ${商品数2}    Get Text    xpath=//form/div[1]/div[1]/div[2]/a
+    log    ${商品数2}
+    Run Keyword If    '${商品数2}'=='${商品数加1}'    log    列表中已正确添加一件商品，商品数量正确
+    ...    ELSE    fail    列表中未添加商品，商品数量未发生变化
+    sleep    0.5
+    搜索    ${商品名称}
+    字段校验    //tbody/tr[1]/td[2]/div/span[@ng-bind="list.name"]    ${商品名称}    #商品名称校验
+    字段校验    //tbody/tr[1]/td[4]/span[@ng-bind="list.reserves"]    100    #商品库存校验
+    字段校验    //tbody/tr[1]/td[@ng-bind="list.sales"]    ${销售量}    #商品销量校验
+    sleep    0.5
+    #还原初始数据（删除添加的商品）
+    商品删除    ${商品名称}
+
+修改商品
+    [Tags]    pass
+    [Setup]    点击链接菜单    微店铺
+    点击链接菜单    商品列表
+    ${商品名称}    随机字符    【自动化测试商品】    15
+    ${修改后商品名称}    Set Variable    修改${商品名称}
+    ${销量}    Set Variable    123
+    ${库存}    Set Variable    456
+    #商品添加
+    商品添加    ${商品名称}
+    #搜索商品后修改
+    搜索    ${商品名称}
+    sleep    0.5
+    Click Element    xpath=//td[@class="text-center"]/div/a[@title="修改"]    #点击修改
+    sleep    1
+    Input Text    name=name    ${修改后商品名称}
+    Input Text    name=sales    ${销量}
+    Input Text    name=reserves    ${库存}
+    sleep    0.5
+    Click Element    //*[text()="下一步"]
+    sleep    1
+    Click Element    //div/div[@ng-show="taba==2"]/a[2]
+    弹出窗信息校验    修改成功
+    #校验
+    搜索    ${修改后商品名称}
+    字段校验    //tbody/tr[1]/td[2]/div/span[@ng-bind="list.name"]    ${修改后商品名称}    #商品名称校验
+    字段校验    //tbody/tr[1]/td[4]/span[@ng-bind="list.reserves"]    ${库存}    #商品库存校验
+    字段校验    //tbody/tr[1]/td[@ng-bind="list.sales"]    ${销量}    #商品销量校验
+    sleep    0.5
+    #还原初始数据（删除添加的商品）
+    商品删除    ${修改后商品名称}
+
+商品上架/下架
+    [Tags]    pass
+    [Setup]    点击链接菜单    微店铺
+    点击链接菜单    商品列表
+    ${商品名称}    随机字符    【自动化测试商品】    15
+    Wait Until Page Contains Element    xpath=//form/div[1]/div[2]/div[2]/a
+    sleep    0.5
+    ${添加前上架商品数}    Get Text    xpath=//form/div[1]/div[2]/div[2]/a    #添加商品前上架中商品数
+    ${添加前下架商品数}    Get Text    xpath=//form/div[1]/div[3]/div[2]/a    #添加商品前下架中商品数
+    商品添加    ${商品名称}
+    ${添加后上架商品数}    Get Text    xpath=//form/div[1]/div[2]/div[2]/a    #添加商品后上架中商品数
+    ${添加后下架商品数}    Get Text    xpath=//form/div[1]/div[3]/div[2]/a    #添加商品后下架中商品数
+    ${添加前下架商品数加1}    Evaluate    int(${添加前下架商品数}+1)
+    ${添加后上架商品数加1}    Evaluate    int(${添加前上架商品数}+1)
+    Run Keyword If    '${添加后上架商品数}'=='${添加前上架商品数}'    LOG    商品添加成功，上架商品数量未发生变化
+    ...    ELSE    fail    商品添加成功后，上架商品数量统计错误
+    Run Keyword If    '${添加后下架商品数}'=='${添加前下架商品数加1}'    LOG    商品添加成功，下架商品数量增加1.添加正确
+    ...    ELSE    fail    商品添加成功后，下架商品数量统计错误
+    搜索    ${商品名称}
+    Click Element    xpath=//tbody/tr[1]/td[7]/label/input    #点击一次，商品上架
+    #检查数据库中，商品的状态值    暂时未作校验，后期补上
+    sleep    0.5
+    Confirm Action
+    sleep    2
+    ${商品上架后上架数}    Get Text    xpath=//form/div[1]/div[2]/div[2]/a    #点击商品上架按钮，统计上架商品数
+    ${商品上架后下架数}    Get Text    xpath=//form/div[1]/div[3]/div[2]/a    #点击商品上架按钮，统计下架商品数
+    Run Keyword If    '${商品上架后上架数}'=='${添加后上架商品数加1}'    LOG    商品上架成功，上架商品数量增加1，添加数量正确
+    ...    ELSE    fail    商品上架后，上架商品数量统计错误
+    Run Keyword If    '${商品上架后下架数}'=='${添加前下架商品数}'    LOG    商品上架成功，下架商品数量减1.添加数量正确
+    ...    ELSE    fail    商品下架后，下架商品数量统计错误
+    搜索    ${商品名称}
+    sleep    0.5
+    Click Element    xpath=//tbody/tr[1]/td[7]/label/input    #再次点击，商品下架
+    #检查数据库中，商品的状态值    暂时未作校验，后期补上
+    sleep    0.5
+    Confirm Action
+    sleep    2
+    ${商品下架后上架数}    Get Text    xpath=//form/div[1]/div[2]/div[2]/a    #点击商品下架按钮，统计上架商品数
+    ${商品下架后下架数}    Get Text    xpath=//form/div[1]/div[3]/div[2]/a    #点击商品下架按钮，统计下架商品数
+    Run Keyword If    '${商品下架后上架数}'=='${添加后上架商品数}'    LOG    商品下架成功，上架商品数量减1，上架商品数量统计正确
+    ...    ELSE    fail    商品下架后，上架商品数量统计错误
+    Run Keyword If    '${商品下架后下架数}'=='${添加后下架商品数}'    LOG    商品下架成功，上架商品数量增加1，下架商品数量统计正确
+    ...    ELSE    fail    商品下架后，下架商品数量统计错误
+    商品删除    ${商品名称}
+
+商品批量上架/下架
+    [Tags]    pass
+    [Setup]    点击链接菜单    微店铺
+    点击链接菜单    商品列表
+    sleep    1
+    ${商品名称前缀}    Set Variable    【自动化测试商品0000】
+    ${商品名称1}    随机字符    ${商品名称前缀}    20
+    ${商品名称2}    随机字符    ${商品名称前缀}    20
+    ${商品名称3}    随机字符    ${商品名称前缀}    20
+    ${商品名称4}    随机字符    ${商品名称前缀}    20
+    ${商品名称5}    随机字符    ${商品名称前缀}    20
+    Wait Until Page Contains Element    xpath=//form/div[1]/div[1]/div[2]/div    40s    元素未加载成功
+    ${添加前上架商品数}    Get Text    xpath=//form/div[1]/div[2]/div[2]/a    #添加商品前上架中商品数
+    ${添加前下架商品数}    Get Text    xpath=//form/div[1]/div[3]/div[2]/a    #添加商品前下架中商品数
+    @{商品名称列表}    Create List    ${商品名称1}    ${商品名称2}    ${商品名称3}    ${商品名称4}    ${商品名称5}
+    : FOR    ${创建商品名称}    IN    @{商品名称列表}
+    \    商品添加    ${创建商品名称}
+    \    sleep    0.5
+    sleep    1
+    ${添加后上架商品数}    Get Text    xpath=//form/div[1]/div[2]/div[2]/a    #添加商品后上架中商品数
+    ${添加后下架商品数}    Get Text    xpath=//form/div[1]/div[3]/div[2]/a    #添加商品后下架中商品数
+    ${添加前下架商品数加5}    Evaluate    int(${添加前下架商品数}+5)
+    ${添加后上架商品数加5}    Evaluate    int(${添加前上架商品数}+5)
+    Run Keyword If    '${添加后上架商品数}'=='${添加前上架商品数}'    LOG    商品添加成功，上架商品数量未发生变化
+    ...    ELSE    fail    商品添加成功后，上架商品数量统计错误
+    Run Keyword If    '${添加后下架商品数}'=='${添加前下架商品数加5}'    LOG    商品添加成功，下架商品数量增加1.添加正确
+    ...    ELSE    fail    商品添加成功后，下架商品数量统计错误
+    搜索    ${商品名称前缀}
+    Click Element    xpath=//table/thead/tr/th[1]/label/input[@ng-click="chooseAll(choose)"]    #点击勾选所有
+    sleep    0.5
+    Click Element    xpath=//div/ul/li[2]/a[@data-toggle="dropdown"]    #定位批量操作下拉框
+    sleep    0.5
+    Click Element    xpath=//*[@id="ulLength"]/li[1]/a    #批量上架
+    sleep    1
+    Confirm Action
+    sleep    2
+    ${商品上架后上架数}    Get Text    xpath=//form/div[1]/div[2]/div[2]/a    #点击商品上架按钮，统计上架商品数
+    ${商品上架后下架数}    Get Text    xpath=//form/div[1]/div[3]/div[2]/a    #点击商品上架按钮，统计下架商品数
+    Run Keyword If    '${商品上架后上架数}'=='${添加后上架商品数加5}'    LOG    商品上架成功，上架商品数量增加1，添加数量正确
+    ...    ELSE    fail    商品上架后，上架商品数量统计错误
+    Run Keyword If    '${商品上架后下架数}'=='${添加前下架商品数}'    LOG    商品上架成功，下架商品数量减1.添加数量正确
+    ...    ELSE    fail    商品下架后，下架商品数量统计错误
+    搜索    ${商品名称前缀}
+    Click Element    xpath=//table/thead/tr/th[1]/label/input[@ng-click="chooseAll(choose)"]    #点击勾选所有
+    sleep    0.5
+    Click Element    xpath=//div/ul/li[2]/a[@data-toggle="dropdown"]    #定位批量操作下拉框
+    sleep    0.5
+    Click Element    xpath=//*[@id="ulLength"]/li[2]/a    #批量下架
+    sleep    1
+    Confirm Action
+    sleep    2
+    ${商品下架后上架数}    Get Text    xpath=//form/div[1]/div[2]/div[2]/a    #点击商品下架按钮，统计上架商品数
+    ${商品下架后下架数}    Get Text    xpath=//form/div[1]/div[3]/div[2]/a    #点击商品下架按钮，统计下架商品数
+    Run Keyword If    '${商品下架后上架数}'=='${添加后上架商品数}'    LOG    商品下架成功，上架商品数量减1，上架商品数量统计正确
+    ...    ELSE    fail    商品下架后，上架商品数量统计错误
+    Run Keyword If    '${商品下架后下架数}'=='${添加后下架商品数}'    LOG    商品下架成功，上架商品数量增加1，下架商品数量统计正确
+    ...    ELSE    fail    商品下架后，下架商品数量统计错误
+    : FOR    ${删除商品名称}    IN    @{商品名称列表}
+    \    商品删除    ${删除商品名称}
+    \    sleep    0.5
+    sleep    1
+
+商品批量修改分类
+    [Tags]    pass
+    [Setup]    点击链接菜单    微店铺
+    点击链接菜单    商品列表
+    sleep    0.5
+    ${商品名称前缀}    Set Variable    【自动化测试商品0000】
+    ${商品名称1}    随机字符    ${商品名称前缀}    20
+    ${商品名称2}    随机字符    ${商品名称前缀}    20
+    ${商品名称3}    随机字符    ${商品名称前缀}    20
+    ${商品名称4}    随机字符    ${商品名称前缀}    20
+    @{商品名称列表}    Create List    ${商品名称1}    ${商品名称2}    ${商品名称3}    ${商品名称4}
+    : FOR    ${创建商品名称}    IN    @{商品名称列表}
+    \    商品添加    ${创建商品名称}
+    \    sleep    0.5
+    sleep    1
+    搜索    ${商品名称前缀}
+    Click Element    xpath=//table/thead/tr/th[1]/label/input[@ng-click="chooseAll(choose)"]    #点击勾选所有
+    sleep    0.5
+    Click Element    xpath=//div/ul/li[2]/a[@data-toggle="dropdown"]    #定位批量操作下拉框
+    sleep    0.5
+    Click Element    xpath=//*[@id="ulLength"]/li[3]/a    #批量分类
+    sleep    0.5
+    Click Element    xpath=//form/div/div/div/div[2]/select[1]    #选择一级分类
+    sleep    0.5
+    Click Element    xpath=//form/div/div/div/div[2]/select[1]/option[text()="系统分类"]
+    sleep    0.5
+    Click Element    xpath=//form/div/div/div/div[2]/select[2]    #选择二级分类
+    sleep    0.5
+    Click Element    xpath=//form/div/div/div/div[2]/select[2]/option[text()="运动户外"]
+    sleep    0.5
+    Click Element    xpath=//form/div/div/div/div[2]/select[3]    #选择三级分类
+    sleep    0.5
+    Click Element    xpath=//form/div/div/div/div[2]/select[3]/option[text()="运动服"]
+    sleep    0.5
+    Click Element    xpath=//*[@id="myModal-fl"]/div/div/div[3]/a[2]    #点击确认按钮
+    sleep    1
+    Confirm Action
+    sleep    1
+    搜索    ${商品名称前缀}
+    : FOR    ${i}    IN RANGE    1    5
+    \    字段校验    //table/tbody/tr[${i}]/td[3]    系统分类-运动户外-运动服
+    \    sleep    0.5
+    sleep    0.5
+    : FOR    ${删除商品名称}    IN    @{商品名称列表}
+    \    商品删除    ${删除商品名称}
+    \    sleep    0.5
+    sleep    1
+
+商品批量删除
+    [Tags]    pass
+    [Setup]    点击链接菜单    微店铺
+    点击链接菜单    商品列表
+    sleep    0.5
+    ${商品名称前缀}    Set Variable    【自动化测试商品0000】
+    ${商品名称1}    随机字符    ${商品名称前缀}    20
+    ${商品名称2}    随机字符    ${商品名称前缀}    20
+    ${商品名称3}    随机字符    ${商品名称前缀}    20
+    ${商品名称4}    随机字符    ${商品名称前缀}    20
+    @{商品名称列表}    Create List    ${商品名称1}    ${商品名称2}    ${商品名称3}    ${商品名称4}
+    : FOR    ${创建商品名称}    IN    @{商品名称列表}
+    \    商品添加    ${创建商品名称}
+    \    sleep    0.5
+    sleep    1
+    搜索    ${商品名称前缀}
+    sleep    0.5
+    Click Element    xpath=//table/thead/tr/th[1]/label/input[@ng-click="chooseAll(choose)"]    #点击勾选所有
+    sleep    0.5
+    Click Element    xpath=//div/ul/li[3]/a[@ng-click="deleteAll()"]    #点击批量删除
+    sleep    1
+    Click Button    xpath=//tbody/tr/td/div/button[@data-id="ok"]    #点击确认删除按钮
+    sleep    1
+    Confirm Action
+    sleep    0.5
+
+分页
+    [Tags]    pass
+    [Setup]    点击链接菜单    微店铺
+    #商品数分页测试
+    ${单页显示数上限}    Set Variable    10
+    点击链接菜单    商品列表
+    sleep    0.5
+    Wait Until Element Contains    xpath=//form/div[1]/div[1]/div[2]/div    商品数
+    sleep    0.5
+    #下面步骤是判断分页栏是否存在
+    ${显示属性值}    Set Variable    ng-paginate ng-isolate-scope
+    ${获取属性值}    Get Element Attribute    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[5]@class    #获取分页栏的属性
+    log    ${获取属性值}
+    ${单页数据统计}    Get Matching Xpath Count    //tr[@class='ng-scope']
+    Run Keyword If    '${获取属性值}'=='${显示属性值}'    分页操作    xpath=//div[@page="page"]/ul[2]/li[3]/span/span    ${单页显示数上限}
+    ...    ELSE    LOG    无分页栏，只有1页数据，数据总数为：${单页数据统计}
+    sleep    1
+    #商品上架数分页测试
+    Click Element    xpath=//form/div[1]/div[2]/div[2]/a    #点击上架数
+    sleep    1
+    ${获取属性值1}    Get Element Attribute    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[5]@class    #获取分页栏的属性
+    log    ${获取属性值1}
+    ${单页数据统计1}    Get Matching Xpath Count    //tr[@class='ng-scope']
+    Run Keyword If    '${获取属性值1}'=='${显示属性值}'    分页操作    xpath=//div[@page="page"]/ul[2]/li[3]/span/span    ${单页显示数上限}
+    ...    ELSE    LOG    无分页栏，只有1页数据，数据总数为：${单页数据统计1}
+    sleep    1
+    #商品下架数分页测试
+    Click Element    xpath=//form/div[1]/div[3]/div[2]/a    #点击下架数
+    sleep    1
+    ${获取属性值2}    Get Element Attribute    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[5]@class    #获取分页栏的属性
+    log    ${获取属性值2}
+    ${单页数据统计2}    Get Matching Xpath Count    //tr[@class='ng-scope']
+    Run Keyword If    '${获取属性值2}'=='${显示属性值}'    分页操作    xpath=//div[@page="page"]/ul[2]/li[3]/span/span    ${单页显示数上限}
+    ...    ELSE    LOG    无分页栏，只有1页数据，数据总数为：${单页数据统计2}
+    sleep    1
+
+*** Keywords ***
+商品规格
+    [Arguments]    ${勾选商品规格路径}    ${库存}=100    ${原价}=100    ${零售价}=0.01    ${商家编码}=000001
+    Sleep    1s
+    ${条形码}    Evaluate    random.randint(10000,99999)    random    #随机选择一个条形码
+    Click Element    ${勾选商品规格路径}
+    Sleep    0.5s
+    Input Text    name=reserves    ${库存}    #库存
+    Input Text    name=market_price0    ${原价}    #原价
+    Input Text    name=retail_price0    ${零售价}    #零售价
+    Input Text    name=sku_no    ${商家编码}    #商家编码
+    Sleep    0.5s
+    Input Text    name=barcode    ${条形码}    #条形码
+    Sleep    0.5s
+    Click Element    name=status    #状态
+    Sleep    0.5s
+
+添加规格值
+    [Arguments]    ${规格值路径}
+    Click Element    ${规格值路径}
+    Sleep    1
+    ${规格值}    随机字符    【规格值】    10
+    Input Text    id=kindChildName    ${规格值}
+    Sleep    1s
+    Click Element    xpath=//div[@class="modal-footer"]/a[text()="确定"]
+    弹出窗信息校验    添加成功！
+    商品规格    xpath=//table/tbody/tr[9]/td[2]/div/div[3]/div/ul/li/input
+    Sleep    0.5
+    [Return]    ${规格值}
+
+搜索
+    [Arguments]    ${商品名称}
+    Input Text    xpath=//div/input[@ng-model="searchName"]    ${商品名称}
+    sleep    0.3
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[1]/div/form/div[2]/div/div/div[2]/span/a/i
+    sleep    1
+
+商品添加
+    [Arguments]    ${商品名称}=自动化测试商品
+    点击链接菜单    添加商品
+    等待时间
+    Click Element    xpath=//tbody/tr[1]/td[2]/div[1]/select
+    等待时间    0.5
+    Click Element    xpath=//tbody/tr[1]/td[2]/div[1]/select/option[text()="系统分类"]    #一级菜单为系统分类，二级菜单为汽车配件，三级菜单为汽车内饰
+    等待时间    0.5
+    Input Text    xpath=//input[@ng-model="product.name"]    ${商品名称}    #商品名称
+    Input Text    xpath=//input[@ng-model="product.sales"]    0    #随机输入一个销售量0
+    等待时间    0.5
+    #选择图片
+    选择图片    xpath=//div/a/label[@data-title="选择"]
+    #选择一个商品规格
+    随机选择下拉框    //tbody/tr[9]/td[2]/div/select    #随机选择一个库存规格
+    sleep    1
+    ${count3}    Get Matching Xpath Count    xpath=//tbody/tr[9]/td[2]/div/div[3]/div/ul/*
+    log    ${count3}
+    ${y}    Run Keyword If    ${count3}>0    Evaluate    random.randint(1,${count3})    random
+    ...    ELSE    Evaluate    1
+    #以下步骤是库存规则，选择的下拉规格中规格值为空，则新增一个规格值，然后输入规格参数，否则直接输入规格参数
+    sleep    0.5
+    Run Keyword If    ${count3}>0    商品规格    xpath=//table/tbody/tr[9]/td[2]/div/div[3]/div/ul/li[${y}]/input
+    ...    ELSE    添加规格值    xpath=//div/a[@class="btn btn-xs btn-primary margin-left20"]/i
+    sleep    0.5
+    Click Element    //*[text()="下一步"]
+    sleep    1
+    Input Text    name=weigh    100    #产品重量
+    Input Text    name=buy    0    #每人限购
+    Input Text    name=sort    0    #排序
+    Select Frame    id=ueditor_0    #商品详情
+    sleep    0.5
+    Input Text    xpath=//body    1、经典香草肉酱直条面8盒装，常温保存12个月，零添加，备餐精选 2、子初婴儿葫芦头棉签56只    #输入内容
+    Unselect Frame
+    sleep    0.3
+    Click Element    //div/div[@ng-show="taba==2"]/a[2]
+    sleep    0.5
+    弹出信息校验    添加成功
+    sleep    1
+
+商品删除
+    [Arguments]    ${商品名称}
+    搜索    ${商品名称}
+    Click Element    xpath=//tbody/tr[1]/td[8]/div/a[@title="删除"]
+    sleep    0.5
+    Click Element    xpath=//div/button[@data-id="ok"]
+    弹出窗信息校验    删除成功

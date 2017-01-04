@@ -1,0 +1,5 @@
+*** Variables ***
+${BASE_URL}       http://betanewwsh.vikduo.com/login/index
+${DRIVER}         gc
+${USER}           20151228
+${PASSWORD}       123456

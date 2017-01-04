@@ -1,0 +1,156 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Resource          ../../Resource/常用操作.robot
+Library           Selenium2Library
+Resource          ../../Resource/API.robot
+
+*** Test Cases ***
+修改商家信息
+    [Tags]    paused
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    商家信息
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]
+    Sleep    1
+    ####随机参数
+    ${商家名称}    随机字符    Name-
+    ${num}    Generate Random String    8    0123456789
+    ${联系电话}    Set Variable    138${num}
+    ${商家描述}    随机字符    商家介绍：    40
+    ####修改信息
+    ${atext}    Get Text    //*[@id="home"]/form/div[10]/div/a
+    Click Element    //*[@id="home"]/form/div[10]/div/a
+    Sleep    2
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/form/div[1]/div/input    ${商家名称}
+    Sleep    1
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/form/div[3]/div/input    ${联系电话}
+    Sleep    3
+    ##选择图片
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/form/div[2]/div/div[1]/a/label/span
+    Wait Until Page Contains Element    //h4[text()='图片管理器']
+    Sleep    1.5
+    Click Element    //*[@id="select_ajax_form"]/div[3]/div/ul/li[1]/a/img
+    Sleep    1
+    Click Element    id=submitImage
+    Sleep    2
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/form/div[6]/div/div/textarea    ${商家描述}
+    Sleep    1
+    ##保存
+    Click Element    id=submit
+    Sleep    1
+    ${alert}    Get Alert Message
+    Should Contain    ${alert}    成功
+    Sleep    3
+    ####结果校验
+    ${商家名称2}    Get Text    //*[@id="home"]/form/div[2]/div/p
+    ${联系电话2}    Get Text    //*[@id="home"]/form/div[4]/div/p
+    ${商家介绍2}    Get Text    //*[@id="home"]/form/div[9]/div/label
+    Should Be Equal As Strings    ${商家名称2}    ${商家名称}
+    Should Be Equal As Strings    ${联系电话2}    ${联系电话}
+    Should Be Equal As Strings    ${商家介绍2}    ${商家描述}
+
+支付管理
+    [Tags]    ready
+    ####查询接口
+    查询支付方式
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    支付管理
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"支付")]
+    Sleep    1
+    ####状态校验
+    ${status_wx}    Run Keyword And Return Status    Checkbox Should Be Selected    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/table/tbody/tr[1]/td[4]/label/input
+    ${status_hd}    Run Keyword And Return Status    Checkbox Should Be Selected    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/table/tbody/tr[5]/td[4]/label/input
+    ####状态开关
+    支付管理状态开关校验    ${len_wx}
+    Log    Success!
+    ####操作校验
+
+扫码支付
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    扫码支付
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]
+    Sleep    1
+    ####随机参数
+    ${限额}    随机金额
+    ####设置参数
+    ##扫码支付
+    ${status}    Run Keyword And Return Status    Checkbox Should Not Be Selected    //*[@id="main-container"]/div/div[2]/div[2]/div/form/div/div[1]/div/div[2]/label/input
+    Log    ${status}
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/form/div/div[3]/div[1]/ng-form/div/input    ${限额}
+    Sleep    1
+    Click Element    //input[@value="保存"]
+    Sleep    2
+    弹出信息校验    成功
+    Sleep    1
+    ####结果校验
+    Reload Page
+    Sleep    2
+    ${限制2}    Get Value    //*[@id="main-container"]/div/div[2]/div[2]/div/form/div/div[3]/div[1]/ng-form/div/input
+    Should Be Equal As Strings    ${限制2}    ${限额}
+
+对账单设置
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    对账单设置
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]
+    Sleep    1
+    ####随机参数
+    ${转账费率}    生成费率
+    ####参数设置
+    Input Text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/form/div/div[2]/div[1]/div/div[2]/ng-form/div[1]/input    ${转账费率}
+    ##保存
+    Click Link    保存
+    Sleep    1.5
+    弹出信息校验    成功
+    ####结果校验
+    Reload Page
+    Sleep    2
+    ${转账费率2}    Get Value    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/form/div/div[2]/div[1]/div/div[2]/ng-form/div[1]/input
+    Should Be Equal As Strings    ${转账费率2}    ${转账费率}
+
+*** Keywords ***
+查询支付方式
+    ####查询接口
+    ${resp}    获取店铺支付方式
+    ${resp_dict}    To Json    ${resp}
+    ${errcode}    Get From Dictionary    ${resp_dict}    errcode
+    ${data}    Get From Dictionary    ${resp_dict}    data
+    ${pay_settings}    Get From Dictionary    ${data}    pay_settings
+    ${match_delivery}    Get Regexp Matches    ${pay_settings}    delivery
+    ${match_newwxpay }    Get Regexp Matches    ${pay_settings}    newwxpay
+    ${len_hd}    Get Length    ${match_delivery}
+    ${len_wx}    Get Length    ${match_newwxpay }
+    Set Suite Variable    ${len_wx}
+    Set Suite Variable    ${len_hd}
+
+支付管理状态开关校验
+    [Arguments]    ${len}
+    Sleep    1
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/table/tbody/tr[1]/td[4]/label/input
+    Sleep    1.5
+    ${alert}    Get Alert Message
+    Should Contain    ${alert}    成功
+    Sleep    2
+    查询支付方式
+    Sleep    2
+    Run Keyword If    ${len}==1    Should Be Equal As Integers    ${len_wx}    0
+    ...    ELSE    Should Be Equal As Integers    ${len_wx}    1
+    ##重置状态    开启微信支付
+    Run Keyword If    ${len}==1    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/table/tbody/tr[1]/td[4]/label/input
+    Sleep    1
+    弹出信息校验
+
+生成费率
+    ${num}    Generate Random String    2    012345678
+    ${费率}    Set Variable    0.${num}
+    [Return]    ${费率}

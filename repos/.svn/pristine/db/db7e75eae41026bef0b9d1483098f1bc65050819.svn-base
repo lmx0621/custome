@@ -1,0 +1,27 @@
+*** Settings ***
+Library           Selenium2Library
+Resource          ../../Resource/常用操作.robot
+Resource          ../../Resource/功能菜单.robot
+Resource          ../../Resource/配置参数.robot
+
+*** Test Cases ***
+秒杀活动
+    [Setup]    登陆
+    Wait Until Page Contains Element    xpath=//*[@id="headactive"]/li[5]/a    10    error
+    点击菜单    微营销
+    点击菜单    拼团活动
+    点击菜单    添加活动
+    Set Browser Implicit Wait    10
+    Input Text    xpath=//*[@id="home"]/div[2]/form/div[1]/div/input    参考
+    Input Text    xpath=//*[@id="form-field-8"]    成为团长带领小伙伴享受团购价，拼团活动开始啦，赶紧开团召集小伙伴一起团购吧！
+    Click Element    xpath=//*[@id="home"]/div[2]/form/div[3]/div/div/a/label
+    Set Browser Implicit Wait    20
+    Click Element    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li[3]/a/img
+    #Set Browser Implicit Wait    10
+    #Unselect From List By Value \    xpath=//*[@id="imagewidth"]/div[2]/div/div/div[2]/div[2]/div[1]/div[2]/div/select    10
+    sleep    10
+    click image    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li[7]/a/img
+    sleep    10
+    Click Element    id=submitImage
+    sleep    3
+    关闭浏览器

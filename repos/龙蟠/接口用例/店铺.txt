@@ -1,0 +1,38 @@
+*** Settings ***
+Suite Setup       API登录    1    1    1
+Library           RequestsLibrary
+Library           json
+Library           Collections
+Library           String
+Resource          ../Resource/配置参数.robot
+Resource          ../Resource/常用操作.robot
+Resource          ../Resource/API/Common.txt
+Resource          ../Resource/API/店铺.txt
+
+*** Test Cases ***
+获取商家信息
+    [Tags]    ready
+    ${errmsg}    店铺.商家信息
+    ${name}    Get From Dictionary    ${errmsg}    name
+
+获取店铺支付方式
+    [Tags]    ready
+    ${errmsg}    店铺.获取支付方式
+
+设置店铺支付方式
+    [Tags]    ready
+    ${errmsg}    设置支付方式
+
+获取终端店列表
+    [Tags]    ready
+    ${errmsg}    店铺.终端店列表
+
+获取终端店信息
+    [Tags]    ready
+    ${errmsg}    店铺.终端店列表
+
+设置退货流程开关
+    [Tags]    ready
+    ${errmsg}    店铺.退货流程开关
+
+*** Keywords ***

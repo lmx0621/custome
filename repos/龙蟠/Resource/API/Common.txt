@@ -1,0 +1,50 @@
+*** Settings ***
+Library           RequestsLibrary
+Library           Collections
+Library           String
+Library           json
+Resource          ../配置参数.robot
+Library           requests
+
+*** Keywords ***
+API登录
+    [Arguments]    ${后端}=1    ${前端}=0    ${分店}=0
+    [Documentation]    说明：登录API获取Session，可选后端和前端，1为开启，其它值不登录
+    ...
+    ...    默认只登录后端。
+    ...
+    ...    示例：API登录|1|1 \ #前后端全部登录
+    ...
+    ...    示例：API登录|1|1|1 \ #前后端及分店全部登录
+    ...
+    ...    作者：胡永堂
+    初始化
+    Run Keyword If    ${后端}==1    后端登录
+    Run Keyword If    ${分店}==1    分店登录
+    Run Keyword If    ${前端}==1    微信登录
+    Run Keyword If    ${分店}==1 and ${前端}==1    Get Request    wx    /mall/index?sub_id=${GLOBAL_CONFIG.shop_sub_id}
+
+后端登录
+    Log    测试URL：${GLOBAL_CONFIG.url}
+    Log    测试用户：${GLOBAL_CONFIG.username}
+    Create Session    wsh    ${GLOBAL_CONFIG.url}
+    &{data}=    Create Dictionary    username=${GLOBAL_CONFIG.username}    password=${GLOBAL_CONFIG.password}    captcha=1111
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    ${resp}    Post Request    wsh    /login/login-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    ${resp.content}
+    ${cookies}    Evaluate    ${resp.headers}['Set-Cookie']
+    ${match}    Get Regexp Matches    ${cookies}    \(?<=PHPSESSID=).+(?=;)
+    ${match2}    Get Regexp Matches    ${match[0]}    \\b\\w+(?=;)
+    ${ssid}    Set Variable    ${match2[0]}
+    ${cookies}    Create Dictionary    PHPSESSID=${ssid}
+    Set Global Variable    ${cookies}
+
+微信登录
+    Create Session    wx    ${GLOBAL_CONFIG.wx_url}    cookies=${cookies}
+    &{headers}=    Create Dictionary    Content-Type=text/html    charset=UTF-8
+    ${resp}    Post Request    wx    /oauth/testing?id=${GLOBAL_CONFIG.user_id}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+
+分店登录
+    Create Session    sub    ${GLOBAL_CONFIG.subshop_url}    cookies=${cookies}    #${cookies}为全局参数

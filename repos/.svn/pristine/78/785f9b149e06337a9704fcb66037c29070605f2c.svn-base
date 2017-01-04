@@ -1,0 +1,719 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Library           Selenium2Library
+Resource          ../../Resource/常用操作.robot
+Resource          ../../Resource/功能菜单.robot
+Resource          ../../Resource/配置参数.robot
+Library           Screenshot
+Resource          ../../Resource/API.robot
+
+*** Test Cases ***
+截屏测试
+    [Tags]    debug
+    Log    Test1...
+    Capture Page Screenshot
+    Sleep    1
+    Log    Test2...
+    Take Screenshot
+    Sleep    2
+
+客户列表
+    [Tags]    ready
+    [Setup]
+    点击链接菜单    微会员
+    #客户总数
+    sleep    1
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/div[1]/div/span    5
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/div[1]/div/span
+    #微信客户总数
+    sleep    1
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/div[2]/div/span    5
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/div[2]/div/span
+    #昨日新增
+    sleep    1
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/div[3]/div/span    5
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/div[3]/div/span
+    #未分组
+    sleep    1
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/div[4]/div/span    5
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/div[4]/div/span
+    sleep    2
+    [Teardown]
+
+批量操作
+    [Tags]    ready
+    [Setup]
+    点击链接菜单    微会员
+    点击链接菜单    客户列表
+    sleep    1
+    #批量导出
+    Wait Until Page Contains Element    xpath=//*[@id="home"]/form/table/thead/tr/th[1]/label/input    5
+    Click Element    xpath=//*[@id="home"]/form/table/thead/tr/th[1]/label/input
+    sleep    1
+    Wait Until Page Contains Element    xpath=//*[@id="home"]/div[1]/div/ul/li/a    5
+    Click Element    xpath=//*[@id="home"]/div[1]/div/ul/li/a
+    sleep    1
+    Wait Until Page Contains Element    xpath=//*[@id="home"]/div[1]/div/ul/li/ul/li[1]/a    5
+    Click Element    xpath=//*[@id="home"]/div[1]/div/ul/li/ul/li[1]/a
+    sleep    1
+    #批量分组
+
+批量分组
+    [Tags]    ready
+    [Setup]
+    点击链接菜单    微会员
+    点击链接菜单    客户列表
+    sleep    1
+    Log    开始批量分组...
+    @{num}    create list    2    3    5    8
+    #批量分组
+    : FOR    ${i}    IN    @{num}
+    \    Log    ${i}
+    \    Click Element    //*[@id="home"]/form/table/tbody/tr[${i}]/td[1]/label/input
+    \    sleep    0.1
+    sleep    1
+    Wait Until Page Contains Element    xpath=//*[@id="home"]/div[1]/div/ul/li/a    5
+    Click Element    xpath=//*[@id="home"]/div[1]/div/ul/li/a    #点击批量操作
+    sleep    0.5
+    Wait Until Page Contains Element    xpath=//*[@id="home"]/div[1]/div/ul/li/ul/li[3]/a    5
+    Click Element    xpath=//*[@id="home"]/div[1]/div/ul/li/ul/li[3]/a    #选择批量分组
+    sleep    0.5
+    Wait Until Page Contains Element    xpath=//*[@id="myModal"]/div/div/div[2]/div/form/div/div/div/select    5
+    Select From List By Value    xpath=//*[@id="myModal"]/div/div/div[2]/div/form/div/div/div/select    2487
+    #Click Element    xpath=//*[@id="myModal"]/div/div/div[2]/div/form/div/div/div/select    #点击选择分组
+    sleep    0.5
+    #Click Element    xpath=//*[@id="myModal"]/div/div/div[2]/div/form/div/div/div/select/option[5]    #点击需要批量分组的组名
+    sleep    0.5
+    Wait Until Page Contains Element    xpath=//*[@id="myModal"]/div/div/div[3]/a[2]    5
+    Click Element    xpath=//*[@id="myModal"]/div/div/div[3]/a[2]
+    sleep    1
+    confirm action
+    sleep    1.2
+    #Unselect From List By Value    xpath=//*[@id="myModal"]/div/div/div[2]/div/form/div/div/div/select/option[5]@[value]    2487
+    #关闭浏览器
+    [Teardown]
+
+客户管理_添加分组
+    [Tags]    ready    long
+    [Setup]    点击链接菜单    微会员
+    点击链接菜单    分组管理
+    等待时间    1
+    ${count}    Get Matching Xpath Count    //tr[@class='ng-scope']
+    点击链接菜单    添加分组
+    等待时间    0.5
+    ####生成参数
+    ${组名}    Set Variable    【测试组】
+    ${排序}    Generate Random String    1    123
+    Input Text    xpath=//*[@id="myModal-bjhy"]/div/div/div[2]/div/form/div/div/div[1]/div/input    ${组名}
+    等待时间    0.2
+    Input Text    xpath=//*[@id="myModal-bjhy"]/div/div/div[2]/div/form/div/div/div[2]/div/input    ${排序}
+    等待时间    0.2
+    Wait Until Page Contains Element    xpath=//*[@id="submit"]    5
+    Click Element    xpath=//*[@id="submit"]
+    等待时间    1
+    Confirm Action
+    等待时间    1
+    ${i}    Set Variable    1
+    #${sum}    Set Variable    0
+    ${count1}    Get Matching Xpath Count    //tr[@class='ng-scope']
+    ${sum}    Evaluate    ${count}+${i}
+    Run Keyword If    '${sum}'=='${count1}'    log    新增后校验通过
+    ...    ELSE    log    新增后校验失败
+
+客户管理_编辑分组
+    [Tags]    ready
+    [Setup]    点击链接菜单    微会员
+    点击链接菜单    分组管理
+    等待时间    1
+    ${count}    Get Matching Xpath Count    //tr[@class='ng-scope']
+    点击链接菜单    添加分组
+    等待时间    0.5
+    Input Text    xpath=//*[@id="myModal-bjhy"]/div/div/div[2]/div/form/div/div/div[1]/div/input    分组
+    等待时间    0.2
+    Input Text    xpath=//*[@id="myModal-bjhy"]/div/div/div[2]/div/form/div/div/div[2]/div/input    0
+    等待时间    0.2
+    Wait Until Page Contains Element    xpath=//*[@id="submit"]    5
+    Click Element    xpath=//*[@id="submit"]
+    等待时间    1
+    Confirm Action
+    等待时间    1
+    ${i}    Set Variable    1
+    #${sum}    Set Variable    0
+    ${count1}    Get Matching Xpath Count    //tr[@class='ng-scope']
+    ${sum}    Evaluate    ${count}+${i}
+    Run Keyword If    '${sum}'=='${count1}'    log    新增后校验通过
+    ...    ELSE    log    新增后校验失败
+
+客户列表_页面检测
+    [Tags]    ready
+    [Setup]
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    客户列表
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]
+    Sleep    1
+    ####客户列表页面检测
+    ##检查列表是否有数据
+    ${num}    Get Matching Xpath Count    //*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]
+    Run Keyword If    ${num}<1    Fail    没有会员数据，请检查是否异常！
+    ##顶部客户统计
+    Page Should Contain Element    //*[@id="main-container"]//div[@class="infobox-data"]/div[@class="infobox-content" and contains(text(),"客户总数")]
+    Page Should Contain Element    //*[@id="main-container"]//div[@class="infobox-data"]/div[@class="infobox-content" and contains(text(),"微信客户总数")]
+    Page Should Contain Element    //*[@id="main-container"]//div[@class="infobox-data"]/div[@class="infobox-content" and contains(text(),"昨日新增")]
+    Page Should Contain Element    //*[@id="main-container"]//div[contains(@class,"infobox-data")]/div[@class="infobox-content" and contains(text(),"未分组")]
+    #API数据
+    ${errmsg_客户统计}    API.客户统计
+    ${客户总数_API}    Get From Dictionary    ${errmsg_客户统计}    total
+    ${微信客户总数_API}    Get From Dictionary    ${errmsg_客户统计}    wx_total
+    ${昨日新增_API}    Get From Dictionary    ${errmsg_客户统计}    yestodayNew
+    #页面数据
+    ${客户总数_PAGE}    Get Text    //*[@id="main-container"]//div[@class="infobox-data"]/span[@ng-click="totalClick()"]
+    ${微信客户总数_PAGE}    Get Text    //*[@id="main-container"]//div[@class="infobox-data"]/span[@ng-click="wxClick()"]
+    ${昨日新增_PAGE}    Get Text    //*[@id="main-container"]//div[@class="infobox-data"]/span[@ng-click="newClick()"]
+    Should Be Equal As Strings    ${客户总数_PAGE}    ${客户总数_API}
+    Should Be Equal As Strings    ${微信客户总数_PAGE}    ${微信客户总数_API}
+    #${微信客户总数}
+    #${昨日新增}
+    #${未分组}
+    ####列表数据校验
+    Run Keyword If    ${客户总数_API}>20    Page Should Contain Element    //ul[@boundary-links="true" and @total-items="page.total_count"]
+    ${总计}    Get Text    //*[@id="hitTagTabble"]/div/ul[@class="pagination"]/li[@class="ng-paginate-search"]//span[@ng-bind="page.total_count"]
+    Pass Execution    Test
+    ${errmsg}    API.客户_列表
+    ${data}    Get From Dictionary    ${errmsg}    data
+    : FOR    ${i}    IN RANGE    ${num}
+    \    ${user}    Get From List    ${data}    ${i}
+    \    ${name}    Get From Dictionary    ${user}    nickname
+    \    ${point}    Get From Dictionary    ${user}    point
+    \    ${is_subscribe}    Get From Dictionary    ${user}    is_subscribe
+    \    ${page_name}    Get Text    xpath=(//*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]/td[@ng-bind="list.nickname"])[${i+1}]
+    \    ${page_point}    Get Text    xpath=(//*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]/td[contains(@ng-bind,"list.point")])[${i+1}]
+    \    ${page_is_subscribe}    Get Text    xpath=(//*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]/td[contains(@ng-if,"list.is_subscribe")])[${i+1}]
+    \    ${page_is_subscribe_attr}    Get Element Attribute    xpath=(//*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]/td[contains(@ng-if,"list.is_subscribe")])[${i+1}]@ng-if
+    \    ${page_is_subscribe_matches}    Get Regexp Matches    ${page_is_subscribe_attr}    \\d
+    \    Should Be Equal As Strings    ${page_name}    ${name}
+    \    Should Be Equal As Strings    ${page_point}    ${point}
+    \    Should Be Equal As Strings    ${page_is_subscribe_matches[0]}    ${is_subscribe}
+    [Teardown]
+
+客户列表_分类统计
+    [Tags]    ready
+    [Setup]
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    客户列表
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]
+    Sleep    1
+    ####客户列表页面检测
+    ##检查列表是否有数据
+    ${num}    Get Matching Xpath Count    //*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]
+    Run Keyword If    ${num}<1    Fail    没有会员数据，请检查是否异常！
+    ##统计数据
+    ${客户总数_PAGE}    Get Text    //*[@id="main-container"]//div[@class="infobox-data"]/span[@ng-click="totalClick()"]
+    ${微信客户总数_PAGE}    Get Text    //*[@id="main-container"]//div[@class="infobox-data"]/span[@ng-click="wxClick()"]
+    ${昨日新增_PAGE}    Get Text    //*[@id="main-container"]//div[@class="infobox-data"]/span[@ng-click="newClick()"]
+    ##分别进入统计页
+    #微信客户总数
+    Click Element    //*[@id="main-container"]//div[@class="infobox-data"]/span[@ng-click="wxClick()"]
+    Sleep    2
+    ${页面数量}    Get Matching Xpath Count    //*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]/td[starts-with(@ng-if,"list.is_subscribe")]
+    ${微信客户数量}    Get Matching Xpath Count    //*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]/td[starts-with(@ng-if,"list.is_subscribe") and text()="是"]
+    ${总计}    Get Text    //*[@id="hitTagTabble"]/div/ul[@class="pagination"]/li[@class="ng-paginate-search"]//span[@ng-bind="page.total_count"]
+    Should Be Equal As Strings    ${页面数量}    ${微信客户数量}
+    Should Be Equal As Strings    ${总计}    ${微信客户总数_PAGE}
+    #昨日新增
+    Click Element    //*[@id="main-container"]//div[@class="infobox-data"]/span[@ng-click="newClick()"]
+    Sleep    2
+    ${昨日新增_PAGE}    Get Text    //*[@id="main-container"]//div[@class="infobox-data"]/span[@ng-click="newClick()"]
+    ${flag}    Run Keyword And Return Status    Element Should Not Contain    //*[@id="integralTable"]/tbody    暂时没有可展示的数据
+    Run Keyword If    ${昨日新增_PAGE}==0 and ${flag}!=True    Log    昨日新增数据为0
+    ...    ELSE    统计校验_昨日新增
+    #未分组    //*[@id="main-container"]//div/span[@ng-click="unGroupClick()"]
+    Click Element    //*[@id="main-container"]//div/span[@ng-click="unGroupClick()"]
+    Sleep    2
+    ${未分组页面数量}    Get Matching Xpath Count    //*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]
+    ${未分组_列数}    Get Matching Xpath Count    //*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]/td[@ng-show="isclick"]/div/select/option[@selected="selected" and @value="?"]
+    #${flag}    Run Keyword And Return Status    Page Should Not Contain Element    //*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]/td[@ng-show="isclick"]/div/select/option[@selected="selected" and not(@value="?")]
+    Should Be Equal As Strings    ${未分组_列数}    ${未分组页面数量}
+    [Teardown]
+
+客户列表_批量分组
+    [Documentation]    注：如果操作前已经分组的，在测试完成后将恢复原分组，否则将会分配至【无名组】
+    [Tags]    ready
+    [Setup]
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    客户列表
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]
+    Sleep    1
+    ####客户列表-批量分组
+    #Click Element    //*[@id="hitTagTabble"]/div[2]/ul[1]/li[5]/a
+    ##随机参数
+    ${n}    Evaluate    random.randint(3,5)    random
+    @{randlist}    Evaluate    random.sample(range(1,20),${n})    random
+    ${原分组字典}    Create Dictionary
+    ##勾选
+    Log    开始随机分组...
+    : FOR    ${i}    IN    @{randlist}
+    \    #${flag}    Get Matching Xpath Count    //*[@id="integralTable"]/tbody/tr[${i}]/td[@ng-show="isclick"]/div/select/option[@selected="selected" and @value="?"]
+    \    #${group}    Run Keyword If    ${flag}==1    Set Variable    【无名组】
+    \    #...    # ELSE    Get Text    //*[@id="integralTable"]/tbody/tr[${i}]/td[@ng-show="isclick"]/div/select/option[@selected="selected"]
+    \    ${group}    Get Text    //*[@id="integralTable"]/tbody/tr[${i}]/td[@ng-show="isclick"]/div/select/option[@selected="selected"]
+    \    ${group}    Run Keyword If    '${group}'==''    Set Variable    【无名组】
+    \    ...    ELSE    Set Variable    ${group}
+    \    Set To Dictionary    ${原分组字典}    '${i}'=${group}
+    \    Click Element    xpath=(//*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]//input[@type="checkbox"])[${i}]
+    \    Log    ${i}
+    \    Sleep    1
+    Log    OrgGroups:${原分组字典}
+    ##分组
+    批量分组    【批量分组测试】
+    Sleep    1
+    ##恢复
+    Log    恢复原分组...
+    : FOR    ${i}    IN    @{randlist}
+    \    Sleep    1
+    \    ${group}    Get From Dictionary    ${原分组字典}    '${i}'
+    \    Run Keyword If    '${group}'!='【批量分组测试】'    Select From List By Label    //*[@id="integralTable"]/tbody/tr[${i}]/td[@ng-show="isclick"]/div/select    ${group}
+    \    ...    ELSE    Continue For Loop
+    \    Log    ${i}:${group}
+    \    Sleep    1
+    \    弹出信息校验
+    \    Sleep    1
+    Sleep    1
+    Pass Execution    Test
+    [Teardown]
+
+客户列表_统一打标签
+    [Documentation]    注：如果操作前已经分组的，在测试完成后将恢复原分组，否则将会分配至【无名组】
+    [Tags]    ready
+    [Setup]
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    客户列表
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]
+    Sleep    1
+    ####客户列表-批量分组
+    #Click Element    //*[@id="hitTagTabble"]/div[2]/ul[1]/li[5]/a
+    ##随机参数
+    ${n}    Evaluate    random.randint(1,3)    random
+    @{randlist}    Evaluate    random.sample(range(1,20),${n})    random
+    ${原分组字典}    Create Dictionary
+    ##勾选
+    Log    开始随机勾选...
+    : FOR    ${i}    IN    @{randlist}
+    \    #${flag}    Get Matching Xpath Count    //*[@id="integralTable"]/tbody/tr[${i}]/td[@ng-show="isclick"]/div/select/option[@selected="selected" and @value="?"]
+    \    #${group}    Run Keyword If    ${flag}==1    Set Variable    【无名组】
+    \    #...    # ELSE    Get Text    //*[@id="integralTable"]/tbody/tr[${i}]/td[@ng-show="isclick"]/div/select/option[@selected="selected"]
+    \    ${group}    Get Text    //*[@id="integralTable"]/tbody/tr[${i}]/td[@ng-show="isclick"]/div/select/option[@selected="selected"]
+    \    ${group}    Run Keyword If    '${group}'==''    Set Variable    【无名组】
+    \    ...    ELSE    Set Variable    ${group}
+    \    Set To Dictionary    ${原分组字典}    '${i}'=${group}
+    \    Click Element    xpath=(//*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]//input[@type="checkbox"])[${i}]
+    \    Log    ${i}
+    \    Sleep    1
+    Log    OrgGroups:${原分组字典}
+    ##分组
+    ${randtag}    统一打标签
+    ####结果校验
+    : FOR    ${i}    IN    @{randlist}
+    \    Click Element    //*[@id="integralTable"]/tbody/tr[${i}]/td[10]/a[@title="打标签"]
+    \    Sleep    1
+    \    Wait Until Element Is Visible    //*[@id="tagging"]//div[contains(@class,"modal-content")]//h4[@class="modal-title" and text()="打标签"]
+    \    Sleep    1
+    \    ${class}    Get Element Attribute    //*[@id="tagging"]/div/div/div[@class="modal-body"]/span[${randtag}]@class
+    \    Should Match Regexp    ${class}    b-color-8F
+    \    Click Element    //*[@id="tagging"]//div[@class="modal-footer"]/a[@type="button" and text()="取消"]
+    \    Sleep    1.2
+    Log    Sucess!
+    [Teardown]
+
+客户列表_打标签
+    [Tags]    ready
+    [Setup]
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    客户列表
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]
+    Sleep    1
+    ####客户列表-打标签
+    Click Element    //*[@id="integralTable"]/tbody/tr[1]/td[10]/a[1]
+    Wait Until Element Is Visible    //*[@id="tagging"]//div[contains(@class,"modal-content")]//h4[@class="modal-title" and text()="打标签"]
+    Sleep    1
+    ${tags}    Get Matching Xpath Count    //*[@id="tagging"]//div[@class="modal-body"]/span[@ng-click="setCss($event,i)"]
+    Click Element    //*[@id="tagging"]//div[@class="modal-footer"]/a[@type="button" and text()="取消"]
+    Sleep    1.2
+    ${randtag}    Evaluate    random.randint(1,${tags})    random
+    @{randtags}    Evaluate    random.sample(range(1,${tags}),5)    random
+    ${随机客户}    Evaluate    random.randint(1,20)    random
+    Click Element    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[10]/a[@title="打标签"]
+    Sleep    1
+    Wait Until Element Is Visible    //*[@id="tagging"]//div[contains(@class,"modal-content")]//h4[@class="modal-title" and text()="打标签"]
+    Sleep    1
+    : FOR    ${tag}    IN    @{randtags}
+    \    ${class}    Get Element Attribute    //*[@id="tagging"]/div/div/div[@class="modal-body"]/span[${tag}]@class
+    \    ${flag}    Run Keyword And Return Status    Should Not Match Regexp    ${class}    b-color-8F
+    \    Exit For Loop If    ${flag}==True
+    Click Element    //*[@id="tagging"]/div/div/div[@class="modal-body"]/span[${tag}]
+    Sleep    1
+    Click Element    //*[@id="tagging"]//div[@class="modal-footer"]/a[@type="button" and text()="确定"]
+    Sleep    1.2
+    弹出信息校验
+    ####结果校验
+    [Teardown]
+
+客户列表_客户详情
+    [Documentation]    注：该用例等待《用户详情》接口完成后做前后端校验
+    [Tags]    ready
+    [Setup]
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    客户列表
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]
+    Sleep    1
+    ####生成参数
+    ${num}    Get Matching Xpath Count    //*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]
+    Run Keyword If    ${num}<1    Fail    没有会员数据，请检查是否异常！
+    ${客户总数_PAGE}    Get Text    //*[@id="main-container"]//div[@class="infobox-data"]/span[@ng-click="totalClick()"]
+    ${随机客户}    Evaluate    random.randint(1,${num})    random
+    ####页面数据
+    ${昵称}    Get Text    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[2]
+    ${积分}    Get Text    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[3]
+    ${所属推广员}    Get Text    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[@ng-bind="list.belongToFxMember.real_name"]
+    ${所属员工}    Get Text    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[@ng-bind="list.belongStaff.real_name"]
+    ${所属终端店}    Get Text    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[@ng-bind="list.shopInfo.name"]
+    ${所属代理商}    Get Text    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[@ng-bind="list.shopAgent.agent_name"]
+    ####查看
+    Click Element    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[10]/a[@title="查看"]
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"客户详情")]
+    Sleep    3
+    ####查询API
+    ####页面校验
+    ##基本信息
+    ${客户昵称}    Get Text    //*[@id="main-container"]//div[@class="page-content"]//div/label[@ng-bind="model.nickname"]
+    ${关联会员}    Get Text    //*[@id="main-container"]//div[@class="page-content"]//div/label/a[@ng-bind="model.real_name"]
+    ${会员电话}    Get Text    //*[@id="main-container"]//div[@class="page-content"]//div/label[@ng-bind="model.bind_mobile"]
+    ${积分}    Get Text    //*[@id="integralTable"]/label[starts-with(@ng-bind,"model.point")]
+    ${红包}    Get Text    //*[@id="main-container"]//div[@class="page-content"]//div/label[@ng-bind="redpack"]
+    ${卡劵}    Get Text    //*[@id="main-container"]//div[@class="page-content"]//div/label[@ng-bind="card"]
+    ${最近一次登录时间}    Get Text    //*[@id="main-container"]//div[@class="page-content"]//div/span[starts-with(@ng-bind,"model.lastlogintime")]
+    ${登录IP}    Get Text    //*[@id="main-container"]//div[@class="page-content"]//div/label[@ng-bind="model.lastloginip"]
+    ${首次授权登录时间}    Get Text    //*[@id="main-container"]//div[@class="page-content"]//div/span[starts-with(@ng-bind,"model.created")]
+    ${OPENID}    Get Text    //*[@id="main-container"]//div[@class="page-content"]//div/span[@ng-bind="model.wxUsers.open_id"]
+    #归属关系
+    ${flag}    Run Keyword And Return Status    Element Should Not Contain    //*[@id="main-container"]//div[@class="page-content"]//div/form/table/tbody    暂时没有可展示的数据
+    Run Keyword If    ${flag}!=True    Log    暂时没有可展示的数据
+    ...    ELSE    Log    开始获取归属关系数据...
+    Pass Execution    Test
+    ##收货地址
+    ${收货人}
+    ${所在地区}
+    ${详细地址}
+    ${电话/手机}
+    ##留言信息
+    ${消息发送者}
+    ${消息内容}
+    ${发送时间}
+    [Teardown]
+
+客户列表_调整积分
+    [Tags]    ready
+    [Setup]
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    客户列表
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]
+    Sleep    1
+    ####生成参数
+    ${num}    Get Matching Xpath Count    //*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]
+    Run Keyword If    ${num}<1    Fail    没有客户数据，请检查是否异常！
+    ${客户总数_PAGE}    Get Text    //*[@id="main-container"]//div[@class="infobox-data"]/span[@ng-click="totalClick()"]
+    ${随机客户}    Evaluate    random.randint(1,${num})    random
+    ${操作}    Generate Random String    1    1    #操作类型：0为添加，1为减少
+    ${分数}    Evaluate    random.randint(5,200)    random
+    ${备注}    随机字符    【备注】    50
+    ####页面数据
+    ${昵称}    Get Text    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[2]
+    ${积分}    Get Text    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[3]
+    ####客户列表-调整积分
+    Click Element    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[10]/a[@title="调整积分"]
+    Wait Until Element Is Visible    //*[@id="integral"]/div/div/div[1]/h4[text()="调整积分"]
+    Sleep    3
+    ##校验
+    ${客户昵称}    Get Text    //*[@id="integral"]//div/form[@name="myform2"]//div/label[@ng-bind="integralObj.name"]
+    ${当前积分}    Get Text    //*[@id="integral"]//div/form[@name="myform2"]//div/label[@ng-bind="integralObj.point"]
+    Should Be Equal As Strings    ${客户昵称}    ${昵称}
+    Should Be Equal As Strings    ${当前积分}    ${积分}
+    ##输入参数
+    Select From List By Value    //*[@id="integral"]//div/form[@name="myform2"]//div//select[@ng-model="integralObj.type"]    ${操作}
+    Sleep    1
+    Input Text    //*[@id="integral"]//div/form[@name="myform2"]//div//input[@ng-model="integralObj.integral"]    ${分数}
+    Input Text    //*[@id="integral"]//div/form[@name="myform2"]//div//textarea[@ng-model="integralObj.source"]    ${备注}
+    Sleep    1
+    Click Link    //div[@class="modal-footer"]/a[text()="确定"]
+    Sleep    1.5
+    Run Keyword If    ${操作}!=0 and ${当前积分}<${分数}    减少积分异常及恢复
+    ...    ELSE    弹出信息校验
+    Sleep    3
+    ####调整后校验
+    [Teardown]
+
+客户列表_批量补全归属
+    [Tags]
+    [Setup]
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    客户列表
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]
+    Sleep    1
+    ####生成参数
+    ${num}    Get Matching Xpath Count    //*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]
+    Run Keyword If    ${num}<1    Fail    没有客户数据，请检查是否异常！
+    ${客户总数_PAGE}    Get Text    //*[@id="main-container"]//div[@class="infobox-data"]/span[@ng-click="totalClick()"]
+    ${随机客户}    Evaluate    random.randint(1,${num})    random
+    ${操作}    Generate Random String    1    1    #操作类型：0为添加，1为减少
+    ${分数}    Evaluate    random.randint(5,200)    random
+    ${备注}    随机字符    【备注】    50
+    ####页面数据
+    ${昵称}    Get Text    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[2]
+    ${积分}    Get Text    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[3]
+    ####客户列表-调整积分
+    Click Element    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[10]/a[@title="调整积分"]
+    Wait Until Element Is Visible    //*[@id="integral"]/div/div/div[1]/h4[text()="调整积分"]
+    Sleep    3
+    ##校验
+    ${客户昵称}    Get Text    //*[@id="integral"]//div/form[@name="myform2"]//div/label[@ng-bind="integralObj.name"]
+    ${当前积分}    Get Text    //*[@id="integral"]//div/form[@name="myform2"]//div/label[@ng-bind="integralObj.point"]
+    Should Be Equal As Strings    ${客户昵称}    ${昵称}
+    Should Be Equal As Strings    ${当前积分}    ${积分}
+    ##输入参数
+    Select From List By Value    //*[@id="integral"]//div/form[@name="myform2"]//div//select[@ng-model="integralObj.type"]    ${操作}
+    Sleep    1
+    Input Text    //*[@id="integral"]//div/form[@name="myform2"]//div//input[@ng-model="integralObj.integral"]    ${分数}
+    Input Text    //*[@id="integral"]//div/form[@name="myform2"]//div//textarea[@ng-model="integralObj.source"]    ${备注}
+    Sleep    1
+    Click Link    //div[@class="modal-footer"]/a[text()="确定"]
+    Sleep    1.5
+    Run Keyword If    ${操作}!=0 and ${当前积分}<${分数}    减少积分异常及恢复
+    ...    ELSE    弹出信息校验
+    Sleep    3
+    [Teardown]
+
+新增趋势_页面检测
+    [Tags]
+    [Setup]
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    客户列表
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]
+    Sleep    1
+    ####生成参数
+    ${num}    Get Matching Xpath Count    //*[@id="integralTable"]/tbody/tr[@ng-repeat="list in lists"]
+    Run Keyword If    ${num}<1    Fail    没有客户数据，请检查是否异常！
+    ${客户总数_PAGE}    Get Text    //*[@id="main-container"]//div[@class="infobox-data"]/span[@ng-click="totalClick()"]
+    ${随机客户}    Evaluate    random.randint(1,${num})    random
+    ${操作}    Generate Random String    1    1    #操作类型：0为添加，1为减少
+    ${分数}    Evaluate    random.randint(5,200)    random
+    ${备注}    随机字符    【备注】    50
+    ####页面数据
+    ${昵称}    Get Text    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[2]
+    ${积分}    Get Text    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[3]
+    ####客户列表-调整积分
+    Click Element    //*[@id="integralTable"]/tbody/tr[${随机客户}]/td[10]/a[@title="调整积分"]
+    Wait Until Element Is Visible    //*[@id="integral"]/div/div/div[1]/h4[text()="调整积分"]
+    Sleep    3
+    ##校验
+    ${客户昵称}    Get Text    //*[@id="integral"]//div/form[@name="myform2"]//div/label[@ng-bind="integralObj.name"]
+    ${当前积分}    Get Text    //*[@id="integral"]//div/form[@name="myform2"]//div/label[@ng-bind="integralObj.point"]
+    Should Be Equal As Strings    ${客户昵称}    ${昵称}
+    Should Be Equal As Strings    ${当前积分}    ${积分}
+    ##输入参数
+    Select From List By Value    //*[@id="integral"]//div/form[@name="myform2"]//div//select[@ng-model="integralObj.type"]    ${操作}
+    Sleep    1
+    Input Text    //*[@id="integral"]//div/form[@name="myform2"]//div//input[@ng-model="integralObj.integral"]    ${分数}
+    Input Text    //*[@id="integral"]//div/form[@name="myform2"]//div//textarea[@ng-model="integralObj.source"]    ${备注}
+    Sleep    1
+    Click Link    //div[@class="modal-footer"]/a[text()="确定"]
+    Sleep    1.5
+    Run Keyword If    ${操作}!=0 and ${当前积分}<${分数}    减少积分异常及恢复
+    ...    ELSE    弹出信息校验
+    Sleep    3
+    [Teardown]
+
+客户分组_添加
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    客户分组
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"分组管理")]
+    Sleep    1
+    ####添加分组
+    Click Link    添加分组
+    Wait Until Element Is Visible    //*[@id="myModal-bjhy"]//div[@class="modal-header"]/h4[text()="添加分组"]
+    Sleep    1
+    ####生成参数
+    ${添加前数量}    Get Matching Xpath Count    //*[@id="main-container"]//table/tbody/tr[@ng-repeat="list in groupList"]
+    ${添加前数量}    Evaluate    int(${添加前数量})
+    ${组名列表}    Create List    【测试组】    TestGroup1    【这是一个非常长的测试组名称它超过十五个字符】
+    ${rand}    Generate Random String    1    012
+    ${组名}    Set Variable    【测试组】
+    ${排序}    Generate Random String    1    0123
+    ####输入参数
+    Input Text    //*[@id="myModal-bjhy"]//input[@ng-model="$root.groupObj.group_name" and @placeholder="请输入2-15个汉字"]    ${组名列表[${rand}]}
+    Input Text    //*[@id="myModal-bjhy"]//input[@name="sort" and @ng-model="$root.groupObj.sort"]    ${排序}
+    Sleep    1
+    ##条件判断
+    Run Keyword If    ${rand}==0    确定并校验
+    ...    ELSE IF    ${rand}==1    Element Should Be Visible    //*[@id="myModal-bjhy"]//span[@ng-show="groupForm.name.$error.pattern" and text()="只能输入汉字"]
+    ...    ELSE IF    ${rand}==2    组名过长文字校验    ${组名列表[${rand}]}    #正常
+    Run Keyword If    ${rand}==1    Input Text    //*[@id="myModal-bjhy"]//input[@ng-model="$root.groupObj.group_name" and @placeholder="请输入2-15个汉字"]    ${组名列表[0]}
+    Sleep    1
+    Run Keyword If    ${rand}!=0    确定并校验
+    Sleep    2
+    ####结果校验
+    ${添加后数量}    Get Matching Xpath Count    //*[@id="main-container"]//table/tbody/tr[@ng-repeat="list in groupList"]
+    Should Be Equal As Integers    ${添加后数量}    ${添加前数量+1}
+
+客户分组_编辑
+    [Documentation]    注：由于没有固定索引，每次修改后无法定位原记录，故暂无法在修改后做对比校验
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    客户分组
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"分组管理")]
+    Sleep    1
+    ####生成参数
+    ${els}    Get Matching Xpath Count    //*[@id="main-container"]//table/tbody/tr[@ng-repeat="list in groupList"]/td[@ng-bind="list.group_name" and text()="【测试组】"]/parent::tr[1]/td/a[@title="编辑"]
+    ${rand}    Evaluate    random.randint(1,${els})    random
+    ${组名列表}    Create List    【测试组】改    TestGroup1    【改】这是一个非常长的测试组名称它超过十五个字符】
+    ${组名}    Set Variable    【测试组】改
+    ${排序}    Generate Random String    1    0123
+    ${随机组名}    Generate Random String    1    012
+    ####客户分组-编辑
+    Click Element    xpath=(//*[@id="main-container"]//table/tbody/tr[@ng-repeat="list in groupList"]/td[@ng-bind="list.group_name" and text()="【测试组】"]/parent::tr[1]/td/a[@title="编辑"])[${rand}]
+    Wait Until Element Is Visible    //*[@id="myModal-bjhy"]//div[@class="modal-header"]/h4[text()="编辑分组"]
+    Sleep    1
+    ####输入参数
+    Input Text    //*[@id="myModal-bjhy"]//input[@ng-model="$root.groupObj.group_name" and @placeholder="请输入2-15个汉字"]    ${组名列表[${随机组名}]}
+    Input Text    //*[@id="myModal-bjhy"]//input[@name="sort" and @ng-model="$root.groupObj.sort"]    ${排序}
+    Sleep    1
+    ##条件判断
+    Run Keyword If    ${随机组名}==0    确定并校验
+    ...    ELSE IF    ${随机组名}==1    Element Should Be Visible    //*[@id="myModal-bjhy"]//span[@ng-show="groupForm.name.$error.pattern" and text()="只能输入汉字"]
+    ...    ELSE IF    ${随机组名}==2    组名过长文字校验    ${组名列表[${随机组名}]}    #正常
+    Run Keyword If    ${随机组名}==1    Input Text    //*[@id="myModal-bjhy"]//input[@ng-model="$root.groupObj.group_name" and @placeholder="请输入2-15个汉字"]    ${组名列表[0]}
+    Sleep    1
+    Run Keyword If    ${随机组名}!=0    确定并校验
+    Sleep    2
+    ####结果校验
+
+*** Keywords ***
+统计校验_昨日新增
+    [Documentation]    由于无数据暂无法调试该脚本
+    ##校验昨日新增
+    Pass Execution    由于无数据暂无法调试脚本
+
+统计校验_微信客户总数
+
+统计校验_未分组
+
+批量分组
+    [Arguments]    ${分组名}
+    ##分组
+    Click Element    //*[@id="home"]//li[@class="dropdown"]/a[contains(text(),"批量操作")]
+    Sleep    1
+    Click Element    //*[@id="home"]//li/a[starts-with(@ng-click,"handClick") and text()="批量分组"]
+    Sleep    1
+    Element Should Be Visible    //*[@id="myModal"]/div[@class="modal-dialog"]//h4[text()="批量分组"]
+    Sleep    1
+    Select From List By Label    //*[@id="myModal"]//div[@class="modal-body"]//select[@ng-model="group_idpop"]    ${分组名}
+    Sleep    1
+    Click Element    //*[@id="myModal"]//div[@class="modal-footer"]/a[@ng-click="saveBtn()"]
+    Sleep    2
+    弹出信息校验
+
+批量分组_bak
+    [Arguments]    ${分组名}
+    ##分组
+    Click Element    //*[@id="home"]//li[@class="dropdown"]/a[contains(text(),"批量操作")]
+    Sleep    1
+    Click Element    //*[@id="home"]//li/a[starts-with(@ng-click,"handClick") and text()="批量分组"]
+    Sleep    3
+    Element Should Be Visible    //*[@id="myModal"]/div[@class="modal-dialog"]//h4[text()="批量分组"]
+    Sleep    1
+    Select From List By Label    //*[@id="myModal"]//div[@class="modal-body"]//select[@ng-model="group_idpop"]    【批量分组测试】
+    Sleep    1
+    Click Element    //*[@id="myModal"]//div[@class="modal-footer"]/a[@ng-click="saveBtn()"]
+    Sleep    2
+    弹出信息校验
+
+单个分组
+    [Arguments]    ${locator}    ${分组名}
+    ##分组
+    Select From List By Label    ${locator}    ${分组名}
+    Sleep    2
+    弹出信息校验
+
+统一打标签
+    [Documentation]    注：每次只打一个标签
+    ##统一打标签
+    Click Element    //*[@id="home"]//li[@class="dropdown"]/a[contains(text(),"批量操作")]
+    Sleep    1
+    Click Element    //*[@id="home"]//li/a[starts-with(@ng-click,"handClick") and text()="统一打标签"]
+    Sleep    1
+    Wait Until Element Is Visible    //*[@id="tagging"]//div[contains(@class,"modal-content")]//h4[@class="modal-title" and text()="打标签"]
+    Sleep    1
+    ##随机标签
+    ${tags}    Get Matching Xpath Count    //*[@id="tagging"]//div[@class="modal-body"]/span[@ng-click="setCss($event,i)"]
+    ${randtag}    Evaluate    random.randint(1,${tags})    random
+    ##点击标签
+    Click Element    //*[@id="tagging"]/div/div/div[@class="modal-body"]/span[${randtag}]
+    Sleep    1
+    Click Element    //*[@id="tagging"]//div[@class="modal-footer"]/a[@ng-click="btnHitTag()" and text()="确定"]
+    Sleep    2
+    弹出信息校验
+    [Return]    ${randtag}
+
+取消标签
+
+打标签
+    Wait Until Element Is Visible    //*[@id="tagging"]//div[contains(@class,"modal-content")]//h4[@class="modal-title" and text()="打标签"]
+    Sleep    1
+    ${class}    Get Element Attribute    //*[@id="tagging"]/div/div/div[@class="modal-body"]/span[${randtag}]@class
+    ${flag}    Run Keyword And Return Status    Should Not Match Regexp    ${class}    b-color-8F
+    Sleep    1
+    Click Element    //*[@id="tagging"]/div/div/div[@class="modal-body"]/span[${randtag}]
+    Pass Execution    test
+    ${class}    Get Element Attribute    //*[@id="tagging"]/div/div/div[@class="modal-body"]/span[${randtag}]@class
+    Should Match Regexp    ${class}    b-color-8F
+
+减少积分异常及恢复
+    弹出信息校验    减少的积分不能大于
+    Sleep    1.2
+    Select From List By Value    //*[@id="integral"]//div/form[@name="myform2"]//div//select[@ng-model="integralObj.type"]    0
+    Sleep    1
+    Click Link    //div[@class="modal-footer"]/a[text()="确定"]
+    弹出信息校验
+
+组名过长文字校验
+    [Arguments]    ${校验文字}
+    ${text}    Get Value    //*[@id="myModal-bjhy"]//input[@ng-model="$root.groupObj.group_name" and @placeholder="请输入2-15个汉字"]
+    Should Not Be Equal As Strings    ${text}    ${校验文字}
+    Sleep    1
+
+确定并校验
+    Click Element    id=submit
+    Sleep    1
+    弹出信息校验

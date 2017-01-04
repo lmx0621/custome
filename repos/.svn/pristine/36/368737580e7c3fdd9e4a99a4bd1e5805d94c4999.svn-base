@@ -1,0 +1,67 @@
+*** Settings ***
+Library           Selenium2Library
+Resource          ../../Resource/常用操作.robot
+Resource          ../../Resource/功能菜单.robot
+Resource          ../../Resource/配置参数.robot
+
+*** Test Cases ***
+客户列表
+    [Setup]    登陆
+    点击菜单    微会员
+    #客户总数
+    sleep    1
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/div[1]/div/span
+    #微信客户总数
+    sleep    1
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/div[2]/div/span
+    #昨日新增
+    sleep    1
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/div[3]/div/span
+    #未分组
+    sleep    1
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/div[4]/div/span
+
+批量操作
+    [Setup]    登陆
+    点击菜单    微会员
+    点击菜单    客户列表
+    sleep    1
+    #批量导出
+    Click Element    xpath=//*[@id="home"]/form/table/thead/tr/th[1]/label/input
+    sleep    1
+    Click Element    xpath=//*[@id="home"]/div[1]/div/ul/li/a
+    sleep    1
+    #Unselect From List By Value    xpath=//*[@id="home"]/div[1]/div/ul/li/a[@ng-click]    handClick(1)
+    Click Element    xpath=//*[@id="home"]/div[1]/div/ul/li/ul/li[1]/a
+    sleep    1
+    #批量分组
+    关闭浏览器
+
+批量分组
+    [Setup]    登陆
+    点击菜单    微会员
+    点击菜单    客户列表
+    sleep    1
+    Log    开始批量分组...
+    @{num}    create list    2    3    5    8
+    #批量分组
+    : FOR    ${i}    IN    @{num}
+    \    Log    ${i}
+    \    Click Element    //*[@id="home"]/form/table/tbody/tr[${i}]/td[1]/label/input
+    \    sleep    0.1
+    sleep    0.5
+    Click Element    xpath=//*[@id="home"]/div[1]/div/ul/li/a    #点击批量操作
+    sleep    0.5
+    Click Element    xpath=//*[@id="home"]/div[1]/div/ul/li/ul/li[3]/a    #选择批量分组
+    sleep    0.5
+    Select From List By Value    xpath=//*[@id="myModal"]/div/div/div[2]/div/form/div/div/div/select    2487
+    #Click Element    xpath=//*[@id="myModal"]/div/div/div[2]/div/form/div/div/div/select    #点击选择分组
+    sleep    0.5
+    #Click Element    xpath=//*[@id="myModal"]/div/div/div[2]/div/form/div/div/div/select/option[5]    #点击需要批量分组的组名
+    sleep    0.5
+    Click Element    xpath=//*[@id="myModal"]/div/div/div[3]/a[2]
+    #Unselect From List By Value    xpath=//*[@id="myModal"]/div/div/div[2]/div/form/div/div/div/select/option[5]@[value]    2487
+    #关闭浏览器
+
+QWE
+    获取分组名

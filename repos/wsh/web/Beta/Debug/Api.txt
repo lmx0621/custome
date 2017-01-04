@@ -1,0 +1,13 @@
+*** Settings ***
+Library           RequestsLibrary
+
+*** Test Cases ***
+first
+    Create Session    wsh    http://betanewwsh.vikduo.com
+    ${url}    Set Variable    http://betanewwsh.vikduo.com
+    &{data}=    Create Dictionary    username=20151228    password=123456    captcha=1111
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    ${resp}    Post Request    wsh    /login/login-ajax    data=${data}    headers=${headers}
+    Log    Response:${resp.content}
+    ${resp}    Post Request    wsh    /shop/get-ajax    data=${data}    headers=${headers}
+    Log    Response:${resp.content}

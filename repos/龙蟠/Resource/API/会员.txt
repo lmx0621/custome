@@ -1,0 +1,303 @@
+*** Settings ***
+Resource          Common.txt
+
+*** Keywords ***
+标签列表
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":20,"name":""}
+    ${resp}    Post Request    wsh    /members/find-tag-ajax    data=${jsonstr}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ###
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+客户列表
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":20,"nickname":"","group_id":null,"shop_sub_id":"","agent_id":"","is_search":false,"belong_to_staff_id":"","createStart":"","createEnd":"","group_ids":[],"yestoday":false,"user_platform":0,"tags":[]}
+    ${resp}    Post Request    wsh    /member/list-ajax    data=${jsonstr}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    接口返回异常！
+    [Return]    ${errmsg}
+
+客户详情
+    [Arguments]    ${id}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wsh    /member/member-detail-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+积分统计
+    [Arguments]    ${id}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"user_id":${id}}
+    ${resp}    Post Request    wsh    /data/user-point-count-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+积分列表
+    [Arguments]    ${id}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":20,"type_id":1,"id":"${id}"}
+    ${resp}    Post Request    wsh    /member/point-list-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+客户消费记录
+    [Arguments]    ${id}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":20,"uid":"${id}"}
+    ${resp}    Post Request    wsh    /members/find-member-order-list-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+全部客户消费记录
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":20,"real_name":"","bind_mobile":"","order_no":"","createStart":"","createEnd":"","total_price_min":"","total_price_max":"","shop_sub_id":[],"order_type":[]}
+    ${resp}    Post Request    wsh    /members/find-member-order-list-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+会员列表
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":0,"_page_size":1,"is_get_card":1}
+    ${resp}    Post Request    wsh    /members/list-ajax    data=${jsonstr}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+会员统计
+    ${resp}    Post Request    wsh    /members/last-count-ajax
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode is:${errcode}
+    Log    Resp:${resp.content}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+会员详情
+    [Arguments]    ${id}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wsh    /members/detail-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+会员分组列表
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":20,"name":""}    # 分页参数：{"_page":1,"_page_size":20,"name":""}
+    ${resp}    Post Request    wsh    /members/find-group-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+会员成长明细
+    [Arguments]    ${id}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":20,"member_id":${id}}
+    ${resp}    Post Request    wsh    /member/member-growth-detail    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+会员列表条件查询
+    [Arguments]    ${name}=${EMPTY}    ${start}=${EMPTY}    ${end}=${EMPTY}    ${mobile}=${EMPTY}    ${status}=[]    ${source}=[]
+    ...    ${level}=[]    ${group_id}=[]    ${tags}=[]    ${sex}=[]
+    [Documentation]    查询参数：
+    ...    {"_page":1,"_page_size":20,"keyword":"","real_name":"","create_start":1467611419,"create_end":1472104227,"bind_mobile":"","status":[],"source":[],"level":[],"member_group_id":[],"tags":[],"sex":[],"city_id":[],"city":[],"shop_sub_id":""}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":20,"keyword":"","real_name":"${name}","create_start":"${start}","create_end":"${end}","bind_mobile":"${mobile}","status":${status},"source":${source},"level":${level},"member_group_id":${group_id},"tags":${tags},"sex":${sex},"city_id":[],"city":[],"shop_sub_id":""}
+    ${resp}    Post Request    wsh    /members/list-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+会员获取全部分组
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":20,"name":""}    # 分页参数：{"_page":1,"_page_size":20,"name":""}
+    ${resp}    Post Request    wsh    /members/find-all-group-ajax    \    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+折扣优惠共享设置
+    [Arguments]    ${折扣开关}    ${商城红包}=2    ${卡券}=2    ${积分}=2
+    [Documentation]    <参数说明>
+    ...
+    ...    折扣开关：是否开启会员折扣功能，1 开启 2 关闭
+    ...
+    ...    其它几个开关分别为对应的优惠类型，1为共享，2为不共享
+    ...
+    ...    作者：胡永堂
+    ###
+    &{headers}    Create Dictionary    Accept=application/json, text/plain, */*    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"is_member_discount":${折扣开关},"is_discount":${商城红包},"is_card":${卡券},"is_point":${积分},"statistics_offset":null}
+    ${resp}    Post Request    wsh    /members/edit-shop-member-setting-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${json_content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${json_content}    errcode
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    ###
+    ${errmsg}    Get From Dictionary    ${json_content}    errmsg
+    [Return]    ${errmsg}
+
+折扣商品设置
+    [Arguments]    ${type}=1
+    [Documentation]    会员折扣商品设置
+    ...
+    ...    <参数说明>
+    ...
+    ...    type：1为全场商品（默认），2为指定商品
+    ...
+    ...    作者：胡永堂
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"member_discounted_product_type":${type},"sku":[],"sku_del":[]}
+    ${resp}    Post Request    wsh    /members/discounted-product-settings-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+WX_添加收货地址
+    [Arguments]    ${name}    ${tel}    ${detail}    ${province}=广东省    ${city}=深圳市    ${county}=宝安区
+    ...    ${address}=广东省省深圳市宝安区    ${zip}=518000    ${province_id}=4877    ${city_id}=4976    ${county_id}=4979
+    [Documentation]    添加一条收货地址
+    ...
+    ...    <参数说明>
+    ...
+    ...    name：姓名
+    ...
+    ...    tel：电话
+    ...
+    ...    detail：详细地址
+    ...
+    ...    注：目前采用的是固定省市模板，只需要传前3个参数即可
+    ...
+    ...    作者：胡永堂
+    &{headers}=    Get Headers    xform
+    &{data}=    Create Dictionary    consignee=${name}    tel=${tel}    zip=${zip}    province_id=${province_id}    city_id=${city_id}
+    ...    county_id=${county_id}    province=${province}    city=${city}    county=${county}    address=${address}    detail=${detail}
+    ${resp}    Post Request    wx    /user/address-add-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+WX_删除收货地址
+    [Arguments]    ${id}
+    [Documentation]    删除一条收货地址
+    ...
+    ...    <参数说明>
+    ...
+    ...    id：地址id
+    ...
+    ...    作者：胡永堂
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wx    /user/address-del-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+WX_设置默认收货地址
+    [Arguments]    ${id}
+    [Documentation]    微信设置默认收货地址
+    ...
+    ...    ${id}收货地址id
+    ...
+    ...    author:戴斌旺
+    &{headers}    Create Dictionary    Content-Type=application/json;charset=utf-8
+    #${id}    Convert To Integer    ${id}
+    ${addressId}    Create Dictionary    id=${id}
+    ${resp}    Post Request    wx    /user/default-address-ajax    data=${addressId}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+WX_获取红包列表
+    [Documentation]    获取用户商城红包列表
+    ...
+    ...    <参数说明>
+    ...
+    ...    is_use：是否已使用，默认为2（未使用）
+    ...
+    ...
+    ...    作者：胡永堂
+    &{headers}=    Get Headers    xform
+    &{data}=    Create Dictionary    _page=1    _page_size=10    is_use=2
+    ${resp}    Post Request    wx    /user/redpack-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+WX_获取用户信息
+    ${resp}    Post Request    wx    /user/get-userinfo-ajax
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}

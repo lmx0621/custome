@@ -1,0 +1,159 @@
+*** Settings ***
+Library           Selenium2Library
+Resource          ../配置参数.robot
+Resource          ../功能菜单.robot
+Library           String
+Library           Collections
+Library           RequestsLibrary
+Resource          Common.txt
+Library           json
+
+*** Keywords ***
+商家信息
+    ${resp}    Post Request    wsh    /shop/get-ajax
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${len}    Get Length    ${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+获取支付方式
+    Create Session    baseapi    http://betanewapi.snsshop.net/v1
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Set Variable    {"shop_id":${GLOBAL_CONFIG.shop_id}}
+    ${resp}    Post Request    baseapi    /payment/find-paytype-list    data=${jsonstr}
+    Log    Response:${resp.content}
+    ${resp_content}    Set Variable    ${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode:${errcode}
+    [Return]    ${resp.content}
+
+设置支付方式
+    [Arguments]    ${delivery}=1    ${newwxpay}=1
+    [Documentation]    设置店铺的支付方式
+    ...
+    ...    <参数说明>
+    ...
+    ...    delivery：货到付款，1开启（默认），0关闭
+    ...
+    ...    newwxpay：微信支付，1开启（默认），0关闭
+    ...
+    ...
+    ...    作者：胡永堂
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"tenpay":0,"wxpay":0,"delivery":${delivery},"agentpay":0,"newwxpay":${newwxpay},"qqpay":0,"citicbank":0}
+    ${resp}    Post Request    wsh    /shop/payment-setting-list-edit-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+终端店列表
+    ${resp}    Post Request    wsh    /terminal/list-ajax
+    ${预期返回码}    Set Variable    0
+    Log    Response:${resp.content}
+    ${商品列表响应}    loads    ${resp.content}
+    ${返回码}    Get From Dictionary    ${商品列表响应}    errcode
+    Log    errcode is:${返回码}
+    Should Be Equal As Strings    ${返回码}    ${预期返回码}
+    ${返回码信息}    Get From Dictionary    ${商品列表响应}    errmsg
+    ${列表数据}    Get From Dictionary    ${返回码信息}    data
+    [Return]    ${返回码信息}
+
+终端店信息
+    [Arguments]    ${search_name}=星之直营店自动化测试专用
+    &{data}=    Create Dictionary    name=${search_name}    is_search=true
+    &{headers}=    Create Dictionary    Content-Type=application/json    charset=UTF-8
+    ${resp}    Post Request    wsh    /terminal/list-ajax    data=${data}    headers=${headers}
+    ${预期返回码}    Set Variable    0
+    Log    Response:${resp.content}
+    ${商品列表响应}    loads    ${resp.content}
+    ${返回码}    Get From Dictionary    ${商品列表响应}    errcode
+    Log    errcode is:${返回码}
+    Should Be Equal As Strings    ${返回码}    ${预期返回码}
+    ${返回码信息}    Get From Dictionary    ${商品列表响应}    errmsg
+    ${列表数据}    Get From Dictionary    ${返回码信息}    data
+    [Return]    ${返回码信息}
+
+WX_获取自提店铺列表
+    [Arguments]    ${provinceName}=${EMPTY}    ${cityName}=${EMPTY}
+    [Documentation]    获取自提店铺列表
+    ...    provinceName \ 省名称
+    ...    cityName 市名称
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${provinceID}    ${cityID}    Run Keyword If    '${provinceName}' != '${EMPTY}' and '${cityName}' != '${EMPTY}'    WX_获取省市ID    ${provinceName}    ${cityName}
+    ${idData}    Create Dictionary    province_id=${provinceID}    city_id=${cityID}
+    ${shopresp}    Post Request    wx    /order/find-self-pickup-sub-ajax    headers=${headers}    data=${idData}
+    Should Be Equal As Integers    ${shopresp.status_code}    200
+    ${shopdict}    to json    ${shopresp.content}
+    ${shopErrcode}    Get From Dictionary    ${shopdict}    errcode
+    ${shopErrmsg}    Get From Dictionary    ${shopdict}    errmsg
+    Should Be Equal As Integers    ${shopErrcode}    0    接口返回异常！返回信息：${shopErrmsg}
+    ${addressList}    Create List
+    : FOR    ${tmpdata}    IN    @{shopErrmsg}
+    \    ${tempShopInfor}    Get From Dictionary    ${tmpdata}    shopInfo
+    \    ${shopName}    Get From Dictionary    ${tempShopInfor}    name
+    \    ${shopAddress}    Get From Dictionary    ${tempShopInfor}    address
+    \    ${tmpDictData}    Create Dictionary    name=${shopName}    address=${shopAddress}
+    \    Append To List    ${addressList}    ${tmpDictData}
+    [Return]    ${addressList}
+
+WX_获取省市ID
+    [Arguments]    ${provinceName}=广东省    ${cityName}=深圳市
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${provinceresp}    Post Request    wx    /common/find-province-ajax    headers=${headers}
+    Should Be Equal As Integers    ${provinceresp.status_code}    200
+    ${provincedict}    to json    ${provinceresp.content}
+    ${provinceErrcode}    Get From Dictionary    ${provincedict}    errcode
+    ${provinceErrmsg}    Get From Dictionary    ${provincedict}    errmsg
+    Should Be Equal As Integers    ${provinceErrcode}    0    接口返回异常！返回信息：${provinceErrmsg}
+    : FOR    ${tempProvince}    IN    @{provinceErrmsg}
+    \    ${tempProvinceName}    Get From Dictionary    ${tempProvince}    name
+    \    ${tempProvinceID}    Get From Dictionary    ${tempProvince}    id
+    \    ${provinceID}    Set Variable If    '${provinceName}' == '${tempProvinceName}'    ${tempProvinceID}
+    \    Exit For Loop If    '${provinceName}' == '${tempProvinceName}'
+    Run Keyword If    ${provinceID} == ${None}    Fail    省名称错误
+    ${provinceData}    Create Dictionary    id=${provinceID}
+    ${cityresp}    Post Request    wx    /common/find-city-ajax    headers=${headers}    data=${provinceData}
+    Should Be Equal As Integers    ${cityresp.status_code}    200
+    ${citydict}    to json    ${cityresp.content}
+    ${cityErrcode}    Get From Dictionary    ${citydict}    errcode
+    ${cityErrmsg}    Get From Dictionary    ${citydict}    errmsg
+    Should Be Equal As Integers    ${cityErrcode}    0    接口返回异常！返回信息：${cityErrmsg}
+    : FOR    ${tempCity}    IN    @{cityErrmsg}
+    \    ${tempCityName}    Get From Dictionary    ${tempCity}    name
+    \    ${tempCityID}    Get From Dictionary    ${tempCity}    id
+    \    ${cityID}    Set Variable If    '${cityName}' == '${tempCityName}'    ${tempCityID}
+    \    Exit For Loop If    '${cityName}' == '${tempCityName}'
+    Run Keyword If    ${cityID} == ${None}    Fail    市名称错误
+    [Return]    ${provinceID}    ${cityID}
+
+退货流程开关
+    [Arguments]    ${flag}=1    ${order_type}=1
+    [Documentation]    设置是否开启退货流程以及支持退货流程的订单类型
+    ...
+    ...    <参数说明>
+    ...
+    ...    flag：开关标志，1开启（默认），2关闭
+    ...
+    ...    order_type：订单类型，1 普通订单（默认），2 秒杀订单
+    ...
+    ...    注：order_type可传多个参数（元组）
+    ...
+    ...    作者：胡永堂
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"return_goods":${flag},"return_goods_order_type":"${order_type}"}
+    ${resp}    Post Request    wsh    /shop/return-goods-setting-update    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}

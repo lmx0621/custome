@@ -1,0 +1,62 @@
+*** Settings ***
+Resource          ../Resource/常用操作.robot
+Resource          ../Resource/YT.robot
+
+*** Test Cases ***
+会员搜索
+    ${time_now}    Get Time    epoch
+    ${time_30day}    Evaluate    3600*24*30
+    ${time_3day}    Evaluate    3600*24*3
+    ${time1}    Evaluate    ${time_now}-${time_30day}
+    ${time2}    Evaluate    ${time_now}-${time_3day}
+    ${开始时间}    Evaluate    random.randint(${time1},${time2})    random
+    ${结束时间}    Set Variable    ${time_now}
+    #    1467611419    14676104227
+
+会员分组列表
+    ${会员分组_API}    Create List
+    ##参数
+    ${grouplist}    获取会员分组列表    10
+    ${len_org}    Get Length    ${grouplist}
+    ${groupdict}    Create Dictionary
+    : FOR    ${i}    IN RANGE    ${len_org}
+    \    Set To Dictionary    ${groupdict}    '${i+1}'='${grouplist[${i}]}'
+    Log    GroupDict:${groupdict}
+    ##
+    ${n}    Evaluate    random.randint(1,4)    random
+    ${会员分组}    Evaluate    random.sample(range(1,${len_org}),${n})    random
+    ${len}    Get Length    ${会员分组}
+    ##
+    ${valuelist}    Create List
+    : FOR    ${i}    IN    @{会员分组}
+    \    ${value}    Get From Dictionary    ${groupdict}    '${i}'
+    \    ${value}    Evaluate    int(${value})
+    \    Append To List    ${valuelist}    ${value}
+    Log    ${valuelist}
+    #
+
+会员标签列表
+    ${会员标签_API}    Create List
+    ##参数
+    ${tagslist}    获取标签列表    10
+    ${len_org}    Get Length    ${tagslist}
+    ${tagsdict}    Create Dictionary
+    : FOR    ${i}    IN RANGE    ${len_org}
+    \    Set To Dictionary    ${tagsdict}    '${i+1}'='${tagslist[${i}]}'
+    Log    GroupDict:${tagsdict}
+    ##
+    ${n}    Evaluate    random.randint(1,4)    random
+    ${会员标签}    Evaluate    random.sample(range(1,${len_org}),${n})    random
+    ${len}    Get Length    ${会员标签}
+    ##
+    ${valuelist}    Create List
+    : FOR    ${i}    IN    @{会员标签}
+    \    ${value}    Get From Dictionary    ${tagsdict}    '${i}'
+    \    ${value}    Evaluate    int(${value})
+    \    Append To List    ${valuelist}    ${value}
+    Log    ${valuelist}
+    #
+
+GetHeaders
+    ${headers}    Get_Headers
+    Log    ${headers}

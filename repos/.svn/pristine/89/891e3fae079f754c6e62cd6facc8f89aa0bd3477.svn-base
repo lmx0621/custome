@@ -1,0 +1,240 @@
+*** Settings ***
+Library           RequestsLibrary
+Library           String
+Library           json
+Library           Collections
+Resource          ../../Resource/API.robot
+
+*** Variables ***
+@{会员卡状态}          1    2    3
+@{会员等级}           1    2    3    4
+@{性别}             1    2    3
+
+*** Test Cases ***
+客户_统计
+    ${errmsg_客户统计}    API.客户统计
+    ${客户总数_API}    Get From Dictionary    ${errmsg_客户统计}    total
+    ${微信客户总数_API}    Get From Dictionary    ${errmsg_客户统计}    wx_total
+    ${昨日新增客户_API}    Get From Dictionary    ${errmsg_客户统计}    yestodayNew
+    ${昨日新增微信客户_API}    Get From Dictionary    ${errmsg_客户统计}    yestodayWxNew
+
+客户_列表
+    ${errmsg}    API.获取客户列表
+    ${data}    Get From Dictionary    ${errmsg}    data
+
+客户_详情
+    ${errmsg}    API.客户_详情    13764502    # 客户id
+    ${model}    Get From Dictionary    ${errmsg}    model
+    ${nickname }    Get From Dictionary    ${model}    nickname
+
+客户_积分统计
+    ${errmsg}    API.客户_积分统计    13764485    # 客户id
+
+客户_消费记录
+    ${errmsg}    API.客户_消费记录    13723238    # 客户id
+
+客户_积分列表
+    ${errmsg}    API.客户_积分列表    13764485    # 客户id
+
+全部客户_消费记录
+    ${errmsg}    API.全部客户_消费记录
+
+----1----
+
+会员_统计
+    ${errmsg_会员统计}    API.会员统计
+    ${会员总数_API}    Get From Dictionary    ${errmsg_会员统计}    total_count
+    ${昨日新增会员_API}    Get From Dictionary    ${errmsg_会员统计}    last_day_count
+
+会员_列表
+    ${errmsg}    API.会员列表
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${page}    Get From Dictionary    ${errmsg}    page
+    ${已开卡会员}    Get From Dictionary    ${page}    total_count
+
+会员_详情
+    ${errmsg}    API.会员_详情    259    # 会员id
+    ${member_no}    Get From Dictionary    ${errmsg}    member_no
+    ${wxUserInfos}    Get From Dictionary    ${errmsg}    wxUserInfos
+
+会员_成长明细
+    ${errmsg}    API.会员_成长明细    258    # 客户id
+
+会员_分组列表
+    ${errmsg}    API.会员_分组列表
+    ${分组列表}    Create List
+    ###
+    ${page}    Get From Dictionary    ${errmsg}    page
+    ${total}    Get From Dictionary    ${page}    total_count
+    ###
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${len}    Get Length    ${data}
+    : FOR    ${i}    IN RANGE    ${len}
+    \    ${data_i}    Get From List    ${data}    ${i}
+    \    ${id}    Get From Dictionary    ${data_i}    id
+    \    ${name}    Get From Dictionary    ${data_i}    name
+    \    Append To List    ${分组列表}    ${id}
+    Log    ${分组列表}
+    #
+
+标签列表
+    ${errmsg}    API.标签列表
+    ${标签列表}    Create List
+    ###
+    ${page}    Get From Dictionary    ${errmsg}    page
+    ${total}    Get From Dictionary    ${page}    total_count
+    ###
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${len}    Get Length    ${data}
+    : FOR    ${i}    IN RANGE    ${len}
+    \    ${data_i}    Get From List    ${data}    ${i}
+    \    ${id}    Get From Dictionary    ${data_i}    id
+    \    ${name}    Get From Dictionary    ${data_i}    name
+    \    Append To List    ${标签列表}    ${id}
+    Log    ${标签列表}
+    #
+
+会员列表_条件查询
+    ###参数
+    ${n}    Evaluate    random.randint(1,3)    random
+    ${会员卡状态}    Evaluate    random.sample(range(1,4),${n})    random
+    ${n2}    Evaluate    random.randint(1,3)    random
+    ${等级}    Evaluate    random.sample(range(1,5),${n})    random
+    ${分组列表}    获取分组列表
+    ${len}    Get Length    ${分组列表}
+    ${n3}    Evaluate    random.randint(1,3)    random
+    ${分组}    Evaluate    random.sample(${分组列表},${n})    random
+    ${标签列表}    获取标签列表
+    ${n}    Evaluate    random.randint(1,3)    random
+    ${标签}    Evaluate    random.sample(${标签列表},${n})    random
+    ${n}    Evaluate    random.randint(1,3)    random
+    ${性别}    Evaluate    random.sample(range(1,4),${n})    random
+    ###查询
+    ${errmsg}    API.会员列表_条件查询    sex=${性别}
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${page}    Get From Dictionary    ${errmsg}    page
+    ${结果数量}    Get From Dictionary    ${page}    total_count
+    #time    1467611419    14676104227
+
+会员列表_条件查询2
+    [Documentation]    {"_page":1,"_page_size":20,"keyword":"","real_name":"${name}","create_start":"${start}","create_end":"${end}","bind_mobile":"${mobile}","status":${status},"source":${source},"level":${level},"member_group_id":${group_id},"tags":${tags},"sex":${sex},"city_id":[],"city":[],"shop_sub_id":""}
+    ###参数
+    ##
+    ${name}    Set Variable    TonyHoo
+    ${name}
+    ${args}    Set Variable    {"_page":1,"_page_size":20,"keyword":"","real_name":"${name}","create_start":"${start}","create_end":"${end}","bind_mobile":"${mobile}","status":${status},"source":${source},"level":${level},"member_group_id":${group_id},"tags":${tags},"sex":${sex},"city_id":[],"city":[],"shop_sub_id":""}
+    ###查询
+    ${errmsg}    API.会员列表_条件查询2    ${args}
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${page}    Get From Dictionary    ${errmsg}    page
+    ${结果数量}    Get From Dictionary    ${page}    total_count
+    #time    1467611419    14676104227
+
+会员列表_条件查询3
+    [Documentation]    {"_page":1,"_page_size":20,"keyword":"","real_name":"${name}","create_start":"${start}","create_end":"${end}","bind_mobile":"${mobile}","status":${status},"source":${source},"level":${level},"member_group_id":${group_id},"tags":${tags},"sex":${sex},"city_id":[],"city":[],"shop_sub_id":""}
+    ###
+    ${status}    Set Variable    [2]
+    ${name}    Set Variable    ${EMPTY}
+    ###查询API
+    #${args}    Set Variable    {"_page":1,"_page_size":20,"real_name":"${name}","status":${status}}
+    #${args}    Set Variable    {"_page":1,"_page_size":20,"keyword":"","real_name":"${name}","create_start":"${start}","create_end":"${end}","bind_mobile":"${mobile}","status":${status},"source":${source},"level":${level},"member_group_id":${group_id},"tags":${tags},"sex":${sex},"city_id":[],"city":[],"shop_sub_id":""}
+    #${start}
+    #${end}
+    #${status}
+    ${args}    Set Variable    {"_page":1,"_page_size":20,"real_name":"","create_start":"1462282235","create_end":"1472126492","bind_mobile":"","status":[1, 3]}
+    ${errmsg}    API.会员列表_条件查询2    ${args}
+    Log    API查询完毕，读取数据...
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${page}    Get From Dictionary    ${errmsg}    page
+    ${结果数量}    Get From Dictionary    ${page}    total_count
+    ###
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${len}    Get Length    ${data}
+    Run Keyword If    ${len}==0    Pass Execution    Test
+    ${data_0}    Get From List    ${data}    0
+    ${wxUserInfos}    Get From Dictionary    ${data_0}    wxUserInfos
+    ${姓名}    Get From Dictionary    ${wxUserInfos}    real_name
+    ${手机}    Get From Dictionary    ${wxUserInfos}    bind_mobile
+
+会员_获取全部分组
+    ${errmsg}    API.会员_获取全部分组
+    Pass Execution    Test
+    ${分组列表}    Create List
+    ###
+    ${page}    Get From Dictionary    ${errmsg}    page
+    ${total}    Get From Dictionary    ${page}    total_count
+    ###
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${len}    Get Length    ${data}
+    : FOR    ${i}    IN RANGE    ${len}
+    \    ${data_i}    Get From List    ${data}    ${i}
+    \    ${id}    Get From Dictionary    ${data_i}    id
+    \    ${name}    Get From Dictionary    ${data_i}    name
+    \    Append To List    ${分组列表}    ${id}
+    Log    ${分组列表}
+    #
+
+微信_获取二维码详情
+    ${errmsg}    API.微信_获取二维码详情
+    #
+
+微信_获取二维码列表
+    ${errmsg}    API.微信_获取二维码列表
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${len}    Get Length    ${data}
+    ${Agents_count}    Set Variable    ${0}
+    : FOR    ${i}    IN RANGE    ${len}
+    \    ${data_i}    Get From List    ${data}    ${i}
+    \    ${shopInfo}    Get From Dictionary    ${data_i}    shopInfo
+    \    ${flag}    Run Keyword And Return Status    Get From Dictionary    ${data_i}    shopAgents
+    \    ${shopAgents}    Run Keyword If    ${flag}==True    Get From Dictionary    ${data_i}    shopAgents
+    \    ${len}    Run Keyword If    ${flag}==True    Get Length    ${shopAgents}
+    \    ${Agents_count}    Set Variable If    ${flag}==True and ${len}!=0    ${Agents_count+1}    ${Agents_count}
+    \    Log    i:${i},AgentsCount:${Agents_count}
+    \    ${二维码归属_API}    Get From Dictionary    ${shopInfo}    name
+    \    Log    ${二维码归属_API}
+    \    ${flag2}    Run Keyword And Return Status    Get From Dictionary    ${shopInfo}    shop_sub_id
+    \    ${shop_sub_id }    Run Keyword If    ${flag2}==True    Get From Dictionary    ${shopInfo}    shop_sub_id
+    \    ...    ELSE    Set Variable    ${EMPTY}
+    #
+
+*** Keywords ***
+获取分组列表
+    ${errmsg}    API.会员_分组列表
+    ${分组列表}    Create List
+    ###
+    ${page}    Get From Dictionary    ${errmsg}    page
+    ${total}    Get From Dictionary    ${page}    total_count
+    ###
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${len}    Get Length    ${data}
+    ${len}    Set Variable If    ${len}>10    10    ${len}
+    : FOR    ${i}    IN RANGE    ${len}
+    \    ${data_i}    Get From List    ${data}    ${i}
+    \    ${id}    Get From Dictionary    ${data_i}    id
+    \    ${name}    Get From Dictionary    ${data_i}    name
+    \    Append To List    ${分组列表}    ${id}
+    Log    ${分组列表}
+    #
+    [Return]    ${分组列表}
+
+获取标签列表
+    ${errmsg}    API.会员_标签列表
+    ${标签列表}    Create List
+    ###
+    ${page}    Get From Dictionary    ${errmsg}    page
+    ${total}    Get From Dictionary    ${page}    total_count
+    ###
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${len}    Get Length    ${data}
+    ${len}    Set Variable If    ${len}>10    10    ${len}
+    : FOR    ${i}    IN RANGE    ${len}
+    \    ${data_i}    Get From List    ${data}    ${i}
+    \    ${id}    Get From Dictionary    ${data_i}    id
+    \    ${name}    Get From Dictionary    ${data_i}    name
+    \    Append To List    ${标签列表}    ${id}
+    Log    ${标签列表}
+    #
+    [Return]    ${标签列表}
+
+参数_姓名

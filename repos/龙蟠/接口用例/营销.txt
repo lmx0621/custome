@@ -1,0 +1,308 @@
+*** Settings ***
+Suite Setup       API登录    1    1    1
+Library           RequestsLibrary
+Resource          ../Resource/API/Common.txt
+Library           json
+Library           Collections
+Library           String
+Resource          ../Resource/常用操作.robot
+Resource          ../Resource/API/营销.txt
+Resource          ../Resource/API/API操作.txt
+
+*** Test Cases ***
+获取拼团活动列表
+    [Tags]    ready
+    ${resp}    Post Request    wsh    /together-buy/list-ajax
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode is:${errcode}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed
+
+获取秒杀活动列表
+    [Tags]    ready
+    ${resp}    Post Request    wsh    /second-kill/list-ajax
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode is:${errcode}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed
+
+获取满减活动列表
+    [Tags]    deprecated
+    ${resp}    Post Request    wsh    /reduction/list-ajax
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode is:${errcode}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed
+
+获取众筹活动列表
+    [Tags]    ready
+    ${resp}    Post Request    wsh    /collect-zan/list-ajax
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode is:${errcode}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed
+
+获取现金红包活动列表
+    [Tags]    ready
+    ${resp}    Post Request    wsh    /cash-redpack/list-ajax
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode is:${errcode}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed
+
+获取大转盘活动列表
+    [Tags]    ready
+    ${resp}    Post Request    wsh    /market-activity/list-ajax
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode is:${errcode}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed
+
+获取砸金蛋活动列表
+    [Tags]    ready
+    ${resp}    Post Request    wsh    /market-activity/smashegg-list-ajax
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode is:${errcode}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed
+
+获取卡券列表
+    [Tags]    ready
+    ${errmsg}    营销.获取卡券列表
+
+添加卡券
+    [Tags]    paused
+    ${title}    随机字符    【测试卡券】    12
+    ${quantity}    Evaluate    random.randint(20,500)    random
+    ${limit}    Set Variable    10
+    ${args}    Set Variable    {"brand_name":"【测试商户】","title":"${title}","logo_url":"http://imgcache.vikduo.com/static/1b6549eaca4feeaf27fab34e16b84e2b.jpg","color":"#55bd47","date_info_type":2,"begin":0,"end":3,"quantity":"${quantity}","get_limit":"${limit}","can_give_friend":2,"code_type":"1","notice":"这是引导提示信息！","description":"这是使用须知介绍。。。","service_phone":"13924628477","card_type":1,"assign":-1,"wx_card_type":1,"card_money":500,"money_limit":800,"card_discount":0,"exchange_content_text":"","product_ids":"","deal_detail":"价值5元代金券1张，全场满8元可用"}
+    ${errmsg}    营销.添加卡券    ${args}
+    ${card_id}    Get From Dictionary    ${errmsg}    id
+    ${card_name}    Get From Dictionary    ${errmsg}    title
+    Set Suite Variable    ${card_id}
+    Set Suite Variable    ${card_name}
+
+手动派发卡券
+    [Tags]    paused
+    ###
+    ${User_ID}    Get_Test_UserID
+    ###
+    ${errmsg}    营销.手动派发卡券    ${User_ID}    ${card_id}
+
+删除卡券
+    [Tags]    paused
+    #${card}    获取一个特定条件卡券
+    #${id}    Get From Dictionary    ${card}    id
+    Sleep    6
+    ${errmsg}    营销.删除卡券    ${card_id}
+
+卡券操作
+    [Tags]    ready
+    ${title}    随机字符    【测试卡券】    12
+    ${quantity}    Evaluate    random.randint(20,500)    random
+    ${args}    Set Variable    {"brand_name":"【测试商户】","title":"${title}","logo_url":"http://imgcache.vikduo.com/static/1b6549eaca4feeaf27fab34e16b84e2b.jpg","color":"#55bd47","date_info_type":2,"begin":0,"end":1,"quantity":"${quantity}","get_limit":"10","can_give_friend":2,"code_type":"1","notice":"这是引导提示信息！","description":"这是使用须知介绍。。。","service_phone":"13924628477","card_type":1,"assign":-1,"wx_card_type":1,"card_money":500,"money_limit":800,"card_discount":0,"exchange_content_text":"","product_ids":"","deal_detail":"价值5元代金券1张，全场满8元可用"}
+    ${errmsg}    营销.添加卡券    ${args}
+    ${card_id}    Get From Dictionary    ${errmsg}    id
+    Sleep    1
+    营销.手动派发卡券    ${GLOBAL_CONFIG.user_id}    ${card_id}
+    Pass Execution    Test
+    营销.删除卡券    ${card_id}
+
+添加商城红包
+    ${args}    Set Variable    sfs
+    Log    准备添加商城红包...
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"activity":{"name":"商城红包测试0914-2","desc":"1. 活动时间：#年#月#日#时 至 #年#月#日#时；\n2. 用户进入活动主页抢群红包，分享给好友瓜分群红包，瓜分到的红包金额自动发放到用户的商城账户；\n3. 用户必须关注微信公众号才能抢群红包；（打开强制关注后）；\n4. 每个用户只能发起一次活动，但可以瓜分不同用户转发的群红包；\n5. 瓜分群红包，先到先得，该群红包分完为止；\n6. 本活动最终解释权归XX商家所有。","start_time":1473844058,"end_time":1475226460,"share_type":1},"redPacketEvent":{"type":1,"red_packet_id":443,"num_per_packet":"5","red_packet_num":"10","is_attention":2},"shareMessage":{"title":"拼的是手气，抢的是红包~","desc":"#商家店名#发红包啦，不要白不要啊！","pic_id":10},"news":{"title":"拼的是手气，抢的是红包~","description":"亲，点击进入活动主页，意外惊喜等着你！","document_id":4}}
+    ${resp}    Post Request    wsh    /redpack/add-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    #${res_content}    Get Substring    ${resp.content}    3
+    ${json_content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${json_content}    errcode
+    ${errmsg}    Get From Dictionary    ${json_content}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    Log    添加商城红包成功...
+
+积分抵扣活动
+    [Tags]    ready
+    API登录
+    ${redeemInfor}    添加积分抵扣活动
+    启用积分抵扣活动    ${redeemInfor}
+    sleep    5
+    关闭积分抵扣活动    ${redeemInfor}
+    sleep    5
+    删除积分抵扣活动    ${redeemInfor}
+
+满减活动列表
+    [Documentation]    说明：添加、删除满减包邮活动
+    [Tags]    debug
+    ${errmsg}    满减活动列表
+    ${data}    Get From Dictionary    ${errmsg}    data
+    #
+
+满减活动
+    [Documentation]    说明：添加、删除满减包邮活动
+    [Tags]    ready
+    检测并关闭开启的满减活动
+    ${name}    随机字符    满减测试
+    ${start_time}    Get Time    epoch
+    ${end_time}    Evaluate    ${start_time}+(3600*5)
+    ${params_json}    Set Variable    {"name":"${name}","is_relate_all":1,"start_time":${start_time},"end_time":${end_time},"conditions":[{"condition_type":1,"level":1,"condition_min":2000,"strategys":[{"reduction_type":1,"amount":200,"discount":"","point":"","card_type_id":"","red_packet_id":"","is_all_area":1,"area_id":"","area_cn":"","is_limit":1}]}],"products":[]}
+    ${errmsg}    添加满减活动    ${params_json}
+    ${id}    Get From Dictionary    ${errmsg}    id
+    Sleep    1
+    开启满减活动    ${id}
+    Sleep    1
+    关闭满减活动    ${id}
+    Sleep    1
+    删除满减活动    ${id}
+
+添加满减活动
+    [Documentation]    说明：添加、删除满减包邮活动
+    [Tags]
+    ${name}    随机字符    满减测试
+    ${start_time}    Get Time    epoch
+    ${end_time}    Evaluate    ${start_time}+(3600*5)
+    ${params_json}    Set Variable    {"name":"${name}","is_relate_all":1,"start_time":${start_time},"end_time":${end_time},"conditions":[{"condition_type":1,"level":1,"condition_min":2000,"strategys":[{"reduction_type":1,"amount":200,"discount":"","point":"","card_type_id":"","red_packet_id":"","is_all_area":1,"area_id":"","area_cn":"","is_limit":1}]}],"products":[]}
+    ${errmsg}    添加满减活动    ${params_json}
+    ${id}    Get From Dictionary    ${errmsg}    id
+
+积分赠送活动
+    [Tags]    ready
+    ${name}    随机字符    【积分赠送】
+    ${id}    添加积分赠送活动    ${name}    30    2
+    Sleep    1
+    开启积分赠送活动    ${id}
+    Sleep    5
+    关闭积分赠送活动    ${id}
+    Sleep    1
+    删除积分赠送活动    ${id}
+    Log    测试成功！
+
+关闭开启的满减活动
+    [Documentation]    说明：添加、删除满减包邮活动
+    [Tags]    ready
+    检测并关闭开启的满减活动
+
+现金红包
+    [Tags]    ready
+    ${errmsg}    添加现金红包
+    ${id}    Get From Dictionary    ${errmsg}    id
+    删除现金红包    ${id}
+
+商城红包
+    [Tags]    ready
+    ${errmsg}    添加商城红包
+    ${id}    Get From Dictionary    ${errmsg}    id
+    Sleep    1
+    删除商城红包    ${id}
+
+商城红包活动
+    [Tags]    ready
+    ${errmsg}    添加商城红包
+    ${redpack_id}    Get From Dictionary    ${errmsg}    id
+    Sleep    1
+    ${errmsg}    添加商城红包活动    ${redpack_id}
+    ${activity}    Get From Dictionary    ${errmsg}    activity
+    ${act_id}    Get From Dictionary    ${activity}    id
+    开启商城红包活动    ${act_id}
+    Sleep    1
+    关闭商城红包活动    ${act_id}
+    Sleep    1
+    删除商城红包活动    ${act_id}
+    Sleep    1
+    删除商城红包    ${redpack_id}
+    #
+
+大转盘活动
+    [Tags]    auto
+    ${errmsg}    添加大转盘活动
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    Sleep    5
+    开启大转盘活动    ${id}
+    Sleep    5
+    关闭大转盘活动    ${id}
+    Sleep    5
+    删除大转盘活动    ${id}
+    大转盘活动列表
+
+砸金蛋活动
+    [Tags]    auto
+    ${errmsg}    添加砸金蛋活动
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    Sleep    1
+    开启砸金蛋活动    ${id}
+    Sleep    1
+    关闭砸金蛋活动    ${id}
+    Sleep    1
+    删除砸金蛋活动    ${id}
+
+获取活动中奖记录
+    ${errmsg}    活动中奖记录    1440
+
+添加砸金蛋活动
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}-600
+    ${try_limit}    Evaluate    5
+    ${errmsg}    添加砸金蛋活动    一等奖机率=100    二等奖机率=0    三等奖机率=0    try_limit=${try_limit}    start_time=${start_time}
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+
+添加大转盘活动
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}-600
+    ${try_limit}    Evaluate    5
+    ${errmsg}    添加大转盘活动    一等奖机率=0    二等奖机率=100    三等奖机率=0    try_limit=${try_limit}    start_time=${start_time}
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+
+添加抽奖活动
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}-600
+    ${try_limit}    Evaluate    5
+    ${errmsg}    添加抽奖活动    一等奖机率=100    二等奖机率=0    三等奖机率=0    四等奖机率=0    五等奖机率=0
+    ...    try_limit=${try_limit}    start_time=${start_time}    name=实物中奖测试2
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+
+WX红包活动
+    [Tags]
+    ${errmsg}    添加商城红包
+    ${redpack_id}    Get From Dictionary    ${errmsg}    id
+    Sleep    1
+    ${errmsg}    添加商城红包活动    ${redpack_id}
+    ${activity}    Get From Dictionary    ${errmsg}    activity
+    ${act_id}    Get From Dictionary    ${activity}    id
+    开启商城红包活动    ${act_id}
+    Sleep    1
+    ${errmsg}    WX_领取红包    ${act_id}
+    ${item_id}    Get From Dictionary    ${errmsg}    id
+    Sleep    1
+    ${errmsg}    WX_打开红包    ${item_id}
+    ${redPacketLog}    Get From Dictionary    ${errmsg}    redPacketLog
+    ${amount}    Get From Dictionary    ${redPacketLog}    amount
+    Pass Execution    Test
+    关闭商城红包活动    ${act_id}
+    Sleep    1
+    删除商城红包活动    ${act_id}
+    Sleep    1
+    删除商城红包    ${redpack_id}
+    #

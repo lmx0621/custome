@@ -1,0 +1,60 @@
+*** Settings ***
+Suite Setup       登录
+Library           Selenium2Library
+Resource          ../../Resource/常用操作.robot
+
+*** Test Cases ***
+Random
+    ${str}    随机字符
+    Log    Str:${str}
+    ${num}    随机数字    3
+    Log    Num:${num}
+    ${random index}    Generate Random String    2    [12345678]0123456789
+
+test
+    ${rand}    Generate Random String    1    01
+    Log    Rand:${rand}
+
+check
+    点击链接菜单    微营销
+    ${sub}    Set Variable    现金红包
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]    20
+    Sleep    1
+    ###Test
+    Sleep    1
+    ${status}    Run Keyword And Return Status    Checkbox Should Not Be Selected    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div/div/div/form/table/tbody/tr[1]/td[10]/label/input
+    ${status2}    Run Keyword And Return Status    Checkbox Should Not Be Selected    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div/div/div/form/table/tbody/tr[2]/td[10]/label/input
+    Log    Status:${status}
+    Log    Status2:${status2}
+    Sleep    3
+
+get time
+    点击链接菜单    微营销
+    ${sub}    Set Variable    现金红包
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]    20
+    Sleep    1
+    $    //*[@id="start_time"]
+
+点赞
+    点击链接菜单    微营销
+    点击链接菜单    众筹活动
+    Wait Until Page Contains    点赞众筹
+    Sleep    1
+    ###Test
+    ${status}    Run Keyword And Return Status    Checkbox Should Not Be Selected    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div/div/div[1]/form/table/tbody/tr[1]/td[4]/label/input
+    ${status2}    Run Keyword And Return Status    Checkbox Should Not Be Selected    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div/div/div[1]/form/table/tbody/tr[2]/td[4]/label/input
+    Sleep    2
+    ###Test
+
+支付
+    点击链接菜单    运营设置
+    点击链接菜单    支付管理
+    Wait Until Page Contains    支付方式
+    Sleep    1
+    ###Test
+    ${status}    Run Keyword And Return Status    Checkbox Should Not Be Selected    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/table/tbody/tr[1]/td[4]/label/input
+    ${status2}    Run Keyword And Return Status    Checkbox Should Not Be Selected    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/table/tbody/tr[5]/td[4]/label/input
+    Sleep    2
+    ###Test

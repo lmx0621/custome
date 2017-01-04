@@ -1,0 +1,654 @@
+*** Settings ***
+Suite Setup       Run Keywords    API登录    1    1    1
+...               AND    关闭分店模式
+Test Teardown     Run Keywords    失败截图
+...               AND    关闭浏览器
+Library           Selenium2Library
+Resource          ../../Resource/常用操作.robot
+Resource          ../../Resource/功能菜单.robot
+Resource          ../../Resource/配置参数.robot
+Resource          ../../Resource/API/营销.txt
+Resource          ../../Resource/微信模拟端/操作单元.robot
+Resource          ../../Resource/微信模拟端/点击按钮.robot
+Resource          ../../Resource/API/店铺.txt
+Resource          ../../Resource/API/会员.txt
+Resource          ../../Resource/API/API操作.txt
+
+*** Test Cases ***
+活动未开启
+    [Tags]    auto    yt
+    ####前置操作
+    ${errmsg}    添加大转盘活动
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+    Log    添加大转盘活动成功...
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=1"]
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    大转盘
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    时来运转，转出你的好运！
+    Sleep    1
+    #进入红包活动页
+    Click Element    //a[@href="../market-activity/list?type=1"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Not Contain Element    //li[@ng-repeat="list in lists"]/a[@href="../market-activity/activity?id=${id}"]
+    Element Should Not Contain    //ul[@class="menu_list plan_list"]    ${name}
+    Sleep    1
+    #数据清理
+    删除大转盘活动    ${id}
+    Log    删除大转盘活动成功...
+    #
+
+活动已开启未开始
+    [Tags]    auto    yt
+    ####前置操作
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}+3600
+    ${errmsg}    添加大转盘活动    start_time=${start_time}
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+    Log    添加大转盘活动成功...
+    开启大转盘活动    ${id}
+    Log    开启大转盘活动成功...
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=1"]
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    大转盘
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    时来运转，转出你的好运！
+    Sleep    1
+    #进入活动列表
+    Click Element    //a[@href="../market-activity/list?type=1"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Contain Element    //li[@ng-repeat="list in lists"]
+    Element Should Contain    //ul[@class="menu_list plan_list"]    ${name}
+    Page Should Contain Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Sleep    1
+    #进入活动页
+    Click Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Wait Until Element Is Visible    id=errorpage
+    Title Should Be    活动未开始
+    #数据清理
+    Log    准备清理数据...
+    Sleep    2
+    删除大转盘活动    ${id}
+    Log    删除大转盘活动成功...
+    #
+
+未中奖
+    [Tags]    auto    yt
+    ####前置操作
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}-1200
+    ${try_limit}    Evaluate    2
+    ${errmsg}    添加大转盘活动    一等奖机率=0    二等奖机率=0    三等奖机率=0    try_limit=${try_limit}    start_time=${start_time}
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+    Log    添加大转盘活动成功...
+    开启大转盘活动    ${id}
+    Log    开启大转盘活动成功...
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=1"]
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    大转盘
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    时来运转，转出你的好运！
+    Sleep    1
+    #进入活动列表
+    Click Element    //a[@href="../market-activity/list?type=1"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Contain Element    //li[@ng-repeat="list in lists"]
+    Element Should Contain    //ul[@class="menu_list plan_list"]    ${name}
+    Page Should Contain Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Sleep    1
+    #进入活动页
+    Click Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Wait Until Element Is Visible    id=rotate
+    Wait Until Element Is Visible    id=botary_btn
+    Wait Until Element Is Visible    //div[@id="botary_btn"]/img[@src="/ace/image/activity/rotory_arrow.png"]
+    Title Should Be    抽奖大转盘
+    #大转盘抽奖
+    Click Element    //div[@id="botary_btn"]/img[@src="/ace/image/activity/rotory_arrow.png"]
+    Sleep    2
+    #未中奖校验
+    Wait Until Element Is Visible    //div[@ng-if="levelid == 0"]
+    Sleep    1
+    Element Should Contain    //div[@ng-if="levelid == 0"]    谢谢参与！
+    Element Should Contain    //div[@ng-if="levelid == 0"]    确定
+    Sleep    1
+    Click Element    //div[@ng-if="levelid == 0"]//span[text()="确定"]
+    #数据清理
+    Log    准备清理数据...
+    Sleep    2
+    关闭大转盘活动    ${id}
+    删除大转盘活动    ${id}
+    Log    删除大转盘活动成功...
+    #
+
+积分中奖
+    [Tags]    auto    yt
+    ####前置操作
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}-1200
+    ${try_limit}    Evaluate    2
+    ${errmsg}    添加大转盘活动    一等奖机率=0    二等奖机率=0    三等奖机率=100    try_limit=${try_limit}    start_time=${start_time}
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+    Log    添加大转盘活动成功...
+    开启大转盘活动    ${id}
+    ${user_info}    会员.客户详情    ${GLOBAL_CONFIG.user_id}
+    ${model}    Get From Dictionary    ${user_info}    model
+    ${会员积分}    Get From Dictionary    ${model}    point
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=1"]
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    大转盘
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    时来运转，转出你的好运！
+    Sleep    1
+    #进入活动列表
+    Click Element    //a[@href="../market-activity/list?type=1"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Contain Element    //li[@ng-repeat="list in lists"]
+    Element Should Contain    //ul[@class="menu_list plan_list"]    ${name}
+    Page Should Contain Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Sleep    1
+    #进入活动页
+    Click Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Wait Until Element Is Visible    id=rotate
+    Wait Until Element Is Visible    id=botary_btn
+    Wait Until Element Is Visible    //div[@id="botary_btn"]/img[@src="/ace/image/activity/rotory_arrow.png"]
+    Title Should Be    抽奖大转盘
+    #大转盘抽奖
+    Click Element    //div[@id="botary_btn"]/img[@src="/ace/image/activity/rotory_arrow.png"]
+    Sleep    2
+    #中奖校验
+    Wait Until Element Is Visible    //div[@ng-if="levelid != 0"]
+    Sleep    1
+    Element Should Contain    //div[@ng-if="levelid != 0"]    三等奖
+    Element Should Contain    //div[@ng-if="levelid != 0"]    积分
+    Element Should Contain    //div[@ng-if="levelid != 0"]    10    #10积分
+    Element Should Contain    //div[@ng-if="levelid != 0"]    奖品已自动发送到你的账户，可到个人中心查看
+    Sleep    1
+    Click Element    //div[@ng-if="levelid != 0"]//span[text()="确定"]
+    Sleep    1
+    #积分校验
+    ${会员积分}    Evaluate    str(${会员积分}+10)
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入个人中心
+    点击底部菜单    我
+    Wait Until Element Is Visible    //a[@href="../member/member-point"]
+    Element Should Contain    //a[@href="../member/member-point"]    积分
+    Element Should Contain    //a[@href="../member/member-point"]    ${会员积分}
+    Sleep    2
+    #数据清理
+    Log    准备清理数据...
+    Sleep    2
+    关闭大转盘活动    ${id}
+    删除大转盘活动    ${id}
+    Log    删除大转盘活动成功...
+    #
+
+现金红包中奖
+    [Documentation]    Todo：红包微信消息校验
+    [Tags]    auto    yt
+    ####前置操作
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}-1200
+    ${try_limit}    Evaluate    2
+    ${errmsg}    添加抽奖活动    一等奖机率=0    二等奖机率=0    三等奖机率=0    四等奖机率=0    五等奖机率=100
+    ...    try_limit=${try_limit}    start_time=${start_time}
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+    Log    添加大转盘活动成功...
+    开启大转盘活动    ${id}
+    ${user_info}    会员.客户详情    ${GLOBAL_CONFIG.user_id}
+    ${model}    Get From Dictionary    ${user_info}    model
+    ${会员积分}    Get From Dictionary    ${model}    point
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=1"]
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    大转盘
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    时来运转，转出你的好运！
+    Sleep    1
+    #进入活动列表
+    Click Element    //a[@href="../market-activity/list?type=1"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Contain Element    //li[@ng-repeat="list in lists"]
+    Element Should Contain    //ul[@class="menu_list plan_list"]    ${name}
+    Page Should Contain Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Sleep    1
+    #进入活动页
+    Click Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Wait Until Element Is Visible    id=rotate
+    Wait Until Element Is Visible    id=botary_btn
+    Wait Until Element Is Visible    //div[@id="botary_btn"]/img[@src="/ace/image/activity/rotory_arrow.png"]
+    Title Should Be    抽奖大转盘
+    #大转盘抽奖
+    Click Element    //div[@id="botary_btn"]/img[@src="/ace/image/activity/rotory_arrow.png"]
+    Sleep    2
+    #中奖校验
+    Wait Until Element Is Visible    //div[@ng-if="levelid != 0"]
+    Sleep    1
+    Element Should Contain    //div[@ng-if="levelid != 0"]    恭喜你中了
+    Element Should Contain    //div[@ng-if="levelid != 0"]    五等奖
+    Element Should Contain    //div[@ng-if="levelid != 0"]    现金红包
+    Element Should Contain    //div[@ng-if="levelid != 0"]    红包测试
+    Element Should Contain    //div[@ng-if="levelid != 0"]    奖品已自动发送到你的账户，可到个人中心查看
+    Sleep    1
+    Click Element    //div[@ng-if="levelid != 0"]//span[text()="确定"]
+    Sleep    1
+    #校验中奖记录
+    ${errmsg}    活动中奖记录    ${id}
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${record_id}    Get From Dictionary    ${data[0]}    id
+    ${level}    Get From Dictionary    ${data[0]}    level
+    ${prizes_name}    Get From Dictionary    ${data[0]}    prizes_name
+    ${prize_type}    Get From Dictionary    ${data[0]}    prize_type
+    ${username_API}    Get From Dictionary    ${data[0]}    username
+    ${wxUserInfos}    Get From Dictionary    ${data[0]}    wxUserInfos
+    ${user_id}    Get From Dictionary    ${wxUserInfos}    id
+    Should Be Equal As Strings    ${level}    5
+    Should Be Equal As Strings    ${prizes_name}    红包测试
+    Should Be Equal As Strings    ${user_id}    ${GLOBAL_CONFIG.user_id}
+    Sleep    1
+    #数据清理
+    Log    准备清理数据...
+    Sleep    2
+    关闭大转盘活动    ${id}
+    删除大转盘活动    ${id}
+    Log    删除大转盘活动成功...
+    #
+
+实物中奖
+    [Tags]    auto    yt
+    ####前置操作
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}-1200
+    ${expiry_time}    Evaluate    ${time}+(3600*24*15)
+    ${try_limit}    Evaluate    2
+    ${errmsg}    添加抽奖活动    一等奖机率=100    二等奖机率=0    三等奖机率=0    四等奖机率=0    五等奖机率=0
+    ...    try_limit=${try_limit}    start_time=${start_time}    expiry_time=${expiry_time}
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${act_name}    Get From Dictionary    ${marketingActivity}    activity_name
+    Log    添加大转盘活动成功...
+    开启大转盘活动    ${id}
+    Log    开启大转盘活动成功...
+    ####进入前端页面
+    ${main_browser}    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=1"]
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    大转盘
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    时来运转，转出你的好运！
+    Sleep    1
+    #进入活动列表
+    Click Element    //a[@href="../market-activity/list?type=1"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Contain Element    //li[@ng-repeat="list in lists"]
+    Element Should Contain    //ul[@class="menu_list plan_list"]    ${act_name}
+    Page Should Contain Element    //span[@ng-bind="list.activity_name" and text()="${act_name}"]
+    Sleep    1
+    #进入活动页
+    Click Element    //span[@ng-bind="list.activity_name" and text()="${act_name}"]
+    Wait Until Element Is Visible    id=rotate
+    Wait Until Element Is Visible    id=botary_btn
+    Wait Until Element Is Visible    //div[@id="botary_btn"]/img[@src="/ace/image/activity/rotory_arrow.png"]
+    Title Should Be    抽奖大转盘
+    #大转盘抽奖
+    Click Element    //div[@id="botary_btn"]/img[@src="/ace/image/activity/rotory_arrow.png"]
+    Sleep    2
+    #中奖校验
+    Wait Until Element Is Visible    //div[@ng-if="levelid != 0"]
+    Sleep    1
+    Element Should Contain    //div[@ng-if="levelid != 0"]    恭喜你中了
+    Element Should Contain    //div[@ng-if="levelid != 0"]    一等奖
+    Element Should Contain    //div[@ng-if="levelid != 0"]    iPhone7
+    Sleep    1
+    Click Element    //div[@ng-if="levelid != 0"]//span[text()="确定"]
+    #未填资料校验
+    进入活动界面    ${act_name}
+    Element Should Be Visible    //div[@ng-style="$root.showRecodeInfo"]
+    Element Should Contain    //div[@ng-style="$root.showRecodeInfo"]    你上次中奖，还未填写兑奖资料，点击确定填写资料
+    Element Should Contain    //div[@ng-style="$root.showRecodeInfo"]    确定
+    Sleep    1
+    Click Element    //span[@ng-click="$root.winForm()"]
+    Wait Until Element Is Visible    //div[@class="winningform"]
+    Sleep    1
+    Close Browser
+    Sleep    1
+    Switch Browser    ${main_browser}
+    #中奖资料提交
+    Wait Until Element Is Visible    //div[@class="winningform"]
+    Sleep    1
+    Element Should Contain    //div[@class="winningform"]    一等奖
+    Element Should Contain    //div[@class="winningform"]    我的会员中心->实物奖品码
+    ${name}    随机字符    周云天
+    ${mobile}    随机手机号
+    ${address}    Set Variable    广东省深圳市南山区XX花园XX号
+    Input Text    id=name    ${name}
+    Input Text    id=mobile    ${mobile}
+    Input Text    id=address    ${address}
+    Element Should Be Visible    id=form_btn
+    Element Should Contain    id=form_btn    立即提交
+    Click Element    id=form_btn
+    Sleep    1
+    #中奖记录
+    ${errmsg}    活动中奖记录    ${id}
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${record_id}    Get From Dictionary    ${data[0]}    id
+    ${level}    Get From Dictionary    ${data[0]}    level
+    ${prizes_name}    Get From Dictionary    ${data[0]}    prizes_name
+    ${prize_type}    Get From Dictionary    ${data[0]}    prize_type
+    ${username_API}    Get From Dictionary    ${data[0]}    username
+    ${wxUserInfos}    Get From Dictionary    ${data[0]}    wxUserInfos
+    ${中奖时间}    Get From Dictionary    ${data[0]}    created
+    ${中奖时间}    Get Time    \    ${中奖时间}    #转化时间格式
+    ${截止时间}    Get Time    \    ${expiry_time}
+    ${user_id}    Get From Dictionary    ${wxUserInfos}    id
+    #个人中心页面校验
+    Title Should Be    店铺首页
+    点击底部菜单    我
+    Wait Until Element Is Visible    //a[@href="../user/qrcode"]
+    Element Should Contain    //a[@href="../user/qrcode"]    兑奖二维码
+    Sleep    1
+    Click Element    //a[@href="../user/qrcode"]
+    Wait Until Page Contains Element    //div[@class="erweima_box"]
+    Title Should Be    兑奖二维码
+    Sleep    1
+    Element Should Be Visible    //p[text()="${act_name}"]/ancestor::li[@ng-repeat="list in model"]
+    Element Should Contain    //p[text()="${act_name}"]/ancestor::li[@ng-repeat="list in model"]    iPhone7
+    Page Should Contain Element    //p[text()="${act_name}"]/ancestor::li[@ng-repeat="list in model"]//span[text()="点击查看二维码"]
+    Click Element    //p[text()="${act_name}"]/ancestor::li[@ng-repeat="list in model"]//span[text()="点击查看二维码"]
+    Wait Until Element Is Visible    //div[@class="erweima_wrap"]
+    Sleep    1
+    Element Should Contain    //div[@class="erweima_wrap"]    iPhone7
+    Element Should Contain    //div[@class="erweima_wrap"]    ${中奖时间}
+    Element Should Contain    //div[@class="erweima_wrap"]    ${截止时间}
+    ${act_id}    Convert To String    ${id}
+    ${record_id}    Convert To String    ${record_id}
+    ${qr_img_src}    Get Element Attribute    //div[@class="erweima_wrap"]//img[starts-with(@src,"../qrcode/image")]@src
+    ${match}    Should Match Regexp    ${qr_img_src}    ${GLOBAL_CONFIG.wx_acc}
+    ${match}    Should Match Regexp    ${qr_img_src}    act_id
+    ${match}    Should Match Regexp    ${qr_img_src}    ${act_id}
+    ${match}    Should Match Regexp    ${qr_img_src}    ${record_id}
+    #数据清理
+    Log    准备清理数据...
+    Sleep    2
+    关闭大转盘活动    ${id}
+    删除大转盘活动    ${id}
+    Log    删除大转盘活动成功...
+    #
+
+卡券中奖
+    [Tags]    auto    yt
+    ####前置操作
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}-1200
+    ${try_limit}    Evaluate    2
+    ${errmsg}    添加抽奖活动    一等奖机率=0    二等奖机率=100    三等奖机率=0    四等奖机率=0    五等奖机率=0
+    ...    try_limit=${try_limit}    start_time=${start_time}
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+    Log    添加大转盘活动成功...
+    开启大转盘活动    ${id}
+    ${user_info}    会员.客户详情    ${GLOBAL_CONFIG.user_id}
+    ${model}    Get From Dictionary    ${user_info}    model
+    ${会员积分}    Get From Dictionary    ${model}    point
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=1"]
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    大转盘
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    时来运转，转出你的好运！
+    Sleep    1
+    #进入活动列表
+    Click Element    //a[@href="../market-activity/list?type=1"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Contain Element    //li[@ng-repeat="list in lists"]
+    Element Should Contain    //ul[@class="menu_list plan_list"]    ${name}
+    Page Should Contain Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Sleep    1
+    #进入活动页
+    Click Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Wait Until Element Is Visible    id=rotate
+    Wait Until Element Is Visible    id=botary_btn
+    Wait Until Element Is Visible    //div[@id="botary_btn"]/img[@src="/ace/image/activity/rotory_arrow.png"]
+    Title Should Be    抽奖大转盘
+    #大转盘抽奖
+    Click Element    //div[@id="botary_btn"]/img[@src="/ace/image/activity/rotory_arrow.png"]
+    Sleep    2
+    #中奖校验
+    Wait Until Element Is Visible    //div[@ng-if="levelid != 0"]
+    Sleep    1
+    Element Should Contain    //div[@ng-if="levelid != 0"]    二等奖
+    Element Should Contain    //div[@ng-if="levelid != 0"]    卡券
+    Element Should Contain    //div[@ng-if="levelid != 0"]    YT折扣卡
+    Element Should Contain    //div[@ng-if="levelid != 0"]    恭喜你中了
+    Sleep    1
+    Click Element    //div[@ng-if="levelid != 0"]//span[text()="确定"]
+    Sleep    1
+    #校验中奖记录
+    ${errmsg}    活动中奖记录    ${id}
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${record_id}    Get From Dictionary    ${data[0]}    id
+    ${level}    Get From Dictionary    ${data[0]}    level
+    ${prizes_name}    Get From Dictionary    ${data[0]}    prizes_name
+    ${prize_type}    Get From Dictionary    ${data[0]}    prize_type
+    ${username_API}    Get From Dictionary    ${data[0]}    username
+    ${wxUserInfos}    Get From Dictionary    ${data[0]}    wxUserInfos
+    ${user_id}    Get From Dictionary    ${wxUserInfos}    id
+    Should Be Equal As Strings    ${level}    2
+    Should Be Equal As Strings    ${prizes_name}    YT折扣卡
+    Should Be Equal As Strings    ${user_id}    ${GLOBAL_CONFIG.user_id}
+    Sleep    1
+    #数据清理
+    Log    准备清理数据...
+    Sleep    1
+    关闭大转盘活动    ${id}
+    删除大转盘活动    ${id}
+    Log    删除大转盘活动成功...
+    #
+
+商城红包中奖
+    [Tags]    auto    yt
+    ####前置操作
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}-1200
+    ${try_limit}    Evaluate    2
+    ${errmsg}    添加抽奖活动    一等奖机率=0    二等奖机率=0    三等奖机率=0    四等奖机率=100    五等奖机率=0
+    ...    try_limit=${try_limit}    start_time=${start_time}
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+    Log    添加大转盘活动成功...
+    开启大转盘活动    ${id}
+    ${user_info}    会员.客户详情    ${GLOBAL_CONFIG.user_id}
+    ${model}    Get From Dictionary    ${user_info}    model
+    ${积分数量}    Get From Dictionary    ${model}    point
+    ${红包数量}    Get From Dictionary    ${user_info}    redpack
+    ${卡券数量}    Get From Dictionary    ${user_info}    card
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=1"]
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    大转盘
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    时来运转，转出你的好运！
+    Sleep    1
+    #进入活动列表
+    Click Element    //a[@href="../market-activity/list?type=1"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Contain Element    //li[@ng-repeat="list in lists"]
+    Element Should Contain    //ul[@class="menu_list plan_list"]    ${name}
+    Page Should Contain Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Sleep    1
+    #进入活动页
+    Click Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Wait Until Element Is Visible    id=rotate
+    Wait Until Element Is Visible    id=botary_btn
+    Wait Until Element Is Visible    //div[@id="botary_btn"]/img[@src="/ace/image/activity/rotory_arrow.png"]
+    Title Should Be    抽奖大转盘
+    #大转盘抽奖
+    Click Element    //div[@id="botary_btn"]/img[@src="/ace/image/activity/rotory_arrow.png"]
+    Sleep    2
+    #中奖校验
+    Wait Until Element Is Visible    //div[@ng-if="levelid != 0"]
+    Sleep    1
+    Element Should Contain    //div[@ng-if="levelid != 0"]    恭喜你中了
+    Element Should Contain    //div[@ng-if="levelid != 0"]    四等奖
+    Element Should Contain    //div[@ng-if="levelid != 0"]    红包
+    Element Should Contain    //div[@ng-if="levelid != 0"]    YT商城红包
+    Element Should Contain    //div[@ng-if="levelid != 0"]    奖品已自动发送到你的账户，可到个人中心查看
+    Sleep    1
+    Click Element    //div[@ng-if="levelid != 0"]//span[text()="确定"]
+    Sleep    1
+    #校验中奖记录
+    ${errmsg}    活动中奖记录    ${id}
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${record_id}    Get From Dictionary    ${data[0]}    id
+    ${level}    Get From Dictionary    ${data[0]}    level
+    ${prizes_name}    Get From Dictionary    ${data[0]}    prizes_name
+    ${prize_type}    Get From Dictionary    ${data[0]}    prize_type
+    ${username_API}    Get From Dictionary    ${data[0]}    username
+    ${wxUserInfos}    Get From Dictionary    ${data[0]}    wxUserInfos
+    ${user_id}    Get From Dictionary    ${wxUserInfos}    id
+    Should Be Equal As Strings    ${level}    4
+    Should Be Equal As Strings    ${prizes_name}    YT商城红包
+    Should Be Equal As Strings    ${user_id}    ${GLOBAL_CONFIG.user_id}
+    Sleep    1
+    #个人中心数据校验
+    ${红包数量}    Evaluate    str(${红包数量}+1)
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入个人中心
+    点击底部菜单    我
+    Wait Until Element Is Visible    //a[@href="../user/redpack?is_use=2"]
+    Element Should Contain    //a[@href="../user/redpack?is_use=2"]    红包
+    Element Should Contain    //a[@href="../user/redpack?is_use=2"]    ${红包数量}
+    #数据清理
+    Log    测试成功，准备清理数据...
+    Sleep    1
+    关闭大转盘活动    ${id}
+    删除大转盘活动    ${id}
+    Log    删除大转盘活动成功...
+    #
+
+*** Keywords ***
+进入活动界面
+    [Arguments]    ${act_name}
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=1"]
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    大转盘
+    Element Should Contain    //a[@href="../market-activity/list?type=1"]    时来运转，转出你的好运！
+    Sleep    1
+    #进入活动列表
+    Click Element    //a[@href="../market-activity/list?type=1"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Contain Element    //li[@ng-repeat="list in lists"]
+    Element Should Contain    //ul[@class="menu_list plan_list"]    ${act_name}
+    Page Should Contain Element    //span[@ng-bind="list.activity_name" and text()="${act_name}"]
+    Sleep    1
+    #进入活动页
+    Click Element    //span[@ng-bind="list.activity_name" and text()="${act_name}"]
+    Wait Until Element Is Visible    id=rotate
+    Wait Until Element Is Visible    id=botary_btn
+    Wait Until Element Is Visible    //div[@id="botary_btn"]/img[@src="/ace/image/activity/rotory_arrow.png"]
+    Title Should Be    抽奖大转盘
+    Sleep    1
+    #
+
+未填资料校验
+    [Arguments]    ${act_name}
+
+获取中奖记录
+    [Arguments]    ${act_id}
+    #中奖记录
+    ${errmsg}    活动中奖记录    ${act_id}
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${record_id}    Get From Dictionary    ${data[0]}    id
+    ${level}    Get From Dictionary    ${data[0]}    level
+    ${prizes_name}    Get From Dictionary    ${data[0]}    prizes_name
+    ${prize_type}    Get From Dictionary    ${data[0]}    prize_type
+    ${username_API}    Get From Dictionary    ${data[0]}    username
+    ${wxUserInfos}    Get From Dictionary    ${data[0]}    wxUserInfos
+    ${user_id}    Get From Dictionary    ${wxUserInfos}    id
+    #

@@ -1,0 +1,79 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Library           Selenium2Library
+Resource          ../../../Resource/常用操作.robot
+Resource          ../../../Resource/功能菜单.robot
+Resource          ../../../Resource/配置参数.robot
+Resource          ../../../Resource/API.robot
+
+*** Test Cases ***
+添加商品_简单
+    [Documentation]    添加商品的简单冒烟用例
+    ####进入页面
+    点击链接菜单    微店铺
+    ${sub}    Set Variable    商品列表
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"商品列表")]
+    Sleep    1
+    ####添加商品
+    Click Link    添加商品
+    #//a[@href="/product/add" and text()="添加商品"]
+    Wait Until Element Is Visible    //ul[@id="myTab"]/li[@class="active"]/a[text()="1.编辑基本信息"]
+    Sleep    1
+    ####生成参数
+    ${商品分类_list}    Get List Items    //*[@id="home"]/form/div//select[starts-with(@ng-model,"options.dataBack")]
+    ${分类数量}    Get Length    ${商品分类_list}
+    ${商品分类_rand}    Evaluate    str(random.randint(1,${分类数量-1}))    random
+    ${商品名称}    随机字符    【YT测试商品】    15
+    ${总销量}    Evaluate    random.randint(1,1000)    random
+    #${库存规格_list}    Get List Items    //*[@id="home"]/form/div//select[@ng-model="list.kindListIndex"]
+    #${规格数量}    Get Length    ${库存规格_list}
+    ${库存规格_rand}    Evaluate    str(random.randint(2,4))    random
+    Sleep    1
+    ####输入参数
+    Select From List By Value    //*[@id="home"]/form/div//select[starts-with(@ng-model,"options.dataBack")]    ${商品分类_rand}
+    Sleep    1
+    Input Text    //input[@ng-model="product.name"]    ${商品名称}
+    Input Text    //input[@ng-model="product.sales"]    ${总销量}
+    Sleep    1
+    Select From List By Value    //*[@id="home"]/form/div//select[@ng-model="list.kindListIndex"]    ${库存规格_rand}
+    Sleep    1
+    ${规格数量}    Get Matching Xpath Count    //input[@ng-model="lis.ischoose"]
+    ${n}    Evaluate    random.randint(1,${规格数量})    random
+    ${随机选取的规格}    Evaluate    random.sample(range(1,${规格数量}),${n})    random
+    ${len}    Get Length    ${随机选取的规格}
+    : FOR    ${i}    IN    @{随机选取的规格}
+    \    Log    规格：${i}
+    \    Click Element    xpath=(//input[@ng-model="lis.ischoose"])[${i}]
+    \    Sleep    0.8
+    Element Should Be Visible    //*[@id="tbody"]/tr[1]/td[text()="统一修改"]
+    Sleep    1
+    输入商品规格
+    Sleep    3
+    #
+
+添加商品_API
+
+*** Keywords ***
+输入商品规格
+    ####
+    Log    生成动态参数...
+    ${库存}    Evaluate    random.randint(100,1000)    random
+    ${原价}    随机价格
+    ${零售价}    Evaluate    round(${原价}*0.85,2)    random
+    ${商家编码}    随机编码    0000    2
+    ${条形码}    Evaluate    random.randint(10000,99999)    random    #随机选择一个条形码
+    ####
+    Sleep    1s
+    Sleep    0.5s
+    Input Text    //input[@ng-model="memoryAll.reserves"]    ${库存}    #库存
+    Input Text    //input[@ng-model="memoryAll.market_price"]    ${原价}    #原价
+    Input Text    //input[@ng-model="memoryAll.retail_price"]    ${零售价}    #零售价
+    Input Text    //input[@ng-model="memoryAll.sku_no"]    ${商家编码}    #商家编码
+    Input Text    //input[@ng-model="memoryAll.barcode"]    ${条形码}    #条形码
+    Sleep    0.5s
+    Click Element    name=status    #状态
+    Sleep    0.5s
+    #

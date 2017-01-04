@@ -1,0 +1,626 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Library           Selenium2Library
+Resource          ../../Resource/常用操作.robot
+Resource          ../../Resource/功能菜单.robot
+Resource          ../../Resource/配置参数.robot
+Library           Ytools
+
+*** Test Cases ***
+满减包邮_首页
+    [Tags]    deprecated
+    点击链接菜单    微营销
+    点击链接菜单    满减包邮
+    page should contain link    添加活动
+    page should contain link    首页
+    page should contain link    «
+    page should contain link    »
+    page should contain link    2
+    page should contain link    末页
+    #page should contain element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]
+    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[1]    活动名称
+    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[2]    活动时间
+    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[3]    活动条件
+    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[4]    优惠内容
+    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[5]    优惠关联
+    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[6]    状态
+    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[7]    操作
+    等待时间    1
+    点击链接菜单    2
+    等待时间    0.5
+    点击链接菜单    末页
+    等待时间    0.5
+    点击链接菜单    «
+    等待时间    0.5
+    点击链接菜单    »
+    等待时间    0.5
+    点击链接菜单    首页
+    Input Text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[4]/ul[2]/li[1]/span/input    3
+    等待时间    1
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[4]/ul[2]/li[2]/span/button
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[4]/ul[2]/li[2]/span/button
+    等待时间    3
+
+满减包邮_列表总数
+    [Tags]    deprecated
+    点击链接菜单    微营销
+    点击链接菜单    满减包邮
+    等待时间    2
+    #${count}    Get Matching Xpath Count    //tr[@class='ng-scope']
+    ${pagenumber}    Get Text    //div[@ng-show="page.total_page>1"]/ul[2]/li[2]/span/button/span
+    #log    ${count}
+    log    ${pagenumber}
+    ${sum}    Set Variable    0
+    : FOR    ${i}    IN RANGE    1    ${pagenumber}
+    \    点击链接菜单    »
+    \    ${count}    Get Matching Xpath Count    //tr[@class='ng-scope']
+    \    sleep    1
+    \    log    ${count}
+    \    ${sum}    Evaluate    ${sum}+${count}
+    ${number}    Get Text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[4]/ul[2]/li[3]/span/span
+    Run Keyword If    '${sum}'=='${number}'    log    列表总数正确
+    ...    ELSE    log    列表总数错误
+
+满减包邮_添加活动
+    [Tags]    ready    add
+    点击链接菜单    微营销
+    ${sub}    Set Variable    满减包邮
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]    20
+    ###添加活动
+    Click Link    添加活动
+    Sleep    1
+    ####生成参数
+    ${活动名称}    随机字符    【满减】    15
+    ${商品选择}    Generate Random String    1    2
+    ${满}    Generate Random String    1    12
+    ${满-元}    随机数字    2
+    ${满-件}    Generate Random String    1    23456789
+    ##支付立享优惠
+    ${立享}    Generate Random String    1    12
+    ${立享-包邮}    Generate Random String    1    1
+    ${减-元}    随机数字    1
+    ${减-不封顶}    Generate Random String    1    01
+    ${打折}    Generate Random String    1    456789
+    ${包邮}    Generate Random String    1    2
+    ##完成后赠送
+    ${送积分}    Generate Random String    1    01
+    ${送卡券}    Generate Random String    1    1
+    ${送红包}    Generate Random String    1    1
+    ${积分}    随机数字    1
+    ${积分-不封顶}    Generate Random String    1    01
+    ${卡券-适用}    Generate Random String    1    01
+    Sleep    1
+    ####参数设置
+    Input Text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[1]/div/input    ${活动名称}
+    选择时间
+    Sleep    1
+    Select Radio Button    offline    ${商品选择}
+    Run Keyword If    ${商品选择}==2    选择商品    id=goods    //*[@id="main-container"]/div[3]/div/div/div[3]/a[2]
+    ##条件
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[1]/div[${满}]/label/input
+    Run Keyword If    ${满}==1    Input Text    //*[@id="area"]/tbody/tr[2]/td[1]/div[1]/div/div/input    ${满-元}
+    ...    ELSE    Input Text    //*[@id="area"]/tbody/tr[2]/td[1]/div[2]/div/div/input    ${满-件}
+    Sleep    1
+    ###优惠
+    ##立享优惠
+    #减折
+    Run Keyword If    ${立享}==1    Click Element    //*[@id="area"]/tbody/tr[2]/td[2]/div[1]/label[1]/input
+    ...    ELSE    Click Element    //*[@id="area"]/tbody/tr[2]/td[2]/div[2]/label/input
+    Sleep    1
+    Run Keyword If    ${立享}==1    Input Text    //*[@id="area"]/tbody/tr[2]/td[2]/div[1]/div/div/input    ${减-元}
+    ...    ELSE    Input Text    //*[@id="area"]/tbody/tr[2]/td[2]/div[2]/div/div/input    ${打折}
+    Sleep    1
+    Run Keyword If    ${立享}==1 and ${减-不封顶}==1    Click Element    //*[@id="area"]/tbody/tr[2]/td[2]/div[1]/label[2]/input
+    Sleep    1
+    #包邮
+    Run Keyword If    ${立享-包邮}==1    Click Element    //*[@id="area"]/tbody/tr[2]/td[2]/div[3]/label/input
+    Sleep    1
+    Run Keyword If    ${立享-包邮}==1    Click Element    //*[@id="area"]/tbody/tr[2]/td[2]/div[3]/span/label[${包邮}]/input
+    Run Keyword If    ${立享-包邮}==1 and ${包邮}==2    指定区域包邮
+    Sleep    0.8
+    ##完成后赠送
+    Run Keyword If    ${送积分}==1    Click Element    //*[@id="area"]/tbody/tr[2]/td[2]/div[5]/label[1]/input
+    Run Keyword If    ${送积分}==1    Input Text    //*[@id="area"]/tbody/tr[2]/td[2]/div[5]/div/div/input    ${积分}
+    Run Keyword If    ${送积分}==1 and ${积分-不封顶}==1    Click Element    //*[@id="area"]/tbody/tr[2]/td[2]/div[5]/label[2]/input
+    Run Keyword If    ${送卡券}==1    送卡券    ${卡券-适用}
+    Run Keyword If    ${送红包}==1    送红包
+    ####保存
+    Click Link    保存
+    Sleep    1.5
+    ${alert}    Get Alert Message
+    ${flag}    Run Keyword And Return Status    Should Contain    ${alert}    成功
+    Run Keyword If    ${flag}!=True    Fail    保存失败:${alert}
+    #Should Contain    ${alert}    成功
+    Sleep    3
+    ###结果校验
+
+满减包邮_活动开启/关闭、编辑
+    [Tags]    ready
+    点击链接菜单    微营销
+    点击链接菜单    满减包邮
+    #活动开启/关闭
+    : FOR    ${i}    IN RANGE    2
+    \    Click Element    xpath = //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[6]/label/input
+    \    sleep    1
+    \    confirm action
+    \    sleep    1
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[1]    5
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[1]    #详情
+    等待时间    1
+    Wait Until Page Contains Element    xpath=//*[@id="modal-footer"]/a[1]    5
+    Click Element    xpath=//*[@id="modal-footer"]/a[1]    #返回列表
+    等待时间    1
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[1]    5
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[1]    #详情
+    等待时间    1
+    Wait Until Page Contains Element    xpath=//*[@id="post"]    5
+    Click Element    xpath=//*[@id="post"]    #保存
+    等待时间    2
+    confirm action    #关闭弹出框
+    等待时间    1
+
+满减包邮_删除
+    [Tags]    ready
+    点击链接菜单    微营销
+    点击链接菜单    满减包邮
+    等待时间    1
+    ${number}    Get Text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[4]/ul[2]/li[3]/span/span
+    #等待时间    1
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[2]/i    #点击删除按钮
+    等待时间    0.5
+    Click Element    xpath=//tbody/tr[3]/td/div[2]/button[1]    #确认删除
+    等待时间    1
+    confirm action
+    等待时间    2
+    ${i}    Set Variable    1
+    #${sum}    Set Variable    0
+    ${number1}    Get Text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[4]/ul[2]/li[3]/span/span
+    ${sum}    Evaluate    ${number}-${i}
+    Run Keyword If    '${sum}'=='${number1}'    log    删除后校验通过
+    ...    ELSE    log    删除后校验失败
+
+拼团活动_首页检测
+    [Tags]    ready
+    点击链接菜单    微营销
+    点击链接菜单    拼团活动
+    page should contain link    添加活动
+    page should contain link    拼团活动使用说明
+    page should contain link    首页
+    page should contain link    «
+    page should contain link    »
+    page should contain link    2
+    page should contain link    末页
+    #page should contain element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[1]    活动单元名称
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[2]    活动类型
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[3]    参团人数要求
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[4]    开始时间
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[5]    结束时间
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[6]    状态
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[7]    操作
+    等待时间    1
+    点击链接菜单    2
+    等待时间    0.5
+    点击链接菜单    末页
+    等待时间    0.5
+    点击链接菜单    «
+    等待时间    0.5
+    点击链接菜单    »
+    等待时间    0.5
+    点击链接菜单    首页
+    Input Text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[4]/ul[2]/li[1]/span/input    5
+    等待时间    1
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[4]/ul[2]/li[2]/span/button    5
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[4]/ul[2]/li[2]/span/button
+    等待时间    3
+
+拼团活动_添加
+    [Tags]    ready
+    点击链接菜单    微营销
+    ${sub}    Set Variable    拼团活动
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]    20
+    ###添加活动
+    Click Link    添加活动
+    Sleep    1
+    ####生成参数
+    ${图文标题}    随机字符    【测试】    15
+    ${摘要内容}    随机字符    【摘要内容】    50
+    ${活动图片}    Generate Random String    1    01
+    ##活动参数
+    ${开启条件}    Generate Random String    1    1
+    ${活动名称}    随机字符    【拼团】    15
+    ${活动说明}    随机字符    【活动说明】    60
+    ${运费策略}    Generate Random String    1    0
+    ##商品
+    ${商品}    Generate Random String    1    123
+    ${团购价}    Generate Random String    1    12345
+    ${配额}    随机数字    2
+    ${参团人数}    Set Variable    ${配额}
+    ${每人限购}    随机数字    1
+    ${团长订单减额}    Generate Random String    1    01
+    ${是否开启凑团}    Generate Random String    1    12
+    ${显示更多拼团}    Generate Random String    1    01
+    ${参团时间限制}    Generate Random String    1    01
+    ${活动类型}    Generate Random String    1    01
+    ${分享标题}    随机字符    【爱拼才会赢】    15
+    ${分享描述}    随机字符    【大家一起来吧！】    15
+    ${分享图标}    Generate Random String    1    01
+    ${动态分享标题}    Generate Random String    1    2
+    ####输入图文参数
+    Input Text    //*[@id="home"]/div[2]/form/div[1]/div/input    ${图文标题}
+    Sleep    0.5
+    Input Text    //*[@id="form-field-8"]    ${摘要内容}
+    Sleep    0.5
+    Run Keyword If    ${活动图片}==1    选择图片
+    Click Element    //*[@id="btnConfirm"]
+    Sleep    2
+    ####输入活动参数
+    Run Keyword If    ${开启条件}==1    Click Element    //*[@id="rule"]/ng-form/div[1]/div[1]/label/input
+    Input Text    //*[@id="rule"]/ng-form/div[2]/div/input    ${活动名称}
+    Input Text    //*[@id="rule"]/ng-form/div[3]/div/textarea    ${活动说明}
+    Sleep    1
+    选择时间
+    ##选择商品
+    选择商品    //*[@id="rule"]/ng-form/div[9]/div/a
+    Sleep    2
+    拼团商品设置
+    Sleep    1
+    ##保存商品
+    Click Element    //*[@id="tbody"]/tr/td[11]/div/a[1]
+    Sleep    1.5
+    ${alert}    Get Alert Message
+    ${flag}    Run Keyword And Return Status    Should Contain    ${alert}    成功
+    Run Keyword If    ${flag}!=True    Fail    保存失败:${alert}
+    ##Radio参数
+    Select Radio Button    open    ${是否开启凑团}
+    Sleep    1
+    ##活动主页面
+    Input Text    //*[@id="share"]/div[1]/div/input    ${分享标题}
+    Input Text    //*[@id="share"]/div[2]/div/input    ${分享描述}
+    Sleep    1
+    Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="share"]/div[3]/div/div/a/label/span', document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();
+    Run Keyword If    ${分享图标}==1    选择图片    //*[@id="share"]/div[3]/div/div/a/label/span
+    Select Radio Button    is_auto_share    ${动态分享标题}
+    Sleep    1
+    ####保存
+    Click Element    id=post
+    Sleep    1.5
+    ${alert}    Get Alert Message
+    ${flag}    Run Keyword And Return Status    Should Contain    ${alert}    成功
+    Run Keyword If    ${flag}!=True    Fail    保存失败:${alert}
+    ####结果校验
+    Sleep    3
+
+拼团活动_详情、二维码、编辑、删除
+    点击链接菜单    微营销
+    点击链接菜单    拼团活动
+    #拼团活动详情
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[1]/i    10    error
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[1]/i
+    等待时间    1
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div[2]/div/div[2]/table/thead/tr/th[1]    团长昵称
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div[2]/div/div[2]/table/thead/tr/th[2]    开团时间
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div[2]/div/div[2]/table/thead/tr/th[3]    拼团进度
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div[2]/div/div[2]/table/thead/tr/th[4]    拼团状态
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div[2]/div/div[2]/table/thead/tr/th[5]    操作
+    浏览器返回/后退
+    等待时间    1
+    #拼团活动二维码
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[2]/i    10    error
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[2]/i
+    Select Window    title=二维码
+    等待时间    1
+    Wait Until Page Contains    二维码
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/table/thead/tr/th[1]    二维码归属
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/table/thead/tr/th[2]    所属代理商
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/table/thead/tr/th[3]    查看二维码
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/table/tbody/tr[1]/td[3]/a/i    10    error
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/table/tbody/tr[1]/td[3]/a/i    #点击二维码
+    等待时间    1
+    Wait Until Page Contains Element    xpath=//*[@id="query"]/div/div/div[1]/a    10    error
+    Click Element    xpath=//*[@id="query"]/div/div/div[1]/a    #关闭二维码
+    等待时间    1
+    #关闭浏览器
+    Select Window    title=拼团活动管理
+    #点击编辑活动
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[3]/i    10    error
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[3]/i
+    等待时间    1
+    Wait Until Page Contains Element    xpath=//*[@id="btnConfirm"]    10    error
+    Click Element    xpath=//*[@id="btnConfirm"]
+    等待时间    1
+    Wait Until Page Contains Element    id=post    10    error
+    click element    id=post
+    等待时间    1
+    confirm action
+    等待时间    1
+    #删除活动
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[4]    10    error
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[4]
+    等待时间    1
+    Click Element    xpath=//button[@data-id="ok" and text()="删除"]
+    Sleep    2
+    confirm action
+    等待时间    3
+    #关闭浏览器
+
+拼团活动_开启/关闭
+    [Tags]    ready
+    点击链接菜单    微营销
+    点击链接菜单    拼团活动
+    #Click Element    xpath = //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[6]/label/input
+    : FOR    ${i}    IN RANGE    5
+    \    Wait Until Page Contains Element    xpath = //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[6]/label/input    10    error
+    \    Click Element    xpath = //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[6]/label/input
+    \    sleep    1
+    \    confirm action
+    \    sleep    2
+
+拼团活动_使用说明
+    [Tags]    ready
+    点击链接菜单    微营销
+    点击链接菜单    拼团活动
+    点击链接菜单    拼团活动使用说明
+    等待时间    3
+    Execute Javascript    $('body').scrollTop('10000')
+    等待时间    1
+    Execute Javascript    $('body').scrollTop('0')
+    等待时间    5
+
+拼团活动_编辑
+    [Documentation]    注：结果校验需细化
+    点击链接菜单    微营销
+    点击链接菜单    拼团活动
+    Wait Until Page Contains    活动单元名称
+    Sleep    1
+    ####编辑拼团活动
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr/td[starts-with(text(),"【拼团】")]/parent::tr[1]/td[7]/div/a[3]/i
+    Wait Until Page Contains    编辑拼团活动
+    Sleep    1
+    ####生成参数
+    ${图文标题}    随机字符    【测试】改    15
+    ${摘要内容}    随机字符    【摘要内容】    50
+    ${活动图片}    Generate Random String    1    01
+    ${开启条件}    Generate Random String    1    1
+    ${活动名称}    随机字符    【拼团】改    15
+    ${活动说明}    随机字符    【活动说明】    60
+    ${运费策略}    Generate Random String    1    0
+    ####输入参数
+    Input Text    //*[@id="home"]/div[2]/form/div[1]/div/input    ${图文标题}
+    Sleep    1
+    Input Text    //*[@id="form-field-8"]    ${摘要内容}
+    Sleep    1
+    Click Element    //*[@id="btnConfirm"]    #下一步
+    Sleep    2
+    ##活动设置
+    Input Text    //*[@id="rule"]/ng-form/div[2]/div/input    ${活动名称}
+    Sleep    1
+    Click Element    id=post
+    Sleep    2
+    弹出信息校验
+    ####结果校验
+
+满减包邮_添加活动2
+    [Tags]    bak
+    点击链接菜单    微营销
+    点击链接菜单    满减包邮
+    点击链接菜单    添加活动
+    #校验添加活动输入项
+    #对比校验
+    #添加活动
+    ${name}    Set Variable    满100立减10元
+    Input Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[1]/div/input    ${name}    #输入活动名称
+    Input Text    xpath=//*[@id="start_time"]    2017-06-27 23:59:59    #输入活动开始时间
+    等待时间    0.5
+    Input Text    xpath=//*[@id="end_time"]    2017-06-28 23:59:59    #输入活动结束时间
+    Input Text    xpath=//*[@id="area"]/tbody/tr[2]/td[1]/div[1]/div/div/input    100    #满100元
+    Wait Until Page Contains Element    xpath=//*[@id="area"]/tbody/tr[2]/td[2]/div[1]/label[1]/input    5
+    Click Element    xpath=//*[@id="area"]/tbody/tr[2]/td[2]/div[1]/label[1]/input
+    Input Text    xpath=//*[@id="area"]/tbody/tr[2]/td[2]/div[1]/div/div/input    10    #减10元
+    Wait Until Page Contains Element    xpath=//*[@id="area"]/tbody/tr[2]/td[2]/div[1]/label[2]/input    5
+    Click Element    xpath=//*[@id="area"]/tbody/tr[2]/td[2]/div[1]/label[2]/input    #上不封顶
+    等待时间    0.5
+    Select Radio Button    offline    2
+    Sleep    0.5
+    Wait Until Page Contains Element    xpath=//*[@id="goods"]    5
+    Click Element    xpath=//*[@id="goods"]
+    Sleep    0.5
+    Wait Until Page Contains Element    xpath=//*[@id="product"]/div[1]/table/tbody[1]/tr[1]/td[3]    5
+    click element    xpath=//*[@id="product"]/div[1]/table/tbody[1]/tr[1]/td[3]    #选择商品
+    Sleep    0.5
+    Wait Until Page Contains Element    xpath=//*[@id="product"]/div[1]/table/tbody[1]/tr[2]/td/table/tbody/tr[3]/td[3]    5
+    #click element    xpath=//*[@id="product"]/div[1]/table/tbody[1]/tr[2]/td/table/tbody/tr[3]/td[3]
+    Sleep    0.5
+    ${count}    Get Matching Xpath Count    //*[@id="product"]/div[1]/table/tbody[1]/tr[2]/td/table/tbody/tr[2]/td
+    #${mark}    Get Text    xpath=//*[@id="product"]/div[1]/table/tbody[1]/tr[2]/td/table/tbody/tr[2]/td[7]
+    log    ${count}
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div[3]/div/div/div[3]/a[2]    5
+    Run Keyword If    '${count}'=='7'    返回活动列表
+    ...    ELSE    添加商品
+    等待时间    1
+
+拼团活动_添加2
+    [Tags]    bak
+    Wait Until Page Contains Element    xpath=//*[@id="headactive"]/li[5]/a    10    error
+    点击链接菜单    微营销
+    点击链接菜单    拼团活动
+    点击链接菜单    添加活动
+    Set Browser Implicit Wait    10
+    Input Text    xpath=//*[@id="home"]/div[2]/form/div[1]/div/input    参考
+    Input Text    xpath=//*[@id="form-field-8"]    成为团长带领小伙伴享受团购价，拼团活动开始啦，赶紧开团召集小伙伴一起团购吧！
+    Wait Until Page Contains Element    xpath=//*[@id="home"]/div[2]/form/div[3]/div/div/a/label/span    10    error
+    Click Element    xpath=//*[@id="home"]/div[2]/form/div[3]/div/div/a/label/span
+    sleep    1
+    Wait Until Page Contains Element    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li[3]/a/img    10    error
+    Click Element    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li[3]/a/img    #选择活动图片
+    Sleep    0.5
+    Wait Until Page Contains Element    id=submitImage    10    error
+    Click Element    id=submitImage    #点击确认按钮
+    sleep    0.5
+    Wait Until Page Contains Element    id=btnConfirm    10    error
+    click element    id=btnConfirm    #点击下一步
+    sleep    0.5
+    Wait Until Page Contains Element    xpath=//*[@id="rule"]/ng-form/div[1]/div[1]/label/input    10    error
+    click element    xpath=//*[@id="rule"]/ng-form/div[1]/div[1]/label/input    #勾选开启拼团条件
+    ${name}    Set Variable    拼团活动测试
+    Input Text    xpath=//*[@id="rule"]/ng-form/div[2]/div/input    ${name}    #输入拼团活动名称
+    Wait Until Page Contains Element    xpath=//*[@id="rule"]/ng-form/div[9]/div/a    10    error
+    click element    xpath=//*[@id="rule"]/ng-form/div[9]/div/a    #点击选择商品
+    Sleep    0.5
+    ${title}    Get Text    xpath=//*[@id="productModal"]/div/div/div[1]/h4
+    Should Contain    ${title}    商品列表    #校验标题
+    Sleep    0.5
+    Wait Until Page Contains Element    xpath=//*[@id="product"]/div[1]/table/tbody[1]/tr[1]/td[3]    10    error
+    click element    xpath=//*[@id="product"]/div[1]/table/tbody[1]/tr[1]/td[3]
+    Sleep    0.5
+    #Select Radio Button    553    radio
+    Wait Until Page Contains Element    xpath=//*[@id="product"]/div[1]/table/tbody[1]/tr[2]/td/table/tbody/tr[4]/td[3]    10    error
+    click element    xpath=//*[@id="product"]/div[1]/table/tbody[1]/tr[2]/td/table/tbody/tr[4]/td[3]    #选择商品
+    Sleep    0.5
+    Wait Until Page Contains Element    xpath=//*[@id="productModal"]/div/div/div[3]/a[2]    10    error
+    click element    xpath=//*[@id="productModal"]/div/div/div[3]/a[2]    #点击确定按钮
+    #保存商品
+    Input Text    xpath=//*[@id="tbody"]/tr/td[6]/input    0.01    #团购价
+    Input Text    xpath=//*[@id="tbody"]/tr/td[8]/input    2    #配额
+    Input Text    xpath=//*[@id="tbody"]/tr/td[9]/input    2    #参团人数
+    Input Text    xpath=//*[@id="tbody"]/tr/td[10]/input    1    #每人限购
+    #Click Button    xpath=//*[@id="tbody"]/tr/td[11]/div/a[1]/i    #保存商品
+    Wait Until Page Contains Element    xpath=//*[@id="tbody"]/tr/td[11]/div/a[1]/i    10    error
+    click element    xpath=//*[@id="tbody"]/tr/td[11]/div/a[1]/i    #保存商品
+    Sleep    0.5
+    confirm action
+    Sleep    0.5
+    Wait Until Page Contains Element    id=post    10    error
+    click element    id=post
+    Sleep    1
+    confirm action
+    #结果校验
+    Sleep    2
+    ${active_name}=    Get Text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[1]
+    log    ${active_name}    #${active_num}    Get Text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[3]    #${success}    Set Variable
+    ...    # 创建拼团活动成功    #${fail}    Set Variable    创建拼团活动失败    #${result}=    Run Keyword If
+    ...    # '${active_name}'=='${name}'    Set Variable    创建拼团活动成功    # ELSE    Set Variable    创建拼团活动失败
+    #log    ${result}
+    Run Keyword If    '${active_name}'=='${name}'    log    创建拼团活动成功
+    ...    ELSE    log    创建拼团活动失败
+    Sleep    2
+
+*** Keywords ***
+送卡券
+    [Arguments]    ${卡券-适用}
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[2]/div[6]/label[1]/input
+    ####选择卡券
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[2]/div[6]/label[2]/span
+    Wait Until Page Contains Element    //h4[text()="关联卡券"]
+    Sleep    1
+    Click Element    //*[@id="cardModal"]/div/div/form/div[2]/div/div/table/tbody/tr[2]
+    Sleep    2
+    Click Element    //*[@id="cardModal"]/div/div/form/div[3]/a[2]
+    #Click Link    确认
+    Sleep    2
+    ####适用订单
+    Select From List    //*[@id="area"]/tbody/tr[2]/td[2]/div[6]/label[3]/select    ${卡券-适用}
+
+送红包
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[2]/div[7]/label[1]/input
+    Sleep    1
+    ####选择红包
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[2]/div[7]/label[2]/span
+    Wait Until Page Contains Element    //h4[text()="选择红包"]
+    Sleep    1
+    Click Element    //*[@id="redPaceModal"]/div/div/table/tbody/tr[1]/td[1]/label/input
+    Sleep    2
+    Click Element    //*[@id="redPackModal"]/div/div/div/a[2]
+    #Click Link    确认
+    Sleep    2
+
+指定区域包邮
+    ####产生随机区域
+    ${rand}    Generate Random String    2    123
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[2]/div[4]/div[1]
+    Wait Until Page Contains Element    //h4[text()="选择配送地区"]
+    Sleep    1
+    Click Element    //*[@id="provinceUl"]/li[${rand}]    #选择省市
+    Sleep    1
+    Click Element    //*[@id="main-container"]/div[2]/div/div/div[2]/div/div[1]/table/tbody/tr/td[2]/label[1]/input
+    Sleep    1
+    Click Element    //*[@id="main-container"]/div[2]/div/div/div[2]/div/div[2]/a[3]
+    Sleep    2
+
+拼团商品设置
+    ####获取参数
+    ${销售价}    Get Text    //*[@id="tbody"]/tr/td[5]
+    ${库存}    Get Text    //*[@id="tbody"]/tr/td[7]
+    ${库存}    Convert To Integer    ${库存}
+    ####生成参数
+    ${库存factor}    Run Keyword If    ${库存}>=200    Set Variable    0.2
+    ...    ELSE IF    100<=${库存}<200    Set Variable    0.3
+    ...    ELSE IF    50<=${库存}<100    Set Variable    0.4
+    ...    ELSE    Set Variable    0.6
+    ${i1}    Evaluate    ${销售价}*0.6
+    ${i2}    Evaluate    ${销售价}*0.9
+    ${j1}    Evaluate    ${库存}*${库存factor}*0.8
+    ${j2}    Evaluate    ${库存}*${库存factor}
+    ${jj1}    Evaluate    int(round(${j1}))
+    ${jj2}    Evaluate    int(round(${j2}))
+    ${团购价}    Yt Get Rand Float    ${i1}    ${i2}    2
+    ${配额}    Yt Get Rand Integer    ${jj1}    ${jj2}
+    ${min}    Evaluate    int(5)
+    ${min}    Run Keyword If    ${min}>${库存}    Set Variable    ${库存}
+    ...    ELSE    Set Variable    ${min}
+    ${max}    Evaluate    ${配额}*0.6
+    ${max}    Evaluate    int(round(${max}))
+    ${max}    Run Keyword If    ${min}>${max}    Set Variable    ${min}
+    ...    ELSE    Set Variable    ${max}
+    ${参团人数}    Yt Get Rand Integer    ${min}    ${max}
+    ##规则限制
+    ${参团人数}    Run Keyword If    ${参团人数}<2    Set Variable    2
+    ...    ELSE    Set Variable    ${参团人数}
+    ${配额}    Run Keyword If    ${参团人数}>${配额}    Set Variable    ${参团人数}
+    ...    ELSE    Set Variable    ${配额}
+    ${每人限购}    Generate Random String    1    23456
+    ${每人限购}    Run Keyword If    ${每人限购}>${参团人数}    Set Variable    ${参团人数}
+    ...    ELSE    Set Variable    ${每人限购}
+    ${每人限购}    Run Keyword If    ${每人限购}>${库存}    Set Variable    ${库存}
+    ...    ELSE    Set Variable    ${每人限购}
+    ##类型转换
+    ${团购价}    Yt To String    ${团购价}
+    Input Text    //*[@id="tbody"]/tr/td[6]/input    ${团购价}
+    Input Text    //*[@id="tbody"]/tr/td[8]/input    ${配额}
+    Input Text    //*[@id="tbody"]/tr/td[9]/input    ${参团人数}
+    Input Text    //*[@id="tbody"]/tr/td[10]/input    ${每人限购}
+    Sleep    2
+
+库存少重新选择商品
+    [Arguments]    ${商品}
+    Click Element    //*[@id="product"]/div[1]/table/tbody[${商品}]/tr[1]
+    Sleep    1
+    ${商品}    Run Keyword If    ${商品}>2    Evaluate    ${商品}-1
+    ...    ELSE    Evaluate    ${商品}+1
+    Click Element    //*[@id="product"]/div[1]/table/tbody[${商品}]/tr[1]
+    Set Suite Variable    ${商品}
+
+选择商品
+    [Arguments]    ${xpath_商品链接}=No    ${xpath_确定按钮}=No
+    ${商品链接}    Run Keyword If    '${xpath_商品链接}'=='No'    Set Variable    id=goods
+    ...    ELSE    Set Variable    ${xpath_商品链接}
+    ${确定按钮}    Run Keyword If    '${xpath_确定按钮}'=='No'    Set Variable    //div[contains(@class,"modal-footer")]/a[contains(@class,"btn btn-primary") and contains(text(),"确定")]
+    ...    ELSE    Set Variable    ${xpath_确定按钮}
+    Click Element    ${xpath_商品链接}
+    Wait Until Page Contains Element    //h4[text()="商品列表"]
+    Sleep    1
+    ####选择商品
+    ${商品}    Generate Random String    1    123
+    Click Element    //*[@id="product"]/div[1]/table/tbody[${商品}]/tr[1]    #展开商品
+    Sleep    1
+    ${库存}    Get Text    //*[@id="product"]/div[1]/table/tbody[${商品}]/tr[2]/td/table/tbody/tr[2]/td[4]
+    Run Keyword If    ${库存}<=2    库存少重新选择商品    ${商品}
+    Sleep    1
+    Click Element    //*[@id="product"]/div[1]/table/tbody[${商品}]/tr[2]/td/table/tbody/tr[2]    #选择商品第一个规格
+    Sleep    1.5
+    Click Element    ${确定按钮}    #确定
+    Sleep    2

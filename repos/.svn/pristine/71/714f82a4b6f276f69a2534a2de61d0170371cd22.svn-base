@@ -1,0 +1,128 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Resource          ../../Resource/常用操作.robot
+Library           Selenium2Library
+Resource          ../../Resource/API.robot
+
+*** Test Cases ***
+微信图文_添加
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    图文素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    1
+    ####添加微信图文
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/div/div/div[1]/a[1]
+    Sleep    2
+    ####生成参数
+    ${标题}    随机字符    【微信图文】    12
+    ${是否在正文展示封面}    Generate Random String    1    01
+    ${摘要}    随机字符    【摘要】    60
+    ${正文}    随机字符    【正文】    200
+    ${原文地址}    随机URL
+    ${原文Rand}    Generate Random String    1    1
+    ####输入参数
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/div[3]/div/div/form/div/div[1]/div/input    ${标题}
+    Sleep    1
+    图文封面    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/div[3]/div/div/form/div/div[2]/div/a
+    Sleep    1
+    Run Keyword If    ${是否在正文展示封面}==1    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/div[3]/div/div/form/div/div[3]/label/input
+    Sleep    1
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/div[3]/div/div/form/div/div[4]/div/textarea    ${摘要}
+    Sleep    1
+    文本编辑器输入
+    Run Keyword If    ${原文Rand}==1    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/div[3]/div/div/form/div/div[6]/div/input    ${原文地址}
+    Sleep    1
+    Mouse Out    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/div[3]/div/div/form/div/div[6]/div/input
+    Sleep    1
+    Click Element    id=submit
+    Sleep    2
+    弹出信息校验
+    Sleep    3
+    ####结果校验
+    Page Should Contain Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/div[3]/ul/li/div/div[5]/div/span[starts-with(text(),"${标题}")]/ancestor::ul[1]/li/div/div[5]/div/span[2]
+
+微信图文_编辑
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    图文素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    1
+    ####编辑微信图文
+    #${el}    Get Webelement    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/div[3]/ul/li/div/div[5]/div/span[starts-with(text(),"【微信图文】")]
+    #${text}    Get Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/div[3]/ul/li/div/div[5]/div/span[starts-with(text(),"【微信图文】")]/ancestor::ul[1]/li/div/div[5]/div/span[2]
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/div[3]/ul/li/div/div[5]/div/span[starts-with(text(),"【微信图文】")]/ancestor::ul[1]/li/div/div[3]/div[2]/a[3]
+    Sleep    2
+    ####生成参数
+    ${标题}    随机字符    【微信图文】改    12
+    ${是否在正文展示封面}    Generate Random String    1    01
+    ${摘要}    随机字符    【摘要】改    60
+    ${正文}    随机字符    【正文】改    200
+    ${原文地址}    随机URL
+    ${原文Rand}    Generate Random String    1    1
+    ####输入参数
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/div[3]/div/div/form/div/div[1]/div/input    ${标题}
+    Sleep    1
+    图文封面    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/div[3]/div/div/form/div/div[2]/div/a
+    Sleep    1
+    Run Keyword If    ${是否在正文展示封面}==1    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/div[3]/div/div/form/div/div[3]/label/input
+    Sleep    1
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/div[3]/div/div/form/div/div[4]/div/textarea    ${摘要}
+    Sleep    1
+    文本编辑器输入
+    Run Keyword If    ${原文Rand}==1    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/div[3]/div/div/form/div/div[6]/div/input    ${原文地址}
+    Sleep    1
+    Mouse Out    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/div[3]/div/div/form/div/div[6]/div/input
+    Sleep    3
+    Click Element    id=submit
+    Sleep    1
+    Wait Until Keyword Succeeds    15 sec    3 sec    弹出信息校验
+    #Capture Page Screenshot
+    Sleep    3
+    ####结果校验
+    字段校验    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/div[3]/ul/li/div/div[5]/div/span[starts-with(text(),"【微信图文】")]/ancestor::ul[1]/li/div/div[5]/div/span[2]    ${标题}
+
+微信图文_删除
+
+*** Keywords ***
+随机URL
+    ${后缀}    Create List    com    net    cn    com.cn
+    ${后缀Rand}    Generate Random String    1    0123
+    ${域名}    Generate Random String    8    [LOWER]
+    ${URL}    Set Variable    http://www.${域名}.${后缀[${后缀Rand}]}
+    [Return]    ${URL}
+
+图文封面
+    [Arguments]    ${选择按钮}    ${确定按钮}=//*[@id="insertImageMaterial"]/div/div/div[3]/a[2]
+    ####选择图文封面
+    Click Element    ${选择按钮}
+    Sleep    2
+    ${els}    Get Webelements    //*[@id="mytabPane"]/div[2]/ul/li
+    ${len}    Get Length    ${els}
+    ${len}    Evaluate    ${len}-2
+    ${图片}    Evaluate    random.randint(1,${len})    random
+    Click Element    //*[@id="mytabPane"]/div[2]/ul/li[${图片}]/img
+    Sleep    1
+    Click Element    ${确定按钮}
+
+文本编辑器输入
+    [Arguments]    ${iframeID}=ueditor_0
+    Select Frame    id=${iframeID}
+    ####输入内容
+    ${文本}    随机字符    【测试文本】    200
+    ${text}    Get Text    //html/body/p
+    Execute Javascript    var el=document.getElementsByTagName("p")[0];el.innerHTML = "${文本}";
+    Sleep    1
+    Click Element    //html/body/p
+    Sleep    1
+    Mouse Out    //html/body/p
+    Sleep    1
+    ${text2}    Get Text    //html/body/p
+    Unselect Frame
+    Sleep    1

@@ -1,0 +1,402 @@
+*** Settings ***
+Resource          Common.txt
+
+*** Keywords ***
+订单列表
+    [Arguments]    ${订单状态}=0
+    #####获取待收货订单信息
+    #####${订单状态}=0全部订单    ${订单状态}=1待付款订单    ${订单状态}=2待发货订单    ${订单状态}=3待收货订单    ${订单状态}=4已完成订单    # ${订单状态}=5售后订单    ${订单状态}=6已关闭订单
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    &{data}=    Create Dictionary    _status=${订单状态}    after_sales_status=2
+    ${resp}    Post Request    wsh    /order/list-ajax    data=${data}    headers=${headers}
+    ${预期返回码}    Set Variable    0
+    Log    Response:${resp.content}
+    ${商品订单列表响应}    loads    ${resp.content}
+    ${返回码}    Get From Dictionary    ${商品订单列表响应}    errcode
+    Log    errcode is:${返回码}
+    Should Be Equal As Strings    ${返回码}    ${预期返回码}
+    ${返回码信息}    Get From Dictionary    ${商品订单列表响应}    errmsg
+    ${列表数据}    Get From Dictionary    ${返回码信息}    data
+    ${商品订单列表数量}    Get Length    ${列表数据}
+    ##随机选择一个订单获取信息
+    ${数组下标}    Evaluate    int(${商品订单列表数量}-1)
+    ${随机选择一个订单}    Evaluate    random.randint(1,${数组下标})    random
+    ${获取订单内容}    Get From List    ${列表数据}    ${随机选择一个订单}
+    log    ${获取订单内容}
+    ##获取订单相关信息
+    Comment    ${订单号}    Get From Dictionary    ${获取订单内容}    order_no
+    Comment    ${微信昵称}    Get From Dictionary    ${获取订单内容}    user_name
+    Comment    ${商品总金额}    Get From Dictionary    ${获取订单内容}    total_price
+    Comment    ${应付金额}    Get From Dictionary    ${获取订单内容}    should_pay
+    Comment    ${实付金额}    Get From Dictionary    ${获取订单内容}    payed
+    Comment    ${订单状态}    Get From Dictionary    ${获取订单内容}    order_status
+    Comment    ${订单类型}    Get From Dictionary    ${获取订单内容}    order_type
+    Comment    ${支付时间}    Get From Dictionary    ${获取订单内容}    pay_time
+    Comment    ${时间戳}    Get From Dictionary    ${获取订单内容}    created
+    Comment    ${创建订单时间}    Get Time    \    ${时间戳}
+    Comment    ${配送方式}    Get From Dictionary    ${获取订单内容}    pickup_type    ####pickup_type=1 \ 快递配送    pickup_type=2 到店自提
+    Comment    ${提货码}    Get From Dictionary    ${获取订单内容}    pickup_code
+    Comment    ########
+    Comment    ${订单详情数据0}    Get From Dictionary    ${获取订单内容}    orderDetails
+    Comment    ${订单详情数据}    Get From List    ${订单详情数据0}    0
+    Comment    log    ${订单详情数据}
+    Comment    ${订单详情id}    Get From Dictionary    ${订单详情数据}    id
+    Comment    ${订单id号}    Get From Dictionary    ${订单详情数据}    order_id
+    Comment    ${商品id号}    Get From Dictionary    ${订单详情数据}    product_id
+    Comment    ${商品名称}    Get From Dictionary    ${订单详情数据}    product_name
+    Comment    ${商品sku_id号}    Get From Dictionary    ${订单详情数据}    product_sku_id
+    Comment    ${商品sku名称}    Get From Dictionary    ${订单详情数据}    product_sku_name
+    Comment    ${商品金额}    Get From Dictionary    ${订单详情数据}    price
+    Comment    ${商品数量}    Get From Dictionary    ${订单详情数据}    num
+    ####用户信息
+    Comment    ${用户详情}    Get From Dictionary    ${获取订单内容}    wxUserInfos
+    Comment    ${用户id}    Get From Dictionary    ${用户详情}    id
+    [Return]    ${返回码信息}
+
+订单详情
+    [Arguments]    ${订单id}
+    &{data}=    Create Dictionary    id=${订单id}
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    ${resp}    Post Request    wsh    /order/get-order-detail-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+创建扫码订单
+    [Arguments]    ${total_price}=10000
+    ##获取创建订单请求参数
+    ${终端店信息}    获取终端店信息
+    ${data0}    Get From Dictionary    ${终端店信息}    data
+    ${data}    Get From List    ${data0}    0
+    ${id}    Get From Dictionary    ${data}    id
+    微信登录
+    &{data}=    Create Dictionary    total_price=${total_price}    shop_sub_id=${id}
+    &{headers}=    Create Dictionary    Content-Type=application/json    charset=UTF-8
+    ${resp}    Post Request    wx    /weishanghuzhushou/order/add-scan-ajax    data=${data}    headers=${headers}
+    Log    Response:${resp.content}
+    ${预期返回码}    Set Variable    0
+    ${会员列表响应}    loads    ${resp.content}
+    ${返回码}    Get From Dictionary    ${会员列表响应}    errcode
+    ${返回响应}    Get From Dictionary    ${会员列表响应}    errmsg
+    Log    errcode is:${返回码}
+    Should Be Equal As Strings    ${返回码}    ${预期返回码}
+    [Return]    ${返回响应}
+
+货到付款订单
+    [Arguments]    ${pay_type}=3
+    #${pay_type}=3货到付款    #${pay_type}=5微信支付
+    ${errmsg}    订单_创建普通订单
+    ${orderDetail}    Get From Dictionary    ${errmsg}    orderDetail
+    ${orderDetai0l}    Get From List    ${orderDetail}    0
+    ${order_id}    Get From Dictionary    ${orderDetai0l}    order_id
+    ${id}    Get From Dictionary    ${orderDetai0l}    id
+    ${product_id}    Get From Dictionary    ${orderDetai0l}    product_id
+    ${product_sku_id}    Get From Dictionary    ${orderDetai0l}    product_sku_id
+    ${shop_sub_id}    Get From Dictionary    ${orderDetai0l}    shop_sub_id
+    &{data}=    Create Dictionary    id=${order_id}    r_points=0    member_discount=1    customer_mark=${EMPTY}    orderPayInfo[0][pay_type]=${pay_type}
+    ...    orderPayInfo[0][amount]=100    orderDetails[0][id]=${id}    orderDetails[0][order_id]=${order_id}    orderDetails[0][product_id]=${product_id}    orderDetails[0][product_sku_id]=${product_sku_id}    orderDetails[0][shop_sub_id]=${shop_sub_id}
+    ...    orderDetails[0][num]=1
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    ${resp}    Post Request    wx    /weishanghuzhushou/order/pay-ajax    data=${data}    headers=${headers}
+    Log    Response:${resp.content}
+    ${预期返回码}    Set Variable    0
+    ${会员列表响应}    loads    ${resp.content}
+    ${返回码}    Get From Dictionary    ${会员列表响应}    errcode
+    ${返回响应}    Get From Dictionary    ${会员列表响应}    errmsg
+    Log    errcode is:${返回码}
+    Should Be Equal As Strings    ${返回码}    ${预期返回码}
+    [Return]    ${返回响应}
+
+更新订单设置
+    [Arguments]    ${id}    ${订单自动关闭}=2    ${订单回收时间}=60    ${秒杀订单自动关闭}=2    ${发货自动确认}=2    ${收货自动评价}=2
+    ...    # 各类订单自动处理机制，1为开启，2为关闭
+    [Documentation]    状态说明：1为开启，2为关闭
+    ...
+    ...    {"id":2,"simple_order_close_unpay_time":60,"auto_receive_time":60,"sk_order_close_unpay_time":120,"order_comment_time":60,"simple_order_close_unpay_status":2,"auto_receive_status":2,"sk_order_close_unpay_status":1,"order_comment_status":2,"simple_order_close_unpay_time_type":1,"auto_receive_time_type":1,"sk_order_close_unpay_time_type":1,"order_comment_time_type":1}
+    &{headers}    Get_Headers
+    ${jsonstr}    Convert To String    {"id":${id},"simple_order_close_unpay_time":${订单回收时间},"auto_receive_time":60,"sk_order_close_unpay_time":120,"order_comment_time":60,"simple_order_close_unpay_status":${订单自动关闭},"auto_receive_status":${发货自动确认},"sk_order_close_unpay_status":${秒杀订单自动关闭},"order_comment_status":${收货自动评价},"simple_order_close_unpay_time_type":1,"auto_receive_time_type":1,"sk_order_close_unpay_time_type":1,"order_comment_time_type":1}
+    ${resp}    Post Request    wsh    /shop/update-shop-order-auto-settings-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    ##
+    [Return]    ${errmsg}
+
+获取订单设置
+    [Documentation]    获取订单设置参数
+    ...
+    ...    <参数说明>
+    ...    无
+    ...
+    ...    作者：胡永堂
+    &{headers}=    Get Headers
+    ${data}    Convert To String    {}
+    ${resp}    Post Request    wsh    /shop/get-shop-order-auto-settings-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+获取订单列表
+    [Arguments]    ${订单状态}=0
+    [Documentation]    状态说明：0全部 1待付款 2待发货 3待收货4已完成5售后中7已关闭
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    &{data}=    Create Dictionary    _status=${订单状态}    after_sales_status=2
+    ${resp}    Post Request    wsh    /order/list-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    返回码异常！
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+WX_创建普通订单
+    [Arguments]    ${product_id}    ${sku_id}    ${num}=1    ${pickup_type}=1
+    &{data}=    Create Dictionary    products[0][id]=${product_id}    products[0][sku_id]=${sku_id}    products[0][num]=${num}    pickup_type=${pickup_type}
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    ${resp}    Post Request    wx    /order/order-add-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    返回码异常！
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+WX_取消订单
+    [Arguments]    ${order_id}
+    &{headers}    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    ${orderID}    Create Dictionary    id=${order_id}
+    ${resp}    Post Request    wx    /order/cancel-ajax    data=${orderID}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+订单发货
+    [Arguments]    ${order_id}    ${expressNo}=随机    ${expressType}=2
+    ${express_no}    Run Keyword If    '${expressNo}'=='随机'    Generate Random String    12    [NUMBERS]
+    ...    ELSE    Set Variable    ${expressNo}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${data}    Convert To String    {"order_id":${order_id},"express_type":"${expressType}","seller_remark":"发货测试。","express_no":"${express_no}"}
+    ${resp}    Post Request    wsh    /order/deliver-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${expressType}    ${express_no}
+
+WX_确认收货
+    [Arguments]    ${order_id}
+    &{headers}=    Get Headers    xform
+    &{data}=    Create Dictionary    order_id=${order_id}
+    ${resp}    Post Request    wx    /order/take-over-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+订单支付
+    [Arguments]    ${args}
+    [Documentation]    说明：默认采用货到付款
+    Log    args: ${args}
+    &{headers}=    Get Headers    xform
+    ${resp}    Post Request    wx    /order/pay-ajax    data=${args}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+WX_订单详情
+    [Arguments]    ${订单id}
+    &{headers}=    Get Headers
+    ${data}    Convert To String    {"id":"${订单id}"}
+    ${resp}    Post Request    wx    /order/get-order-detail-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+WX_申请退货
+    [Arguments]    ${order_id}    ${phone}    ${content}=退货说明    ${reason_type}=1    ${pic_list}=${EMPTY}
+    [Documentation]    提交退货申请
+    ...
+    ...    <参数说明>
+    ...
+    ...    order_id：订单ID(必要)
+    ...
+    ...    phone：手机号(必要)
+    ...
+    ...    content：退货说明
+    ...
+    ...    reason_type：退货原因类型(可选值1-3)
+    ...
+    ...    pic_list：退货图片
+    ...
+    ...    注：pic_list为List
+    ...
+    ...    作者：胡永堂
+    &{headers}=    Get Headers
+    ${data}    Convert To String    {"order_id":"${order_id}","refund_reason":${reason_type},"user_phone":"${phone}","content":"${content}","pic_list":""}
+    ${resp}    Post Request    wx    /order/refund-goods-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+退货_商家同意退货
+    [Arguments]    ${id}
+    [Documentation]    同意退货并发货
+    ...
+    ...    <参数说明>
+    ...
+    ...
+    ...
+    ...    pic_list：退货图片
+    ...
+    ...    注：pic_list为List
+    ...
+    ...    作者：胡永堂
+    &{headers}=    Get Headers
+    ${data}    Convert To String    {"id":"${id}","reply":"深圳南山区后海路XX小区XX号 <br/>姓名: 王可欣 <br/>手机号码: 18822334455"}
+    ${resp}    Post Request    wsh    /order/refund-pass-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+WX_退货发货
+    [Arguments]    ${id}    ${express_no}    ${remark}=退货备注    ${express_type}=2    ${pic_list}=${EMPTY}
+    [Documentation]    退货发货
+    ...
+    ...    <参数说明>
+    ...
+    ...    id：退货单ID(必要)
+    ...
+    ...    express_no：物流单号(必要)
+    ...
+    ...    remark：退货备注
+    ...
+    ...    express_type：退货发货的物流公司(默认值为申通快递)
+    ...
+    ...    pic_list：退货图片
+    ...
+    ...    注：pic_list为List
+    ...
+    ...    作者：胡永堂
+    &{headers}=    Get Headers
+    ${data}    Convert To String    {"id":"${id}","express_type":"${express_type}","express_no":"${express_no}","remark":"${remark}","pic_list":"${pic_list}"}
+    ${resp}    Post Request    wx    /order/add-return-goods-logistics-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+退货_商家确认收货
+    [Arguments]    ${id}
+    [Documentation]    商家确认收货并退款
+    ...
+    ...    <参数说明>
+    ...
+    ...    ${id}：退货单ID
+    ...
+    ...    作者：胡永堂
+    &{headers}=    Get Headers
+    ${data}    Convert To String    {"id":"${id}","reply":"","type":1}
+    ${resp}    Post Request    wsh    /order/refund-goods-handle-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+退货_商家确认打款
+    [Arguments]    ${id}    ${order_id}
+    [Documentation]    商家确认收货并退款
+    ...
+    ...    <参数说明>
+    ...
+    ...    ${id}：退货单ID
+    ...
+    ...    作者：胡永堂
+    &{headers}=    Get Headers
+    ${data}    Convert To String    {"id":${id},"order_id":${order_id}}
+    ${resp}    Post Request    wsh    /order/after-confirm-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+邮费模板列表
+    [Documentation]    获取邮费模板列表
+    ...
+    ...    autho:戴斌旺
+    &{headers}    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    &{pageData}=    Create Dictionary    _page=1    _page_size=100
+    ${resp}    Post Request    wsh    /order/shippingmode-list-ajax    data=${pageData}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    ${postageDataList}    Get From Dictionary    ${errmsg}    data
+    ${pageInfor}    Get From Dictionary    ${errmsg}    page
+    ${totalPage}    Get From Dictionary    ${pageInfor}    total_page
+    ${totalCount}    Get From Dictionary    ${pageInfor}    total_count
+    ${count}    Get Length    ${postageDataList}
+    Should Be Equal As Integers    ${count}    ${totalCount}
+    [Return]    ${postageDataList}
+
+获取邮费模板信息
+    [Arguments]    ${modeID}
+    [Documentation]    获取邮费模板信息
+    ...
+    ...    ${modeID}邮费模板ID
+    ...
+    ...    author:戴斌旺
+    &{headers}    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    &{shipingmodeID}=    Create Dictionary    id=${modeID}
+    ${resp}    Post Request    wsh    /order/shippingmode-find-ajax    data=&{shipingmodeID}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}

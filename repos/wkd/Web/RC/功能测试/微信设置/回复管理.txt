@@ -1,0 +1,98 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Resource          ../../Resource/常用操作.robot
+Library           Selenium2Library
+Resource          ../../Resource/API.robot
+Library           AutoItLibrary
+
+*** Test Cases ***
+关键词回复_新建
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    关键词回复
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"回复管理")]
+    Sleep    1
+    ####新建关键词
+    Click Link    新建关键词回复
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"添加关键字")]
+    Sleep    1
+    ####生成参数
+    ${关键字}    随机字符    【测试】    10
+    ${匹配方式}    Generate Random String    1    01
+    ####输入参数
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div[2]/form/div[1]/table/tbody/tr[2]/td[2]/input    ${关键字}
+    Select From List By Value    //*[@id="main-container"]/div/div[2]/div[2]/div/div[2]/form/div[1]/table/tbody/tr[4]/td[2]/select    ${匹配方式}
+    Sleep    1
+    ####添加消息
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div[2]/form/div[2]/table/tbody/tr[2]/td/a
+    ${素材}    选择素材
+    Sleep    1
+    ${test}    Get Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div[2]/form/div[2]/table/tbody/tr[2]/td[1]/div/div/strong
+    Page Should Contain Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div[2]/form/div[2]/table/tbody/tr[2]/td[1]/div/div/strong[contains(text(),"${素材}")]
+    ####保存
+    Click Element    //*[@id="modal-footer"]/a
+    Sleep    1.5
+    弹出信息校验
+
+关键词回复_编辑
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    关键词回复
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"回复管理")]
+    Sleep    1
+    ####编辑关键词    //*[@id="main"]/div[2]/ul/li[1]/div[1]/b
+    ${el}    Get Webelements    //*[@id="main"]/div[2]/ul/li/div[1]/b[starts-with(@title,"【测试】")]
+    Click Link    //*[@id="main"]/div[2]/ul/li/div[1]/b[starts-with(@title,"【测试】")]/ancestor::li[1]/div[4]/span[1]/a
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"编辑关键字")]
+    Sleep    1
+    ####生成参数
+    ${关键字}    随机字符    【测试】改    10
+    ${匹配方式}    Generate Random String    1    01
+    ####输入参数
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div[2]/form/div[1]/table/tbody/tr[2]/td[2]/input    ${关键字}
+    Select From List By Value    //*[@id="main-container"]/div/div[2]/div[2]/div/div[2]/form/div[1]/table/tbody/tr[4]/td[2]/select    ${匹配方式}
+    Sleep    1
+    ####添加消息    目前未删除原消息，即再添加一条消息
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div[2]/form/div[2]/table/tbody/tr[3]/td/a
+    ${素材}    选择素材
+    Sleep    1
+    ${test}    Get Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div[2]/form/div[2]/table/tbody/tr[2]/td[1]/div/div/strong
+    Page Should Contain Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div[2]/form/div[2]/table/tbody/tr[3]/td[1]/div/div/strong
+    ####保存
+    Click Element    //*[@id="modal-footer"]/a
+    Sleep    1.5
+    弹出信息校验
+
+关键词回复_删除
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    关键词回复
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"回复管理")]
+    Sleep    1
+    ####删除关键词    //*[@id="main"]/div[2]/ul/li[1]/div[1]/b
+
+test
+    Log    Just a test
+
+*** Keywords ***
+选择素材
+    ####选择素材
+    Wait Until Element Is Visible    //*[@id="insertMaterial"]/div/div/div[1]/h4[text()="选择素材"]
+    Sleep    1
+    ####参数
+    ${lis}    Get Webelements    //*[@id="mytabPane"]/div[1]/ul/li
+    ${len}    Get Length    ${lis}
+    ${x}    Evaluate    random.randint(1,${len})    random
+    ${素材}    Get Text    //*[@id="mytabPane"]/div[1]/ul/li[${x}]/h3
+    Click Element    //*[@id="mytabPane"]/div[1]/ul/li[${x}]
+    Sleep    1
+    Click Element    //*[@id="insertMaterial"]/div/div/div[3]/a[2]
+    Sleep    1.5
+    [Return]    ${素材}

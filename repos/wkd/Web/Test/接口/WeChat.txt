@@ -1,0 +1,37 @@
+*** Settings ***
+Suite Setup       登录
+Library           RequestsLibrary
+Resource          Lib/通用操作.robot
+Resource          Lib/配置参数.robot
+Library           String
+Library           json
+Library           Collections
+
+*** Test Cases ***
+获取商品详细信息
+    &{data}=    Create Dictionary    id=285649
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    ${resp}    Post Request    wsh    /product/get-detail-ajax    data=${data}    headers=${headers}
+    Log    Response:${resp.content}
+    ${str}    Get Substring    ${resp.content}    3
+    ${js}    loads    ${str}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode is:${errcode}
+    Log    Resp:${resp.content}
+
+获取商品列表
+    [Tags]    ready
+    ${resp}    Post Request    wsh    /product/list-ajax
+    Log    Response:${resp.content}
+    ${str}    Get Substring    ${resp.content}    3
+    ${js}    loads    ${str}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode is:${errcode}
+    Log    Resp:${resp.content}
+
+获取商品详细信息2
+    &{data}=    Create Dictionary    id=285649
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Set Variable    {"id":285649}
+    ${resp}    Post Request    wsh    /product/get-detail-ajax    data=${jsonstr}
+    Log    Response:${resp.content}

@@ -1,0 +1,52 @@
+*** Settings ***
+Library           Selenium2Library
+Resource          ../../Resource/常用操作.robot
+Resource          ../../Resource/功能菜单.robot
+Resource          ../../Resource/配置参数.robot
+
+*** Test Cases ***
+拼团活动_添加活动
+    [Setup]    登陆
+    Wait Until Page Contains Element    xpath=//*[@id="headactive"]/li[5]/a    10    error
+    点击菜单    微营销
+    点击菜单    拼团活动
+    点击菜单    添加活动
+    Set Browser Implicit Wait    10
+    Input Text    xpath=//*[@id="home"]/div[2]/form/div[1]/div/input    参考
+    Input Text    xpath=//*[@id="form-field-8"]    成为团长带领小伙伴享受团购价，拼团活动开始啦，赶紧开团召集小伙伴一起团购吧！
+    Click Element    xpath=//*[@id="home"]/div[2]/form/div[3]/div/div/a/label/span
+    sleep    1
+    Click Element    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li[3]/a/img    #选择活动图片
+    Sleep    0.5
+    Click Element    id=submitImage    #点击确认按钮
+    sleep    0.5
+    click element    id=btnConfirm    #点击下一步
+    sleep    0.5
+    click element    xpath=//*[@id="rule"]/ng-form/div[1]/div[1]/label/input    #勾选开启拼团条件
+    Input Text    xpath=//*[@id="rule"]/ng-form/div[2]/div/input    拼团活动测试    #输入拼团活动名称
+    click element    xpath=//*[@id="rule"]/ng-form/div[9]/div/a    #点击选择商品
+    Sleep    0.5
+    ${title}    Get Text     xpath=//*[@id="productModal"]/div/div/div[1]/h4
+    Should Contain    ${title}    商品列表    #校验标题
+    Sleep    0.5
+    click element    xpath=//*[@id="product"]/div[1]/table/tbody[1]/tr[1]/td[3]
+    Sleep    0.5
+    #Select Radio Button    553    radio
+    click element    xpath=//*[@id="product"]/div[1]/table/tbody[1]/tr[2]/td/table/tbody/tr[4]/td[3]    #选择商品
+    Sleep    0.5
+    click element    xpath=//*[@id="productModal"]/div/div/div[3]/a[2]    #点击确定按钮
+    #保存商品
+    Input Text    xpath=//*[@id="tbody"]/tr/td[6]/input    0.01    #团购价
+    Input Text    xpath=//*[@id="tbody"]/tr/td[8]/input    2    #配额
+    Input Text    xpath=//*[@id="tbody"]/tr/td[9]/input    2    #参团人数
+    Input Text    xpath=//*[@id="tbody"]/tr/td[10]/input    1    #每人限购
+    #Click Button    xpath=//*[@id="tbody"]/tr/td[11]/div/a[1]/i    #保存商品
+    click element    xpath=//*[@id="tbody"]/tr/td[11]/div/a[1]/i    #保存商品
+    Sleep    0.5
+    confirm action
+    Sleep    0.5
+    click element    id=post
+    Sleep    0.5
+    confirm action
+    Sleep    2
+    [Teardown]    关闭浏览器

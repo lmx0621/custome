@@ -1,0 +1,40 @@
+*** Settings ***
+Documentation     首页顶部功能测试
+Suite Setup       启动App
+Library           AppiumLibrary
+Resource          ../../../Lib/常用操作.robot
+Resource          ../../../Lib/功能菜单.robot
+Resource          ../../../Lib/系统按键.robot
+Resource          ../../../Lib/配置参数.robot
+
+*** Test Cases ***
+搜索
+    Wait Until Page Contains Element    id=ivDiscover    ${TIMEOUT}
+    点击搜索
+    Sleep    3s
+    #Input Text    id=etSearch    儿童玩具
+    Input Text    xpath=//android.widget.EditText[@index='0']    儿童
+    回车
+    返回
+    返回键
+    取消
+
+查看分类
+    Wait Until Page Contains Element    id=ivDiscover    ${TIMEOUT}
+    点击分类
+    Log    开始分类检查...
+    Log To Console    开始分类检查...
+    Wait Until Page Contains Element    xpath=//android.widget.TextView[@text='母婴用品']    ${TIMEOUT}
+    母婴用品
+    居家会场
+    美妆个护
+    环球美食
+    营养保健
+    电器数码
+    服装会场
+    鞋包会场
+    饰品会场
+    Log    分类检查完成...
+    Log To Console    分类检查完成...
+    Click Element    xpath=//android.widget.ImageView[@NAF='true']
+    #返回键

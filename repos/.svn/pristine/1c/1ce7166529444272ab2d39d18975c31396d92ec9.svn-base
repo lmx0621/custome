@@ -1,0 +1,20 @@
+*** Settings ***
+Library           Selenium2Library
+Resource          ../../Resource/常用操作.robot
+Resource          ../../Resource/功能菜单.robot
+Resource          ../../Resource/配置参数.robot
+Library           RequestsLibrary
+Library           Collections
+
+*** Test Cases ***
+asd
+    登陆接口
+    ${resp}    Post Request    wsh    /reduction/list-ajax
+    ${js}    Evaluate    u'${resp.content}'
+    log    ${js}
+    ${response}    Get Substring    ${js}    3
+    log    ${response}
+    ${qqq}    To Json    ${response}
+    log    ${qqq}
+    ${qqq1}    Get From Dictionary    ${qqq}    errmsg
+    log    ${qqq1}

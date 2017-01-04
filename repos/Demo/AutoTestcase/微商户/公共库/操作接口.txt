@@ -1,0 +1,20 @@
+*** Settings ***
+Library           Selenium2Library
+Resource          配置信息.txt
+
+*** Keywords ***
+登录
+    [Arguments]    ${地址}=${BASE_URL}    ${驱动}=${DRIVER}    ${用户名}=${USER}    ${密码}=${PASSWORD}    ${验证码}=123456
+    open browser    ${地址}    ${驱动}
+    input text    id=staff_id    ${用户名}
+    input text    id=password    ${密码}
+    input text    id=captcha    ${验证码}
+    click button    id=login
+    maximize browser window
+
+关闭浏览器
+    close browser
+
+切换菜单
+    [Arguments]    ${菜单名}
+    click link    ${菜单名}

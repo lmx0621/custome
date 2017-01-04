@@ -1,0 +1,58 @@
+*** Settings ***
+Suite Setup       登录
+Library           RequestsLibrary
+Resource          Lib/通用操作.robot
+Resource          Lib/配置参数.robot
+Library           String
+Library           json
+Library           Collections
+
+*** Test Cases ***
+获取客户列表
+    [Tags]    ready
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":20,"nickname":"","group_id":null,"shop_sub_id":"","agent_id":"","is_search":false,"belong_to_staff_id":"","createStart":"","createEnd":"","group_ids":[],"yestoday":false,"user_platform":0,"tags":[]}
+    ${resp}    Post Request    wsh    /member/list-ajax    data=${jsonstr}
+    Log    Response:${resp.content}
+    ${str}    Get Substring    ${resp.content}    3
+    ${js}    loads    ${str}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ###
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${userdata1}    Get From List    ${data}    0
+    ${num}    Get Length    ${data}
+    ${user1_name}    Get From Dictionary    ${userdata1}    nickname
+
+获取客户分组列表
+    [Tags]    ready
+    ${resp}    Post Request    wsh    /member/group-list-ajax
+    Log    Response:${resp.content}
+    ${str}    Get Substring    ${resp.content}    3
+    ${js}    loads    ${str}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ###
+    ${data}    Get From Dictionary    ${js}    errmsg
+    ${num}    Get Length    ${data}
+    ###生成List
+    ${groups}    Create List
+    :FOR    ${i}    IN RANGE    ${num}
+    \    ${groupdata}    Get From List    ${data}    ${i}
+    \    ${id}    Get From Dictionary    ${groupdata}    id
+    \    Append To List    ${groups}    ${id}
+    ${len}    Get Length    ${groups}
+    Log    Groups:'${groups}'
+    Set Suite Variable    ${groups}
+
+客户统计
+    [Tags]    ready
+    ${resp}    Post Request    wsh    /member/count-wx-member
+    Log    Response:${resp.content}
+    ${str}    Get Substring    ${resp.content}    3
+    ${js}    loads    ${str}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode is:${errcode}
+    Log    Resp:${resp.content}
+    Log    scan_limit_amount:${scan_limit}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed

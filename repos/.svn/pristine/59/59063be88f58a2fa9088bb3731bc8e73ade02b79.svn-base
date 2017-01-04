@@ -1,0 +1,16 @@
+*** Settings ***
+Suite Setup       启动App
+Library           AppiumLibrary
+Resource          ../../../Lib/常用操作.robot
+Resource          ../../../Lib/功能菜单.robot
+Resource          ../../../Lib/系统按键.robot
+
+*** Test Cases ***
+首页滑动
+    Wait Until Page Contains Element    id=ivDiscover
+    向上滑动
+    向上滑动
+    向上滑动
+    向下滑动
+    向下滑动
+    向下滑动

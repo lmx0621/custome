@@ -1,0 +1,19 @@
+*** Settings ***
+Library           AppiumLibrary
+Resource          Lib/常用操作.robot
+
+*** Test Cases ***
+first
+    打开微信
+    Wait Until Page Contains    微商户助手
+    Click Element    xpath=//android.view.View[contains(@text,'微商户助手')]
+    Log    Success...
+    Wait Until Page Contains    商城
+    Click Element    xpath=//android.widget.TextView[contains(@text,'商城')]
+    Sleep    1s
+    Click Element    xpath=//android.widget.TextView[contains(@text,'首页')]
+    Wait Until Page Contains    首页测试
+    切换Web视图
+    Sleep    2
+    Get Elements    id=container
+    #Input Text    xpath=//div[@class='app-search-form']/input[@type='text']    Test

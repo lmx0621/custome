@@ -1,0 +1,140 @@
+*** Settings ***
+Suite Setup       API登录    1    1
+Suite Teardown    关闭浏览器
+Test Teardown     失败截图
+Library           Selenium2Library
+Resource          ../../Resource/常用操作.robot
+Resource          ../../Resource/功能菜单.robot
+Resource          ../../Resource/配置参数.robot
+Resource          ../../Resource/API/营销.txt
+Resource          ../../Resource/微信模拟端/操作单元.robot
+Resource          ../../Resource/微信模拟端/点击按钮.robot
+Resource          ../../Resource/API/店铺.txt
+
+*** Test Cases ***
+活动未开启
+    [Tags]    ready
+    ####前置操作
+    ${errmsg}    添加商城红包活动    492
+    ${activity}    Get From Dictionary    ${errmsg}    activity
+    ${id}    Get From Dictionary    ${activity}    id
+    ${name}    Get From Dictionary    ${activity}    name
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../redpack/list"]
+    Element Should Contain    //a[@href="../redpack/list"]    红包活动
+    Element Should Contain    //a[@href="../redpack/list"]    红包活动，让你随时抢不停！
+    Sleep    1
+    #进入红包活动页
+    Click Element    //a[@href="../redpack/list"]
+    Wait Until Page Contains Element    //ul[@class="menu_list plan_list"]
+    Sleep    1
+    Page Should Not Contain Element    //a[@href="../grouppack/receive?id=${id}"]
+    Sleep    1
+    #数据清理
+    删除商城红包活动    ${id}
+    Log    删除红包活动成功...
+    #
+
+活动已开启未开始
+    [Tags]    ready
+    ####前置操作
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}+(3600*24*3)
+    ${errmsg}    添加商城红包活动    492    start_time=${start_time}
+    ${activity}    Get From Dictionary    ${errmsg}    activity
+    ${id}    Get From Dictionary    ${activity}    id
+    ${name}    Get From Dictionary    ${activity}    name
+    开启商城红包活动    ${id}
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../redpack/list"]
+    Element Should Contain    //a[@href="../redpack/list"]    红包活动
+    Element Should Contain    //a[@href="../redpack/list"]    红包活动，让你随时抢不停！
+    Sleep    1
+    #进入红包活动页
+    Click Element    //a[@href="../redpack/list"]
+    Wait Until Page Contains Element    //ul[@class="menu_list plan_list"]
+    Sleep    1
+    Element Should Be Visible    //a[@href="../grouppack/receive?id=${id}"]
+    Element Should Contain    //a[@href="../grouppack/receive?id=${id}"]    ${name}
+    Sleep    1
+    #进入活动页
+    Click Element    //a[@href="../grouppack/receive?id=${id}"]
+    Wait Until Element Is Visible    //div[@class="errorpage_head"]
+    Sleep    1
+    Page Should Contain Element    //div[@class="err_btn"]
+    Element Should Contain    //div[@class="err_btn"]    返回首页
+    Element Should Contain    //div[@class="err_btn"]    返回上一步
+    Element Should Be Visible    //a[@href="http://wkdianshang.betanewwx.snsshop.net/wkdianshang/mall/index"]
+    Title Should Be    活动未开始
+    Sleep    1
+    #数据清理
+    删除商城红包活动    ${id}
+    Log    删除红包活动成功...
+    #
+
+领取红包
+    [Tags]    ready
+    ####前置操作
+    ${errmsg}    添加商城红包活动    492
+    ${activity}    Get From Dictionary    ${errmsg}    activity
+    ${id}    Get From Dictionary    ${activity}    id
+    ${shop_id}    Get From Dictionary    ${activity}    shop_id
+    ${act_name}    Get From Dictionary    ${activity}    name
+    开启商城红包活动    ${id}
+    ${shop_info}    店铺.商家信息
+    ${shop_name}    Get From Dictionary    ${shop_info}    name
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../redpack/list"]
+    Element Should Contain    //a[@href="../redpack/list"]    红包活动
+    Element Should Contain    //a[@href="../redpack/list"]    红包活动，让你随时抢不停！
+    Sleep    1
+    #进入红包活动页
+    Click Element    //a[@href="../redpack/list"]
+    Wait Until Page Contains Element    //ul[@class="menu_list plan_list"]
+    Sleep    1
+    Element Should Be Visible    //a[@href="../grouppack/receive?id=${id}"]
+    Element Should Contain    //a[@href="../grouppack/receive?id=${id}"]    ${act_name}
+    #进入活动页
+    Click Element    //a[@href="../grouppack/receive?id=${id}"]
+    Wait Until Element Is Visible    //a[@href="../mall/index" and text()="${shop_name}"]
+    Sleep    1
+    #参与活动
+    Click Element    //a[@ng-click="$root.join()" and text()="我要领红包"]
+    Wait Until Element Is Visible    //span[text()="恭喜发财,大吉大利，拆红包分钱咯"]
+    Wait Until Element Is Visible    //span[text()="拼手气的时候到了，开红包！"]
+    Sleep    1
+    #领取红包
+    Click Element    //a[@href="javascript:;"]
+    Wait Until Element Is Visible    //a[@href="../product/category" and text()="立即去使用"]
+    Wait Until Element Is Visible    //div[@class="qredpack_show"]
+    Sleep    1
+    Element Should Contain    //div[@class="qredpack_show"]    恭喜你获得
+    Element Should Contain    //div[@class="qredpack_show"]    元红包
+    Element Should Contain    //div[@class="qredpack_show"]    红包将自动发放到您的商城个人账户
+    Sleep    3
+    #数据清理
+    关闭商城红包活动    ${id}
+    删除商城红包活动    ${id}
+    Log    删除红包活动成功...
+    #

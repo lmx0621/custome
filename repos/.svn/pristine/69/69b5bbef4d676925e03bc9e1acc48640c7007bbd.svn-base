@@ -1,0 +1,21 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Resource          ../../Resource/常用操作.robot
+Library           Selenium2Library
+Resource          ../../Resource/查询API.robot
+
+*** Test Cases ***
+上传图片
+
+全选&取消
+
+移动分组
+
+编辑名称
+
+删除
+
+搜索图片
+
+查看图片

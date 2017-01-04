@@ -1,0 +1,569 @@
+*** Settings ***
+Suite Setup       Run Keywords    创建并开启拼团活动
+...               AND    添加抵扣活动
+Suite Teardown    Run Keywords    删除抵扣活动
+...               AND    关闭拼团活动    ${activityID}
+Library           Selenium2Library
+Resource          ../../Resource/API/营销.txt
+Resource          ../../Resource/API/Common.txt
+Resource          ../../Resource/API/会员.txt
+Resource          ../../Resource/API/店铺.txt
+Resource          ../../Resource/API/订单.txt
+Resource          ../../Resource/API/商品.txt
+
+*** Test Cases ***
+拼团商品详情
+    [Tags]    ready
+    进入拼团商品详情    ${productName}
+    #团长立减
+    Run Keyword If    ${isDiscount} == 1    Page Should Contain    团长立减
+    ${textHeadPrice}    Run Keyword If    ${isDiscount} == 1    Get Text    xpath=//span[@ng-bind="details.togetherBuy.head_price | price"]
+    Run Keyword If    ${isDiscount} == 1    Should Be Equal As Numbers    ${headPrice}    ${textHeadPrice}
+    #获取商品轮播图
+    ${wxProductInforamtion}    WX_商品详情    ${productID}
+    ${productModel}    Get From Dictionary    ${wxProductInforamtion}    model
+    ${productDocumentList}    Get From Dictionary    ${productModel}    document
+    sleep    2
+    #校验商品轮播图
+    : FOR    ${document}    IN    @{productDocumentList}
+    \    ${productPicturesURL}    Get From Dictionary    ${document}    file_cdn_path
+    \    Page Should Contain Element    xpath=//div[@id="iSlider-wrapper"]//img[@src="${productPicturesURL}"]
+    #拼团商品详情
+    Page Should Contain Element    //div[@ng-bind="details.product_name" and text()="${productName}"]    #商品名称
+    Page Should Contain Element    //span[@ng-bind="details.together_num" and text()="${togetherNum}"]    #拼团人数
+    Page Should Contain Element    //span[@ng-bind="details.limit_buy" and text()="${limitBuy}"]    #每人限购数
+    #Page Should Contain    ${productName}
+    #Page Should Contain    ${togetherNum}人团
+    #Page Should Contain    每人限购${limitBuy}件
+    ${textBuyPrice}    Get Text    xpath=//i[@ng-bind="details.buy_price | price"]
+    Should Be Equal As Numbers    ${textBuyPrice}    ${buyPrice}
+    ${textProductPrice}    Get Text    xpath=//span[@ng-bind="details.productSku.retail_price | price"]
+    Should Be Equal As Numbers    ${textProductPrice}    ${productPrice}
+    #详情按钮
+    Page Should Contain Element    xpath=//a[@ng-click="picDetail()" and text()="详情"]
+    ${renshu}    Evaluate    ${togetherNum} - 1
+    ${needNum}    Get Text    xpath=//span[@ng-bind="details.together_num - 1"]    #拼团邀请人数
+    Should Be Equal As Integers    ${needNum}    ${renshu}
+    Page Should Contain Element    xpath=//div[contains(text(),"拼团剩余时间")]    #拼团剩余时间
+    #获取拼团剩余时间
+    #${currenttTime}    Get Current Date    result_format=epoch    # exclude_millis=True
+    #${timeLeftValue}    Subtract Date From Date    ${endTime}    ${currenttTime}    timer
+    #${timeLeft}    Convert To String    ${timeLeftValue}
+    #@{left}    Split String    ${timeLeft}    # :
+    #${hourNum}    Get From List    ${left}    0
+    #${minNum}    # Get From List    ${left}    1
+    #${dayNum}    Run Keyword If    ${hourNum} >=24
+    # Evaluate    ${hourNum} / 24    # ELSE    Convert To Integer    0    #${hourNum}
+    # Run Keyword If    ${dayNum} >=1    Evaluate    ${hourNum} - ${dayNum} * 24    # ELSE    Convert To Integer    # ${hourNum}
+    #${minNum}    Convert To Integer    ${minNum}
+    #${textDayNum}    Convert To String    ${dayNum}
+    #${textHourNum}    Convert To String    ${hourNum}
+    #${textMinNum}    Convert To String    ${minNum}
+    #检验拼团剩余时间(执行机时间与服务器时间不一致，暂时无法校验)
+    #Element Text Should Be    xpath=//div[@id="timeChange"]/span[1]    ${textDayNum}
+    #Element Text Should Be    xpath=//div[@id="timeChange"]/span[3]    ${textHourNum}
+    #Element Text Should Be    xpath=//div[@id="timeChange"]/span[5]    ${textMinNum}
+    #商品详情
+    Page Should Contain Element    xpath=//div[@class="tg-cell-bd tg-cell-primary"]/p[text()="商品详情"]    #商品详情
+    Page Should Contain Element    xpath=//a[@name="prod-detail"]/div[@class="tg-cell-ft"]    #商品详情展开按钮
+    #规则
+    Page Should Contain Element    xpath=//span[@class="icon-tips"]
+    Page Should Contain Element    xpath=//span[@ng-click="showRule()" and text()="规则"]
+    #规则弹窗
+    Click Element    xpath=//span[@ng-click="showRule()" and text()="规则"]
+    Wait Until Element Is Visible    //div[@id="rule"]/h3[text()="活动规则"]
+    Element Text Should Be    //div[@class="tg-rule_text"]//pre    ${togetherBuyRule}
+    Click Element    id=close
+    Wait Until Element Is Not Visible    //div[@id="rule"]/h3[text()="活动规则"]
+    #单独购买
+    ${aloneBuyPrice}    Get Text    xpath=//span[@ng-bind="details.product.show_price | price"]
+    Should Be Equal As Numbers    ${aloneBuyPrice}    ${productPrice}
+    Page Should Contain Element    xpath=//div[@class="tg-btn tg-btn-bg"]//span[@class="txt" and text()="元/件"]
+    Page Should Contain Element    xpath=//span[@class="text" and text()="单独购买"]
+    #立即开团
+    ${togetherBuyPrice}    Get Text    xpath=//span[@ng-bind="details.buy_price | price"]
+    Should Be Equal As Numbers    ${togetherBuyPrice}    ${buyPrice}
+    Page Should Contain Element    xpath=//div[@class="tg-btn" and @ng-click="openMask()"]//span[@class="txt" and text()="元/件"]
+    Page Should Contain Element    xpath=//span[@class="txt" and text()="立即开团("]
+    Page Should Contain Element    xpath=//span[@ng-bind="details.together_num" and text()="${togetherNum}"]
+    #点击立即开团,校验弹窗信息
+    Click Element    partial link=立即开团
+    Wait Until Element Is Visible    //span[text()="确认购买"]    5
+    Element Text Should Be    xpath=//a[@ng-bind="details.product_name"]    ${productName}    #商品名称
+    ${popProductPrice}    Get Text    xpath=//span[@ng-bind="details.buy_price | price"]
+    Should Be Equal As Numbers    ${popProductPrice}    ${buyPrice}    #拼团价
+    Element Text Should Be    xpath=//div[@ng-repeat="lists in details.productSku.kinds"]/h2[@ng-bind="lists.name"]    ${kindsName}    #商品规格
+    Element Should Contain    xpath=//div[@ng-repeat="lists in details.productSku.kinds"]//label    ${kindValuesName}    #商品规格值
+    ${textReserves}    Get Text    xpath=//span[@ng-bind="reserves"]    #库存
+    Should Be Equal As Integers    ${saletReserves}    ${textReserves}
+    Page Should Contain Element    xpath=//label[@ng-class="{'btn_postage':sendType == 1}"]    #快递配送
+    Page Should Contain Element    xpath=//label[@ng-class="{'btn_postage':sendType == 2}"]    #到店自提
+    Page Should Contain Element    xpath=//a[@class="tg-btn buy_own"]//span[text()="确认购买"]    #确认购买
+    #底部菜单链接
+    Page Should Contain Link    link=店铺首页
+    Page Should Contain Link    link=会员中心
+    Page Should Contain Link    link=关注我们
+    [Teardown]    Close All Browsers
+
+单独购买
+    [Tags]    ready
+    进入拼团商品详情    ${productName}
+    Click Element    partial link=单独购买
+    wait until page contains    ${productName}
+    #检验商品信息
+    Element Text Should Be    xpath=//div[@ng-bind="model.product.name"]    ${productName}
+    ${textProductPrice}    Get Text    xpath=//span[@ng-bind="model.product.show_price | number:2"]
+    Should Be Equal As Numbers    ${productPrice}    ${textProductPrice}
+    #检验加入购物车与立即购买元素
+    #Page Should Contain Element    xpath=//a[@class="buy_cart" and @ng-click="getCart()"]/span[text()="加入购物车"]
+    #Page Should Contain Element    xpath=//a[@class="buy_own" and @ng-click="showModal()"]/span[text()="立即购买"]
+    Page Should Contain Element    //a[@class="buy_own" and @ng-click="showModal()"]
+    [Teardown]    Close All Browsers
+
+到店自提
+    [Tags]    ready
+    ${shopList}    WX_获取自提店铺列表
+    ${oneShopAddressInfor}    Get From List    ${shopList}    0
+    ${oneshopName}    Get From Dictionary    ${oneShopAddressInfor}    name
+    ${oneshopAddress}    Get From Dictionary    ${oneShopAddressInfor}    address
+    进入拼团商品详情    ${productName}
+    Click Element    partial link=立即开团
+    sleep    1
+    Wait Until Element Is Visible    //span[text()="确认购买"]    5
+    Click Element    xpath=//label[@ng-class="{'btn_postage':sendType == 2}"]    #到店自提
+    Click Element    xpath=//a[@class="tg-btn buy_own"]    #确认购买
+    wait until page contains    微信安全支付    15
+    #校验商品信息
+    Element Text Should Be    xpath=//span[@ng-bind="list.product_sku_name"]    ${productName}
+    ${textPriceValue}    Get Text    xpath=//span[@ng-bind="list.price"]
+    Should Be Equal As Numbers    ${textPriceValue}    ${buyPrice}
+    #用户备注
+    Page Should Contain Element    //textarea[@id="customer_mark" and contains(@placeholder,"请输入您的留言")]
+    #提货输入元素校验
+    Page Should Contain Element    xpath=//input[@name="consignee" and @placeholder="请填写提货人姓名"]
+    Page Should Contain Element    xpath=//input[@name="phoneNo" and @placeholder="请填写提货人手机号码"]
+    Page Should Contain Element    xpath=//input[@name="address" and @placeholder="请选择商户提货地址"]
+    Page Should Contain Element    xpath=//input[@name="timeName" and @placeholder="请选择提货时间"]
+    #输入提货信息
+    page should contain    您选择的是到店自提，商户不负责商品配送。请仔细填写提货相关信息，订单免运费。
+    Input Text    name=consignee    自动化测试
+    Input Text    name=phoneNo    18812345678
+    Click Element    name=address
+    wait until page contains    ${oneshopName}    15
+    #检验自提门店信息
+    : FOR    ${shop}    IN    @{shopList}
+    \    ${name}    Get From Dictionary    ${shop}    name
+    \    ${address}    Get From Dictionary    ${shop}    address
+    \    page should contain    ${name}
+    \    page should contain    ${address}
+    Click Element    xpath=//h3[@ng-bind="i.shopInfo.name" and text()="${oneshopName}"]
+    wait until page contains    微信安全支付    15
+    #校验提货信息
+    Textfield Should Contain    name=consignee    自动化测试
+    Textfield Should Contain    name=phoneNo    18812345678
+    Page Should Contain Element    //span[@ng-bind="nameaddress" and text()="${oneshopName}"]
+    Textfield Should Contain    name=address    ${oneshopAddress}
+    #获取提货时间
+    ${pickUpTime}    Get Value    id=test_default
+    #积分抵扣10积分
+    Click Element    xpath=//h4[contains(text(),'积分抵扣')]
+    Wait Until Element Is Visible    id=point
+    Input Text    id=point    10
+    Element Should Contain    xpath=//span[contains(text(),"积分，抵扣")]/em    ￥0.01
+    #购买数量
+    ${textBuyNum}    Get Text    xpath=//span[@ng-bind="list.num"]
+    #获取金额
+    ${totalPrice}    Get Text    xpath=//span[starts-with(@ng-bind,"model.total_price")]    #商品金额
+    ${discount}    Get Text    xpath=//span[starts-with(@ng-bind,"model.discount")]    #开团减额
+    ${pointDiscount}    Get Text    xpath=//span[starts-with(@ng-bind,"calculatePointDiscount()")]    #积分抵扣
+    ${sellerCut}    Get Text    xpath=//span[starts-with(@ng-bind,"model.seller_cut")]    #促销优惠
+    ${deliveryFee}    Get Text    xpath=//span[starts-with(@ng-bind,"model.delivery_fee")]    #运费
+    ${priceAll}    Get Text    xpath=//span[starts-with(@ng-bind,"priceAll()")]    #实付金额
+    #金额校验
+    ${total}    Evaluate    ${buyPrice} * ${textBuyNum}
+    Should Be Equal As Numbers    ${total}    ${totalPrice}
+    Run Keyword If    ${isDiscount} == 1    Should Be Equal As Numbers    ${discount}    ${headPrice}
+    ...    ELSE IF    ${isDiscount} == 2    Should Be Equal As Numbers    ${discount}    ${0.00}
+    Should Be Equal As Numbers    ${pointDiscount}    ${0.01}
+    Should Be Equal As Numbers    ${sellerCut}    ${0.00}
+    Should Be Equal As Numbers    ${deliveryFee}    ${0.00}
+    ${allPrice}    Evaluate    ${total} - ${0.01} - ${headPrice}
+    Should Be Equal As Numbers    ${priceAll}    ${allPrice}
+    #获取订单ID
+    ${currentURL}    Get Location
+    ${URLList}    Split String    ${currentURL}    =
+    ${orderID}    Get From List    ${URLList}    1
+    Click Element    xpath=//button[@class="weixin"]
+    sleep    5
+    #wait until page does not contain    微信安全支付    15
+    Wait Until Page Does Not Contain Element    id=customer_mark
+    #从接口获取订单信息
+    ${orderInfor}    订单详情    ${orderID}
+    ${orderNo}    Get From Dictionary    ${orderInfor}    order_no    #订单编号
+    ${created}    Get From Dictionary    ${orderInfor}    created    #下单时间
+    ${createdTime}    Convert Date    ${created}    result_format=timestamp    exclude_millis=True
+    #设置用例变量
+    Set Test Variable    ${orderID}
+    Set Test Variable    ${orderNo}
+    Set Test Variable    ${textBuyNum}
+    Set Test Variable    ${sendType}    2    #2为到店自提订单
+    Set Test Variable    ${totalPrice}
+    Set Test Variable    ${discount}
+    Set Test Variable    ${pointDiscount}
+    Set Test Variable    ${sellerCut}
+    Set Test Variable    ${deliveryFee}
+    Set Test Variable    ${priceAll}
+    Set Test Variable    ${createdTime}
+    Set Test Variable    ${consignee}    自动化测试
+    Set Test Variable    ${phoneNo}    18812345678
+    Set Test Variable    ${oneshopName}
+    Set Test Variable    ${oneshopAddress}
+    Set Test Variable    ${pickUpTime}
+    拼团订单列表信息校验
+    到店自提订单详情校验
+    [Teardown]    Run Keywords    Close All Browsers
+    ...    AND    WX_取消订单    ${orderID}
+
+快递配送
+    [Documentation]    用例名称:拼团活动快递配送
+    [Tags]    ready
+    ${consigneel}    ${tell}    ${province}    ${city}    ${county}    ${detail}    获取收货地址
+    进入拼团商品详情    ${productName}
+    Click Element    partial link=立即开团
+    sleep    1
+    Wait Until Element Is Visible    //span[text()="确认购买"]    5
+    Click Element    xpath=//label[@ng-class="{'btn_postage':sendType == 1}"]    #快递配送
+    Click Element    xpath=//a[@class="tg-btn buy_own"]    #确认购买
+    wait until page contains    微信安全支付    15
+    #校验商品信息
+    Element Text Should Be    xpath=//span[@ng-bind="list.product_sku_name"]    ${productName}
+    ${textPriceValue}    Get Text    xpath=//span[@ng-bind="list.price"]
+    Should Be Equal As Numbers    ${textPriceValue}    ${buyPrice}
+    #选择收货地址
+    Click Element    xpath=//span[@class="name fl" and text()="选择收货地址"]
+    Click Element    partial link=收货地址列表
+    wait until page contains    新增收货地址
+    Click Element    xpath=//span[@ng-bind="list.detail" and text()="${detail}"]
+    wait until page contains    微信安全支付    15
+    #检验收货信息
+    Element Should Contain    xpath=//span[@ng-bind="model.orderDelivery.consignee"]    ${consigneel}
+    Element Should Contain    xpath=//span[@ng-bind="model.orderDelivery.tel"]    ${tell}
+    Element Should Contain    xpath=//span[@ng-bind="model.orderDelivery.province"]    ${province}
+    Element Should Contain    xpath=//span[@ng-bind="model.orderDelivery.city"]    ${city}
+    Element Should Contain    xpath=//span[@ng-bind="model.orderDelivery.county"]    ${county}
+    Element Should Contain    xpath=//span[@ng-bind="model.orderDelivery.detail"]    ${detail}
+    #积分抵扣10积分
+    Click Element    xpath=//h4[contains(text(),'积分抵扣')]
+    Wait Until Element Is Visible    id=point
+    Input Text    id=point    10
+    Element Should Contain    xpath=//span[contains(text(),"积分，抵扣")]/em    ￥0.01
+    #用户备注
+    Page Should Contain Element    //textarea[@id="customer_mark" and contains(@placeholder,"请输入您的留言")]
+    #购买数量
+    ${textBuyNum}    Get Text    xpath=//span[@ng-bind="list.num"]
+    #获取金额
+    ${totalPrice}    Get Text    xpath=//span[starts-with(@ng-bind,"model.total_price")]    #商品金额(商品价格*数量)
+    ${discount}    Get Text    xpath=//span[starts-with(@ng-bind,"model.discount")]    #开团减额
+    ${pointDiscount}    Get Text    xpath=//span[starts-with(@ng-bind,"calculatePointDiscount()")]    #积分抵扣
+    ${sellerCut}    Get Text    xpath=//span[starts-with(@ng-bind,"model.seller_cut")]    #促销优惠
+    ${deliveryFee}    Get Text    xpath=//span[starts-with(@ng-bind,"model.delivery_fee")]    #运费
+    ${priceAll}    Get Text    xpath=//span[starts-with(@ng-bind,"priceAll()")]    #实付金额
+    #金额校验
+    ${total}    Evaluate    ${buyPrice} * ${textBuyNum}
+    Should Be Equal As Numbers    ${total}    ${totalPrice}
+    Run Keyword If    ${isDiscount} == 1    Should Be Equal As Numbers    ${discount}    ${headPrice}
+    ...    ELSE IF    ${isDiscount} == 2    Should Be Equal As Numbers    ${discount}    ${0.00}
+    Should Be Equal As Numbers    ${pointDiscount}    ${0.01}
+    Should Be Equal As Numbers    ${sellerCut}    ${0.00}
+    Should Be Equal As Numbers    ${deliveryFee}    ${0.00}
+    ${allPrice}    Evaluate    ${total} - ${0.01} - ${headPrice}
+    Should Be Equal As Numbers    ${priceAll}    ${allPrice}
+    #获取订单ID
+    ${currentURL}    Get Location
+    ${URLList}    Split String    ${currentURL}    =
+    ${orderID}    Get From List    ${URLList}    1
+    Click Element    xpath=//button[@class="weixin"]
+    sleep    5
+    #wait until page does not contain    微信安全支付    15
+    Wait Until Page Does Not Contain Element    id=customer_mark
+    #从接口获取订单信息
+    ${orderInfor}    订单详情    ${orderID}
+    ${orderNo}    Get From Dictionary    ${orderInfor}    order_no    #订单编号
+    ${created}    Get From Dictionary    ${orderInfor}    created    #下单时间
+    ${createdTime}    Convert Date    ${created}    result_format=timestamp    exclude_millis=True
+    #设置用例变量
+    Set Test Variable    ${orderID}
+    Set Test Variable    ${orderNo}
+    Set Test Variable    ${textBuyNum}
+    Set Test Variable    ${sendType}    1    #1为快递配送类型订单
+    Set Test Variable    ${totalPrice}
+    Set Test Variable    ${discount}
+    Set Test Variable    ${pointDiscount}
+    Set Test Variable    ${sellerCut}
+    Set Test Variable    ${deliveryFee}
+    Set Test Variable    ${priceAll}
+    Set Test Variable    ${createdTime}
+    Set Test Variable    ${consigneel}
+    Set Test Variable    ${tell}
+    Set Test Variable    ${province}
+    Set Test Variable    ${city}
+    Set Test Variable    ${county}
+    Set Test Variable    ${detail}
+    拼团订单列表信息校验
+    快递配送订单详情校验
+    [Teardown]    Run Keywords    Close All Browsers
+    ...    AND    WX_取消订单    ${orderID}
+
+*** Keywords ***
+进入拼团商品详情
+    [Arguments]    ${productName}
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    wait until page contains    首页
+    sleep    2
+    click element    link=惊喜
+    wait until page contains    拼团活动
+    Click Element    partial link=拼团活动
+    wait until page contains    ${productName}    15
+    #校验拼团列表页的团相关信息
+    Page Should Contain Element    xpath=//img[@src="${productCoversURL}"]    商品图片
+    Page Should Contain Element    xpath=//div[@class="tg-detail"]//h3[@ng-bind="list.productSku.name " and text()="${productName}"]/parent::*
+    ${textTogetherNum}    Convert To String    ${togetherNum}
+    Element Text Should Be    xpath=//div[@class="tg-detail"]//h3[@ng-bind="list.productSku.name " and text()="${productName}"]/following-sibling::*//span[@ng-bind="list.together_num"]    ${textTogetherNum}    #参团人数
+    ${textBuyPriceValue}    Get Text    xpath=//div[@class="tg-detail"]//h3[@ng-bind="list.productSku.name " and text()="${productName}"]/following-sibling::*//i[@ng-bind="list.buy_price | price"]    #拼团价
+    Should Be Equal As Numbers    ${textBuyPriceValue}    ${buyPrice}
+    ${textProductPriceValue}    Get Text    xpath=//div[@class="tg-detail"]//h3[@ng-bind="list.productSku.name " and text()="${productName}"]/following-sibling::*//del[starts-with(@ng-bind,"list.productSku.retail_price")]    #商品原价
+    Should Be Equal As Numbers    ${textProductPriceValue}    ${productPrice}
+    ${texLimitBuy}    Convert To String    ${limitBuy}
+    Element Text Should Be    xpath=//div[@class="tg-detail"]//h3[@ng-bind="list.productSku.name " and text()="${productName}"]/following-sibling::*//span[@ng-bind="list.limit_buy"]    ${texLimitBuy}    #每人限购数
+    Click Element    partial link=${productName}
+    Select window    商品详情
+    wait until page contains    ${productName}
+
+创建并开启拼团活动
+    API登录    后端=1    前端=1
+    ${together}=    添加拼团活动
+    ${togetherBuyinfo}    Get From Dictionary    ${together}    togetherBuy
+    ${togetherbuyID}    Get From Dictionary    ${togetherBuyinfo}    id
+    ${activityID}    Get From Dictionary    ${togetherBuyinfo}    activity_id
+    ${productID}    ${productSkusID}    ${productSkusReserves}    ${productSkusPrice}    获取拼团商品
+    ${saletReserves}    Evaluate    random.randint(10,100)    modules=random
+    ${salePrice}    Evaluate    random.randint(5,${productSkusPrice})    modules=random
+    ${tuanNum}    Evaluate    random.randint(2,20)    modules=random
+    ${tuanLimitNum}    Evaluate    random.randint(2,${tuanNum})    modules=random
+    添加拼团活动商品    ${togetherbuyID}    ${productID}    ${productSkusID}    ${salePrice}    ${saletReserves}    ${tuanLimitNum}
+    ...    ${tuanNum}
+    编辑拼团活动    ${togetherbuyID}    ${activityID}
+    ${togetherinfor}    开启拼团活动    ${activityID}
+    ${endTime}    Get From Dictionary    ${togetherinfor}    end_time
+    ${togetherBuyRule}    Get From Dictionary    ${togetherinfor}    desc
+    ${togetherBuy}    Get From Dictionary    ${togetherinfor}    togetherBuy
+    ${isDiscount}    Get From Dictionary    ${togetherBuy}    is_discount
+    ${headPriceTmp}    Get From Dictionary    ${togetherBuy}    head_price
+    ${togetherBuyGoodsInfo}    Get From Dictionary    ${togetherBuy}    togetherBuyGoods
+    ${togetherBuyGoods}    Get From List    ${togetherBuyGoodsInfo}    0
+    ${productName}    Get From Dictionary    ${togetherBuyGoods}    product_name
+    ${productPriceTmp}    Get From Dictionary    ${togetherBuyGoods}    product_price
+    ${buyPriceTmp}    Get From Dictionary    ${togetherBuyGoods}    buy_price
+    ${togetherNum}    Get From Dictionary    ${togetherBuyGoods}    together_num
+    ${limitBuy}    Get From Dictionary    ${togetherBuyGoods}    limit_buy
+    ${headPriceN}    Convert To Number    ${headPriceTmp}
+    ${productPriceN}    Convert To Number    ${productPriceTmp}
+    ${buyPriceN}    Convert To Number    ${buyPriceTmp}
+    ${headPrice}    Evaluate    ${headPriceN}/100
+    ${productPrice}    Evaluate    ${productPriceN}/100
+    ${buyPrice}    Evaluate    ${buyPriceN}/100
+    ${postageSetting}    Get From Dictionary    ${togetherinfor}    postageSetting
+    ${postageType}    Run Keyword If    ${postageSetting} != @{EMPTY}    Get From Dictionary    ${postageSetting}    type
+    ${postageAmount}    Run Keyword If    ${postageSetting} != @{EMPTY}    Get From Dictionary    ${postageSetting}    amount
+    ${postageNum}    Run Keyword If    ${postageSetting} != @{EMPTY}    Get From Dictionary    ${postageSetting}    num
+    Set Suite Variable    ${activityID}
+    Set Suite Variable    ${endTime}
+    Set Suite Variable    ${isDiscount}    #是否设置优惠（1.是、2.否)
+    Set Suite Variable    ${headPrice}    #团长减额
+    Set Suite Variable    ${productName}    #商品名称
+    Set Suite Variable    ${togetherBuyRule}    #拼团规则
+    Set Suite Variable    ${productID}    #商品ID
+    Set Suite Variable    ${productPrice}    #商品原价
+    Set Suite Variable    ${buyPrice}    #拼团价
+    Set Suite Variable    ${togetherNum}    #参团人数
+    Set Suite Variable    ${limitBuy}    #每人限购数
+    Set Suite Variable    ${postageType}    #包邮类型（1.满金额包邮、2.满件数包邮、3.免邮费)
+    Set Suite Variable    ${postageAmount}    #数量
+    Set Suite Variable    ${postageNum}    #金额（分为单位）
+    Set Suite Variable    ${saletReserves}    #拼团配额
+
+获取拼团商品
+    ${productInfor}    查询商品    拼团
+    ${productName}    Get From Dictionary    ${productInfor}    name
+    Should Contain    ${productName}    拼团
+    ${productID}    Get From Dictionary    ${productInfor}    id
+    ${productCovers}    Get From Dictionary    ${productInfor}    covers
+    ${productCoversURL}    Get From Dictionary    ${productCovers}    file_cdn_path
+    ${productSkusList}    Get From Dictionary    ${productInfor}    productSkus
+    ${skuNumbers}    Get Length    ${productSkusList}
+    ${radomInt}    Evaluate    random.randint(0,${skuNumbers}-1)    modules=random
+    ${productSkus}    Get From List    ${productSkusList}    ${radomInt}
+    ${productSkusID}    Get From Dictionary    ${productSkus}    id
+    ${productSkusReserves}    Get From Dictionary    ${productSkus}    reserves
+    ${productSkusPrice}    Get From Dictionary    ${productSkus}    retail_price
+    ${kindValueList}    Get From Dictionary    ${productSkus}    kindValues
+    ${kindValue}    Get From List    ${kindValueList}    0
+    ${kindValuesName}    Get From Dictionary    ${kindValue}    name
+    ${kinds}    Get From Dictionary    ${productSkus}    kinds
+    ${kindKeys}    Get Dictionary Keys    ${kinds}
+    ${kindsID}    Get From List    ${kindKeys}    0
+    ${kindsNameInfor}    Get From Dictionary    ${kinds}    ${kindsID}
+    ${kindsName}    Get From Dictionary    ${kindsNameInfor}    name
+    Set Suite Variable    ${kindsName}    #规格
+    Set Suite Variable    ${kindValuesName}    #规格值
+    Set Suite Variable    ${productCoversURL}    #商品封面图片URL
+    [Return]    ${productID}    ${productSkusID}    ${productSkusReserves}    ${productSkusPrice}
+
+添加抵扣活动
+    ${redeemInfor}    添加积分抵扣活动    minConsumption=${2}    Type=${1}    unitPoints=10    unitAmount=${1}    maxAmount=${10}
+    ...    togetherBuyFlag=${1}
+    启用积分抵扣活动    ${redeemInfor}
+    Set Suite Variable    ${redeemInfor}
+
+删除抵扣活动
+    关闭积分抵扣活动    ${redeemInfor}
+    删除积分抵扣活动    ${redeemInfor}
+
+获取收货地址
+    ${errmsg}    客户详情    ${GLOBAL_CONFIG.user_id}    #${BETA_WX_USER}
+    ${model}    Get From Dictionary    ${errmsg}    model
+    ${userDelivery}    Get From Dictionary    ${model}    userDelivery
+    ${address}    Get From List    ${userDelivery}    0
+    ${consigneel}    Get From Dictionary    ${address}    consignee
+    ${tell}    Get From Dictionary    ${address}    tel
+    ${province}    Get From Dictionary    ${address}    province
+    ${city}    Get From Dictionary    ${address}    city
+    ${county}    Get From Dictionary    ${address}    county
+    ${detail}    Get From Dictionary    ${address}    detail
+    [Return]    ${consigneel}    ${tell}    ${province}    ${city}    ${county}    ${detail}
+
+拼团订单列表信息校验
+    Capture Page Screenshot
+    ${theCurrentPageURL}    Get Location
+    log    ${theCurrentPageURL}
+    Close Window    #关闭当前页面，回到拼团活动列表页
+    Select window    拼团活动
+    Click Link    link=会员中心
+    wait until page contains    全部订单    15
+    Click Link    partial link=待付款
+    Wait Until Page Contains    ${orderNo}
+    #订单列表订单信息校验
+    Page Should Contain Element    //div[@class="order_number "]//em[@ng-bind="list.order_no" and text()="${orderNo}"]    #订单号
+    Page Should Contain Element    //a[@href="../order/detail?id=${orderID}"]/span[@class="fr"]/strong[text()="待付款"]    #待付款状态
+    Page Should Contain Element    //em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//div[@ng-bind="product.product_sku_name" and text()="${productName}"]    #订单商品名称
+    Element Text Should Be    xpath=//span[@ng-bind="kindKey"]    ${kindsName}    #规格
+    Element Text Should Be    xpath=//span[@ng-bind="kindValue"]    ${kindValuesName}    #规格值
+    ${textBuyPrice}    Get Text    //em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//span[@ng-bind="product.price"]    #购买价格
+    Should Be Equal As Numbers    ${textBuyPrice}    ${buyPrice}
+    ${buyNum}    Get Text    xpath=//em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//span[@ng-bind="product.num"]    #购买数量
+    Should Be Equal As Integers    ${buyNum}    ${textBuyNum}
+    log    ${sendType}
+    Run Keyword If    ${sendType} == 1    Page Should Contain Element    //em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//div[@class="order_payinfo"]//em[text()="快递配送"]    #快递配送配送方式
+    Run Keyword If    ${sendType} == 2    Page Should Contain Element    //em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//div[@class="order_payinfo"]//em[text()="到店自提"]    #到店自提配送方式
+    ${textPayPrice}    Get Text    xpath=//em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//div[@class="fr order_payoff"]//em
+    ${payPrice}    Strip String    ${textPayPrice}    characters='￥'    #去掉￥符号
+    Should Be Equal As Numbers    ${payPrice}    ${priceAll}
+    Page Should Contain Element    //em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//a[@class="order_btn1" and text()="取消订单"]    #取消订单
+    Page Should Contain Element    //a[@href="../order/detail?id=${orderID}" and text()="立即支付"]    #立即支付
+
+到店自提订单详情校验
+    #打开订单详情
+    Click Link    partial link=${orderNo}
+    wait until page contains    ${orderNo}
+    Page Should Contain    订单状态
+    Page Should Contain Element    xpath=//span[@ng-bind="model.orderStatusText" and text()="待付款"]    #订单状态
+    Page Should Contain Element    xpath=//span[@ng-bind="model.order_no" and text()="${orderNo}"]    #订单编号
+    ${orderTime}    Get Text    xpath=//span[starts-with(@ng-bind,"model.created")]    #下单时间
+    Should Be Equal As Strings    ${orderTime}    ${createdTime}
+    #自提信息
+    ${pickUpList}    Split String    ${pickUpTime}    -    #自提时间进行拆分
+    ${tmpPickTime1}    Get From List    ${pickUpList}    0
+    ${pickTimeValue2}    Get From List    ${pickUpList}    1
+    ${tmpPickTimeValue1}    Replace String    ${tmpPickTime1}    /    -    #将/替换为-
+    ${pickTime1}    Strip String    ${tmpPickTimeValue1}    #去掉空格
+    ${pickTime2}    Strip String    ${pickTimeValue2}    #去掉空格
+    Page Should Contain Element    xpath=//span[@ng-bind="model.pickup_name" and text()="${consignee}"]    #提货人
+    Page Should Contain Element    xpath=//span[@ng-bind="model.pickup_phone" and text()="${phoneNo}"]    #手机号码
+    Page Should Contain Element    xpath=//span[@ng-bind="model.pickupShopSub.shopInfo.address" and text()="${oneshopAddress}"]    #提货地址
+    Page Should Contain Element    xpath=//span[starts-with(@ng-bind,"model.pickup_date * 1000") and text()="${pickTime1}"]    #提货时间1
+    Page Should Contain Element    xpath=//span[starts-with(@ng-bind,"(model.pickup_date+30*60) * 1000") and text()="${pickTime2}"]    #提货时间2
+    #商品信息
+    Page Should Contain Element    xpath=//span[@ng-bind="list.product_sku_name" and text()="${productName}"]    #商品名称
+    Element Text Should Be    xpath=//span[@ng-bind="kindKey"]    ${kindsName}    #规格
+    Element Text Should Be    xpath=//span[@ng-bind="kindValue"]    ${kindValuesName}    #规格值
+    ${textProductPrice}    Get Text    xpath=//span[@ng-bind="list.price"]    #商品价格
+    Should Be Equal As Numbers    ${textProductPrice}    ${buyPrice}
+    Page Should Contain Element    xpath=//span[@ng-bind="list.num" and text()="${textBuyNum}"]    #商品数量
+    #获取金额
+    ${orderTotalPrice}    Get Text    xpath=//span[starts-with(@ng-bind,"model.total_price")]    #商品金额
+    ${orderMemberDiscount}    Get Text    xpath=//span[starts-with(@ng-bind,"model.member_discount_num")]    #会员优惠
+    ${orderDiscount}    Get Text    xpath=//span[starts-with(@ng-bind,"model.discount")]    #开团减额
+    ${orderPointDiscount}    Get Text    xpath=//span[starts-with(@ng-bind,"model.point_discount")]    #积分抵扣
+    ${orderSellerCut}    Get Text    xpath=//span[starts-with(@ng-bind,"model.seller_cut")]    #促销优惠
+    ${orderDeliveryFee}    Get Text    xpath=//span[starts-with(@ng-bind,"model.delivery_fee")]    #运费
+    ${textOrderPriceAll}    Get Text    xpath=//span[@class="payoff money fr ng-binding"]    #实付金额
+    ${orderPriceList}    Split String    ${textOrderPriceAll}    ￥
+    ${orderPriceAll}    Get From List    ${orderPriceList}    1
+    #校验金额
+    Should Be Equal As Numbers    ${totalPrice}    ${orderTotalPrice}
+    Should Be Equal As Numbers    ${orderMemberDiscount}    ${0.00}
+    Should Be Equal As Numbers    ${discount}    ${orderDiscount}
+    Should Be Equal As Numbers    ${pointDiscount}    ${orderPointDiscount}
+    Should Be Equal As Numbers    ${sellerCut}    ${orderSellerCut}
+    Should Be Equal As Numbers    ${deliveryFee}    ${orderDeliveryFee}
+    Should Be Equal As Numbers    ${priceAll}    ${orderPriceAll}
+    #校验支付按钮
+    Element Should Be Visible    xpath=//button/span[text()="微信安全支付"]
+    Element Should Not Be Visible    xpath=//button/span[text()="其他支付"]
+    Element Should Not Be Visible    xpath=//button/span[text()="货到付款"]
+
+快递配送订单详情校验
+    #打开订单详情
+    Click Link    partial link=${orderNo}
+    wait until page contains    ${orderNo}
+    Page Should Contain    订单状态
+    Page Should Contain Element    xpath=//span[@ng-bind="model.orderStatusText" and text()="待付款"]    #订单状态
+    Page Should Contain Element    xpath=//span[@ng-bind="model.order_no" and text()="${orderNo}"]    #订单编号
+    ${orderTime}    Get Text    xpath=//span[starts-with(@ng-bind,"model.created")]    #下单时间
+    Should Be Equal As Strings    ${orderTime}    ${createdTime}
+    #收货信息
+    Page Should Contain Element    xpath=//span[@ng-bind="model.orderDelivery.consignee" and text()="${consigneel}"]    #收货人    ${consigneel}
+    Page Should Contain Element    xpath=//span[@ng-bind="model.orderDelivery.tel" and text()="${tell}"]    #电话号码    ${tell}
+    Page Should Contain Element    xpath=//span[@ng-bind="model.orderDelivery.province" and text()="${province}"]    #省    ${province}
+    Page Should Contain Element    xpath=//span[@ng-bind="model.orderDelivery.city" and text()="${city}"]    #市    ${city}
+    Page Should Contain Element    xpath=//span[@ng-bind="model.orderDelivery.county" and text()="${county}"]    #区    ${county}
+    Page Should Contain Element    xpath=//span[@ng-bind="model.orderDelivery.detail" and text()="${detail}"]    #详细地址    ${detail}
+    #商品信息
+    Page Should Contain Element    xpath=//span[@ng-bind="list.product_sku_name" and text()="${productName}"]    #商品名称
+    Element Text Should Be    xpath=//span[@ng-bind="kindKey"]    ${kindsName}    #规格
+    Element Text Should Be    xpath=//span[@ng-bind="kindValue"]    ${kindValuesName}    #规格值
+    ${textProductPrice}    Get Text    //span[@ng-bind="list.price"]    #商品拼团价格
+    Should Be Equal As Numbers    ${textProductPrice}    ${buyPrice}
+    Page Should Contain Element    xpath=//span[@ng-bind="list.num" and text()="${textBuyNum}"]    #商品数量
+    #获取金额
+    ${orderTotalPrice}    Get Text    xpath=//span[starts-with(@ng-bind,"model.total_price")]    #商品金额(订单金额)
+    ${orderMemberDiscount}    Get Text    xpath=//span[starts-with(@ng-bind,"model.member_discount_num")]    #会员优惠
+    ${orderDiscount}    Get Text    xpath=//span[starts-with(@ng-bind,"model.discount")]    #开团减额
+    ${orderPointDiscount}    Get Text    xpath=//span[starts-with(@ng-bind,"model.point_discount")]    #积分抵扣
+    ${orderSellerCut}    Get Text    xpath=//span[starts-with(@ng-bind,"model.seller_cut")]    #促销优惠
+    ${orderDeliveryFee}    Get Text    xpath=//span[starts-with(@ng-bind,"model.delivery_fee")]    #运费
+    ${textOrderPriceAll}    Get Text    xpath=//span[@class="payoff money fr ng-binding"]    #实付金额
+    ${orderPriceList}    Split String    ${textOrderPriceAll}    ￥
+    ${orderPriceAll}    Get From List    ${orderPriceList}    1
+    #校验金额
+    Should Be Equal As Numbers    ${totalPrice}    ${orderTotalPrice}
+    Should Be Equal As Numbers    ${orderMemberDiscount}    ${0.00}
+    Should Be Equal As Numbers    ${discount}    ${orderDiscount}
+    Should Be Equal As Numbers    ${pointDiscount}    ${orderPointDiscount}
+    Should Be Equal As Numbers    ${sellerCut}    ${orderSellerCut}
+    Should Be Equal As Numbers    ${deliveryFee}    ${orderDeliveryFee}
+    Should Be Equal As Numbers    ${priceAll}    ${orderPriceAll}
+    #校验支付按钮
+    Element Should Be Visible    xpath=//button/span[text()="微信安全支付"]
+    Element Should Not Be Visible    xpath=//button/span[text()="其他支付"]
+    Element Should Not Be Visible    xpath=//button/span[text()="货到付款"]

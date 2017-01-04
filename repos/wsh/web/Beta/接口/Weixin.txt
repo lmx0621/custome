@@ -1,0 +1,53 @@
+*** Settings ***
+Suite Setup       API登录
+Library           RequestsLibrary
+Resource          ../Resource/配置参数.robot
+Library           String
+Library           json
+Library           Collections
+Resource          ../Resource/API.robot
+
+*** Test Cases ***
+获取商品列表
+    [Tags]    ready
+    ${resp}    Post Request    wsh    /product/list-ajax
+    Log    Response:${resp.content}
+    ${str}    Get Substring    ${resp.content}    3
+    ${js}    loads    ${str}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    Log    Resp:${resp.content}
+
+获取商品详细信息
+    [Tags]    ready
+    &{data}=    Create Dictionary    id=285649
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Set Variable    {"id":285649}
+    ${resp}    Post Request    wsh    /product/get-detail-ajax    data=${jsonstr}
+    Log    Response:${resp.content}
+
+获取二维码信息
+    [Tags]    ready
+    ${headers}    Get_Headers
+    &{data}=    Create Dictionary    model=member_card    model_id=1    shop_sub_id=0
+    ${resp}    Post Request    wsh    /weixin/qrcode-detail-ajax    data=${data}    headers=${headers}
+    Log    Response:${resp.content}
+    ${str}    Get Substring    ${resp.content}    3
+    ${js}    loads    ${str}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    ###
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+
+获取二维码列表
+    [Tags]    ready
+    ${headers}    Get_Headers
+    &{data}=    Create Dictionary    _page=1    _page_size=20
+    ${resp}    Post Request    wsh    /activity/qrcode-ajax    data=${data}    headers=${headers}
+    Log    Response:${resp.content}
+    ${str}    Get Substring    ${resp.content}    3
+    ${js}    loads    ${str}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    ###
+    ${errmsg}    Get From Dictionary    ${js}    errmsg

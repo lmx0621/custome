@@ -1,0 +1,352 @@
+*** Settings ***
+Library           Selenium2Library
+Resource          ../../Resource/API/Common.txt
+Resource          ../../Resource/API/营销.txt
+Resource          ../../Resource/API/商品.txt
+Resource          ../../Resource/API/会员.txt
+Resource          ../../Resource/API/其它.txt
+
+*** Test Cases ***
+众筹选择商品
+    [Tags]    ready
+    [Setup]    创建并开启选择商品众筹活动
+    ${joinUserInfor}    会员详情    ${GLOBAL_CONFIG.member_id}
+    ${joinWxUserInfor}    Get From Dictionary    ${joinUserInfor}    wxUserInfos
+    ${joinWxNickName}    Get From Dictionary    ${joinWxUserInfor}    nickname
+    ${joinWxHeadimgURL}    Get From Dictionary    ${joinWxUserInfor}    headimgurl
+    Set Test Variable    ${joinWxNickName}
+    Set Test Variable    ${joinWxHeadimgURL}
+    #我的点赞页面
+    ${mainBrowserIndex}    进入众筹活动页
+    我的点赞页
+    Click Image    xpath=//img[@alt="我要参加"]    #点击我也要玩按钮
+    #帮TA一把页面
+    帮TA一把页
+    Click Element    xpath=//a[@ng-click="btnHelp()"]    #点击找好友帮忙
+    Wait Until Element Is Visible    xpath=//img[@src="/ace/image/icon/share.png"]    #分享弹窗
+    #找好友帮忙
+    ${shareURL}    Get Location
+    ${helpUser}    Create List    ${${GLOBAL_ENV}_MEMBER_ID1}    ${${GLOBAL_ENV}_MEMBER_ID2}
+    ${currentPageTitles}    Get Window Titles
+    好友帮忙赞    ${helpUser}    ${shareURL}
+    #返回众筹页面
+    Switch Browser    ${mainBrowserIndex}
+    Reload Page
+    Capture Page Screenshot
+    集赞成功
+    #点击领取奖品
+    Click Image    xpath=//div[@id="zan_btn"]//img[@src="/ace/image/activity/zan_btn42.jpg"]
+    ${inputName}    ${inputMobile}    ${inputAddress}    中奖信息填写
+    #接口获取众筹活动参与信息
+    ${activityInformation}    获取众筹活动参与用户    ${collectID}    ${joinWxNickName}
+    ${activityDataList}    Get From Dictionary    ${activityInformation}    data
+    ${activityData}    Get From List    ${activityDataList}    0
+    ${mobile}    Get From Dictionary    ${activityData}    mobile
+    ${name}    Get From Dictionary    ${activityData}    name
+    ${address}    Get From Dictionary    ${activityData}    address
+    ${activityID}    Get From Dictionary    ${activityData}    id
+    Should Be Equal As Strings    ${mobile}    ${inputMobile}
+    Should Be Equal As Strings    ${name}    ${inputName}
+    Should Be Equal As Strings    ${address}    ${inputAddress}
+    众筹奖品手动兑换    ${activityID}    ${GLOBAL_CONFIG.user_id}    ${collectID}
+    [Teardown]    Run Keywords    关闭众筹活动    ${collectID}
+    ...    AND    删除众筹活动    ${collectID}
+    ...    AND    Close All Browsers
+
+众筹自定义商品
+    [Setup]    创建并开启自定义商品众筹活动
+    ${joinUserInfor}    会员详情    ${GLOBAL_CONFIG.member_id}
+    ${joinWxUserInfor}    Get From Dictionary    ${joinUserInfor}    wxUserInfos
+    ${joinWxNickName}    Get From Dictionary    ${joinWxUserInfor}    nickname
+    ${joinWxHeadimgURL}    Get From Dictionary    ${joinWxUserInfor}    headimgurl
+    Set Test Variable    ${joinWxNickName}
+    Set Test Variable    ${joinWxHeadimgURL}
+    #我的点赞页面
+    ${mainBrowserIndex}    进入众筹活动页
+    我的点赞页    True
+    Click Image    xpath=//img[@alt="我要参加"]    #点击我也要玩按钮
+    #帮TA一把页面
+    帮TA一把页
+    Click Element    xpath=//a[@ng-click="btnHelp()"]    #点击找好友帮忙
+    Wait Until Element Is Visible    xpath=//img[@src="/ace/image/icon/share.png"]    #分享弹窗
+    #找好友帮忙
+    ${shareURL}    Get Location
+    ${helpUser}    Create List    ${${GLOBAL_ENV}_MEMBER_ID1}    ${${GLOBAL_ENV}_MEMBER_ID2}
+    ${currentPageTitles}    Get Window Titles
+    好友帮忙赞    ${helpUser}    ${shareURL}    True
+    #返回众筹页面
+    Switch Browser    ${mainBrowserIndex}
+    Reload Page
+    Capture Page Screenshot
+    集赞成功    True
+    #点击领取奖品
+    Click Image    xpath=//div[@id="zan_btn"]//img[@src="/ace/image/activity/zan_btn42.jpg"]
+    ${inputName}    ${inputMobile}    ${inputAddress}    中奖信息填写
+    #接口获取众筹活动参与信息
+    ${activityInformation}    获取众筹活动参与用户    ${collectID}    ${joinWxNickName}
+    ${activityDataList}    Get From Dictionary    ${activityInformation}    data
+    ${activityData}    Get From List    ${activityDataList}    0
+    ${mobile}    Get From Dictionary    ${activityData}    mobile
+    ${name}    Get From Dictionary    ${activityData}    name
+    ${address}    Get From Dictionary    ${activityData}    address
+    ${activityID}    Get From Dictionary    ${activityData}    id
+    Should Be Equal As Strings    ${mobile}    ${inputMobile}
+    Should Be Equal As Strings    ${name}    ${inputName}
+    Should Be Equal As Strings    ${address}    ${inputAddress}
+    众筹奖品手动兑换    ${activityID}    ${GLOBAL_CONFIG.user_id}    ${collectID}
+    [Teardown]    Run Keywords    关闭众筹活动    ${collectID}
+    ...    AND    删除众筹活动    ${collectID}
+    ...    AND    Close All Browsers
+
+*** Keywords ***
+创建并开启选择商品众筹活动
+    API登录    后端=1    前端=1
+    ${collectZanInformation}    添加众筹活动
+    ${collect}    Get From Dictionary    ${collectZanInformation}    collect
+    ${collectID}    Get From Dictionary    ${collect}    id
+    ${searchProductInfor}    查询商品    众筹
+    ${searchProductName}    Get From Dictionary    ${searchProductInfor}    name
+    Should Contain    ${searchProductName}    众筹
+    ${searchProductID}    Get From Dictionary    ${searchProductInfor}    id
+    ${searchProductSkusList}    Get From Dictionary    ${searchProductInfor}    productSkus
+    ${skuNumbers}    Get Length    ${searchProductSkusList}
+    ${radomInt}    Evaluate    random.randint(0,${skuNumbers}-1)    modules=random
+    ${searchProductSkus}    Get From List    ${searchProductSkusList}    ${radomInt}
+    ${searchProductSkusID}    Get From Dictionary    ${searchProductSkus}    id
+    ${searchProductSkusReserves}    Get From Dictionary    ${searchProductSkus}    reserves
+    #${searchProductSkusPrice}    Get From Dictionary    ${searchProductSkus}    retail_price
+    ${reservesCount}    Evaluate    random.randint(10,${searchProductSkusReserves})    modules=random
+    ${collectZanProduct}    添加众筹活动商品    ${collectID}    ${searchProductID}    ${searchProductSkusID}    ${2}    ${searchProductSkusReserves}
+    ...    ${reservesCount}
+    ${editCollectZanInfor}    编辑众筹活动    ${collectID}
+    开启众筹活动    ${collectID}
+    ${collect}    Get From Dictionary    ${editCollectZanInfor}    collect
+    ${collectProductsList}    Get From Dictionary    ${collect}    collectProducts
+    ${collectProducts}    Get From List    ${collectProductsList}    0
+    ${collectZanName}    Get From Dictionary    ${collect}    name
+    ${collectZanRule}    Get From Dictionary    ${collect}    rule
+    ${collectZanPrice}    Get From Dictionary    ${collectProducts}    price
+    ${collectProductsInfor}    Get From Dictionary    ${collectProducts}    product
+    ${productName}    Get From Dictionary    ${collectProductsInfor}    name
+    ${productID}    Get From Dictionary    ${collectProductsInfor}    id
+    ${productCovers}    Get From Dictionary    ${collectProductsInfor}    covers
+    ${productCoversImgURL}    Get From Dictionary    ${productCovers}    file_cdn_path
+    Set Suite Variable    ${collectID}    #集赞活动ID
+    Set Suite Variable    ${collectZanName}    #集赞活动名称
+    Set Suite Variable    ${productName}    #集赞商品名称
+    Set Suite Variable    ${productCoversImgURL}    #集赞商品封面图片URL
+    Set Suite Variable    ${productID}    #集赞商品ID
+    Set Suite Variable    ${collectZanRule}    #集赞规则
+    Set Suite Variable    ${collectZanPrice}    #集赞任务个数
+
+创建并开启自定义商品众筹活动
+    API登录    后端=1    前端=1
+    ${collectZanInformation}    添加众筹活动
+    ${collect}    Get From Dictionary    ${collectZanInformation}    collect
+    ${collectID}    Get From Dictionary    ${collect}    id
+    ${imageInformation}    图片列表    众筹自定义    True
+    ${imageID}    Get From Dictionary    ${imageInformation}    id
+    ${imageName}    Get From Dictionary    ${imageInformation}    name
+    ${productCoversImgURL}    Get From Dictionary    ${imageInformation}    file_cdn_path
+    ${reservesCount}    Evaluate    random.randint(10,20)    modules=random
+    ${collectZanProduct}    添加众筹活动自定义商品    ${collectID}    众筹活动自定义奖品    ${2}    ${reservesCount}    ${imageID}
+    ${editCollectZanInfor}    编辑众筹活动    ${collectID}
+    开启众筹活动    ${collectID}
+    ${collect}    Get From Dictionary    ${editCollectZanInfor}    collect
+    ${collectCustomGiftList}    Get From Dictionary    ${collect}    collectCustomGift
+    ${collectCustomGift}    Get From List    ${collectCustomGiftList}    0
+    ${collectZanName}    Get From Dictionary    ${collect}    name
+    ${collectZanRule}    Get From Dictionary    ${collect}    rule
+    ${collectZanPrice}    Get From Dictionary    ${collectCustomGift}    price
+    ${productName}    Get From Dictionary    ${collectCustomGift}    name
+    ${productID}    Get From Dictionary    ${collectCustomGift}    id
+    Set Test Variable    ${collectID}    #集赞活动ID
+    Set Test Variable    ${collectZanName}    #集赞活动名称
+    Set Test Variable    ${productName}    #集赞商品名称
+    Set Test Variable    ${productCoversImgURL}    #集赞商品封面图片URL
+    Set Test Variable    ${productID}    #集赞商品ID
+    Set Test Variable    ${collectZanRule}    #集赞规则
+    Set Test Variable    ${collectZanPrice}    #集赞任务个数
+
+进入众筹活动页
+    ${currentPageIndex}    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    wait until page contains    首页
+    sleep    2
+    click element    link=惊喜
+    wait until page contains    微众筹    15
+    Click Element    partial link=微众筹
+    wait until page contains    ${collectZanName}
+    Click Element    partial link=${collectZanName}
+    wait until page contains    ${productName}    15
+    [Return]    ${currentPageIndex}
+
+我的点赞页
+    [Arguments]    ${isCustomGift}=False
+    Wait Until Page Contains Element    //span[@ng-bind="proName" and text()="${productName}"]    15
+    Page Should Contain Element    xpath=//img[@alt="点赞" and @src="/ace/image/activity/zan_head.jpg"]    #点赞背景图片
+    Page Should Contain Element    xpath=//span[@ng-bind="productData.number" and text()="${collectZanPrice}"]    #需齐集多少个赞数
+    Page Should Contain Element    xpath=//span[@ng-bind="proName" and text()="${productName}"]    #集赞商品名称
+    Page Should Contain Element    xpath=.//img[@id='zan_goodsimg' and @src="${productCoversImgURL}"]    #商品图片
+    Run Keyword If    ${isCustomGift} == False    Page Should Contain Element    xpath=//a[@href="../product/detail?id=${productID}" and text()="直接购买"]    #直接购买按钮
+    Click Image    xpath=//img[@alt="活动规则"]    #点击活动规则，打开规则弹窗
+    Wait Until Element Is Visible    xpath=//div[@class="info_boxs"]    5
+    Element Should Be Visible    xpath=//pre[text()="${collectZanRule}"]
+    Click Image    xpath=//img[@alt="规则"]    #关闭活动规则弹窗
+    #获奖名单
+    Page Should Contain Element    xpath=//div[@class="zan_win_box"]/img[@src="/ace/image/activity/zan_win_bg.jpg"]
+    Page Should Contain Element    xpath=//div[@class="zan_win_box"]/div[@class="zan_win_list"]
+    #我也要玩图片按钮
+    Page Should Contain Element    xpath=//img[@alt="我要参加"]
+    #Click Image    xpath=//img[@alt="我要参加"]    #点击我也要玩按钮
+
+帮TA一把页
+    Wait Until Page Contains Element    xpath=//a[@ng-click="btnHelp()"]    5    #找好友帮忙图片
+    #微信头像
+    Page Should Contain Element    xpath=//div[@class="fl zan_nickimg"]/img[@src="${joinWxHeadimgURL}"]
+    ${totalZan1}    Get Text    xpath=//span[@class="zan_nickname"]/span[@ng-bind="total"]
+    Should Be Equal As Integers    ${totalZan1}    ${collectZanPrice}
+    ${needZan}    Get Text    xpath=//span[@class="zan_nickname"]/span[@ng-bind="overplus"]
+    Should Be Equal As Integers    ${needZan}    ${collectZanPrice}
+    ${currentZan}    Get Text    xpath=//div[@class="zan_cnum"]/span[@ng-bind="number"]
+    Should Be Equal As Integers    ${currentZan}    0
+    ${totalZan2}    Get Text    xpath=//div[@class="zan_cnum"]/span[@ng-bind="total"]
+    Should Be Equal As Integers    ${totalZan2}    ${collectZanPrice}
+    Page Should Contain Element    xpath=.//img[@id='zan_goodsimg' and @src="${productCoversImgURL}"]    #商品图片
+    Click Image    xpath=//img[@src="/ace/image/activity/zan_rule.jpg"]    #点击活动规则，打开规则弹窗
+    Wait Until Element Is Visible    xpath=//div[@class="info_boxs"]    5
+    Element Should Be Visible    xpath=//pre[text()="${collectZanRule}"]
+    Click Image    xpath=//img[@src="/ace/image/activity/c_btn.png"]    #关闭活动规则弹窗
+    #获奖名单
+    Page Should Contain Element    xpath=//div[@class="zan_win_box"]/img[@src="/ace/image/activity/zan_win_bg.jpg"]
+    Page Should Contain Element    xpath=//div[@class="zan_win_box"]/div[@class="zan_win_list"]
+    #谁帮了TA
+    Page Should Contain Element    xpath=//div[@class="zan_frends_box"]/img[@src="/ace/image/activity/frends.png"]
+    Page Should Contain Element    xpath=//div[@class="zan_frends_box"]/div[@class="zan_frends_list"]
+    #找好友帮忙
+    Page Should Contain Element    xpath=//a[@ng-click="btnHelp()"]
+
+好友帮忙赞
+    [Arguments]    ${userList}    ${shareURL}    ${isCustomGift}=False
+    ${listLength}    Get Length    ${userList}
+    : FOR    ${index}    IN RANGE    0    ${listLength}
+    \    ${userID}    Get From List    ${userList}    ${index}
+    \    ${userInfo}    会员详情    ${userID}
+    \    ${wxUserInfo}    Get From Dictionary    ${userInfo}    wxUserInfos
+    \    ${wxuserID}    Get From Dictionary    ${wxUserInfo}    id
+    \    ${wxNickName}    Get From Dictionary    ${wxUserInfo}    nickname
+    \    ${wxHeadimgurl}    Get From Dictionary    ${wxUserInfo}    headimgurl
+    \    微信模拟页面登录    ${wxuserID}
+    \    wait until page contains    首页
+    \    Go To    ${shareURL}
+    \    Wait Until Page Contains Element    xpath=//span[@class="zan_nickname"]/span[@ng-bind="total"]
+    \    Page Should Contain Element    xpath=//img[@alt="点赞" and @src="/ace/image/activity/zan_head.jpg"]    #点赞背景图片
+    \    #微信头像
+    \    Page Should Contain Element    xpath=//div[@class="fl zan_nickimg"]/img[@src="${joinWxHeadimgURL}"]
+    \    #文字中的所需赞与还需赞
+    \    Page Should Contain Element    xpath=//span[@class="zan_nickname"]/span[@ng-bind="total" and text()="${collectZanPrice}"]    #需齐集多少个赞数
+    \    ${textNeedZan}    Get Text    xpath=//span[@class="zan_nickname"]/span[@ng-bind="overplus"]    #还需多少个赞
+    \    ${needZan}    Evaluate    ${collectZanPrice} - ${index}
+    \    Should Be Equal As Integers    ${needZan}    ${textNeedZan}
+    \    #五边形中的已赞数与需赞数
+    \    ${currentZan}    Get Text    xpath=//div[@class="zan_cnum"]/span[@ng-bind="number"]
+    \    Should Be Equal As Integers    ${index}    ${currentZan}
+    \    Page Should Contain Element    xpath=//div[@class="zan_cnum"]/span[@ng-bind="total" and text()="${collectZanPrice}"]    #需齐集多少个赞数
+    \    Page Should Contain Element    xpath=.//img[@id='zan_goodsimg' and @src="${productCoversImgURL}"]    #商品图片
+    \    Run Keyword If    ${isCustomGift} == False    Page Should Contain Element    xpath=//a[@href="../product/detail?id=${productID}" and text()="直接购买"]    #直接购买按钮
+    \    #活动规则
+    \    Click Image    xpath=//img[@src="/ace/image/activity/zan_rule.jpg"]    #点击活动规则，打开规则弹窗
+    \    Wait Until Element Is Visible    xpath=//div[@class="info_boxs"]    5
+    \    Element Should Be Visible    xpath=//pre[text()="${collectZanRule}"]
+    \    Click Image    xpath=//img[@src="/ace/image/activity/c_btn.png"]    #关闭活动规则弹窗
+    \    #获奖名单
+    \    Page Should Contain Element    xpath=//div[@class="zan_win_box"]/img[@src="/ace/image/activity/zan_win_bg.jpg"]
+    \    Page Should Contain Element    xpath=//div[@class="zan_win_box"]/div[@class="zan_win_list"]
+    \    #谁帮了TA
+    \    Page Should Contain Element    xpath=//div[@class="zan_frends_box"]/img[@src="/ace/image/activity/frends.png"]
+    \    Page Should Contain Element    xpath=//div[@class="zan_frends_box"]/div[@class="zan_frends_list"]
+    \    Page Should Contain Element    xpath=//img[@src="/ace/image/activity/zan_btn21.jpg" and @ng-click="btnHelpHe()"]    #帮TA一下
+    \    Page Should Contain Element    xpath=//img[@src="/ace/image/activity/zan_btn22.jpg"]    #我也要玩
+    \    Click Image    xpath=//img[@ng-click="btnHelpHe()"]    #点击帮他一下
+    \    Wait Until Page Contains Element    xpath=//div[@ng-bind="list.userInfo.nickname" and text()="${wxNickName}"]
+    \    Page Should Contain Element    //div[@class="zan_frends_list"]//img[@src="${wxHeadimgurl}"]    #微信头像
+    \    Page Should Contain Element    xpath=//div[@class="zan_frends_list"]//div[@ng-bind="list.userInfo.nickname" and text()="${wxNickName}"]    #微信昵称
+    \    ${indexNumber}    Evaluate    ${index} + 1
+    \    ${remainNeddZan}    Evaluate    ${collectZanPrice} - ${indexNumber}
+    \    #帮点赞后文字中还需集赞的个数
+    \    Page Should Contain Element    xpath=//span[@class="zan_nickname"]/span[@ng-bind="overplus" and text()="${remainNeddZan}"]
+    \    #帮点赞后，五边形中已点赞的个数    #如果集满则显示集赞成功图片
+    \    Run Keyword If    ${remainNeddZan} != 0    Page Should Contain Element    xpath=//div[@class="zan_cnum"]/span[@ng-bind="number" and text()="${indexNumber}"]
+    \    ...    ELSE    Page Should Contain Element    xpath=//img[@src="/ace/image/activity/collection_success.png"]
+    \    #如果集赞完成,获奖名单显示微信名与商品名
+    \    Run Keyword If    ${remainNeddZan} == 0    Page Should Contain Element    xpath=//div[@class="zan_win_list"]//span[@ng-bind="joinList.userInfo.nickname" and text()="${joinWxNickName}"]
+    \    Run Keyword If    ${remainNeddZan} == 0 and ${isCustomGift} == False    Page Should Contain Element    xpath=//div[@class="zan_win_list"]//span[@ng-bind="joinList.collectProduct.product.name" and text()="${productName}"]
+    \    ...    ELSE IF    ${remainNeddZan} == 0 and ${isCustomGift} == True    Page Should Contain Element    xpath=//div[@class="zan_win_list"]//span[@ng-bind="joinList.collectCustomGift.name" and text()="${productName}"]
+    \    #谁帮了TA栏的好友帮忙数
+    \    Xpath Should Match X Times    //div[@class="zan_frends_list"]//div[@ng-bind="list.userInfo.nickname"]    ${indexNumber}
+    \    #集赞满，帮TA一下按钮变灰
+    \    Run Keyword If    ${remainNeddZan} == 0    Page Should Contain Element    xpath=//img[@src="/ace/image/activity/zan_btn22.jpg"]
+    \    #未集赞满，再次点击帮他一下
+    \    Run Keyword If    ${remainNeddZan} != 0    Click Image    xpath=//img[@ng-click="btnHelpHe()"]
+    \    sleep    1
+    \    #未集赞满的弹窗框
+    \    Run Keyword If    ${remainNeddZan} != 0    Alert Should Be Present    该用户已帮助过
+    \    Close Browser
+
+集赞成功
+    [Arguments]    ${isCustomGift}=False
+    Wait Until Page Contains Element    xpath=//div[@class="zan_win_list"]//span[@ng-bind="joinList.userInfo.nickname" and text()="${joinWxNickName}"]
+    Page Should Contain Element    xpath=//img[@alt="点赞" and @src="/ace/image/activity/zan_head.jpg"]    #点赞背景图片
+    #文字中集赞显示数
+    Page Should Contain Element    xpath=//span[@class="zan_nickname"]/span[@ng-bind="total" and text()="${collectZanPrice}"]    #需齐集多少个赞数
+    Page Should Contain Element    xpath=//span[@class="zan_nickname"]/span[@ng-bind="overplus" and text()="0"]    #还需多少个赞
+    #集赞成功五边形
+    Page Should Contain Element    xpath=//img[@src="/ace/image/activity/collection_success.png"]
+    Page Should Contain Element    xpath=.//img[@id='zan_goodsimg' and @src="${productCoversImgURL}"]    #商品图片
+    Element Should Not Be Visible    xpath=//a[@href="../product/detail?id=${productID}" and text()="直接购买"]    #直接购买按钮隐藏不显示
+    #活动规则
+    Click Image    xpath=//img[@src="/ace/image/activity/zan_rule.jpg"]    #点击活动规则，打开规则弹窗
+    Wait Until Element Is Visible    xpath=//div[@class="info_boxs"]    5
+    Element Should Be Visible    xpath=//pre[text()="${collectZanRule}"]
+    Click Image    xpath=//img[@src="/ace/image/activity/c_btn.png"]    #关闭活动规则弹窗
+    #获奖名单
+    Page Should Contain Element    xpath=//div[@class="zan_win_box"]/img[@src="/ace/image/activity/zan_win_bg.jpg"]
+    Page Should Contain Element    xpath=//div[@class="zan_win_list"]//span[@ng-bind="joinList.userInfo.nickname" and text()="${joinWxNickName}"]    #获奖名单
+    #集赞奖品商品名称
+    Run Keyword If    ${isCustomGift} == False    Page Should Contain Element    xpath=//div[@class="zan_win_list"]//span[@ng-bind="joinList.collectProduct.product.name" and text()="${productName}"]
+    ...    ELSE IF    ${isCustomGift} == True    Page Should Contain Element    xpath=//div[@class="zan_win_list"]//span[@ng-bind="joinList.collectCustomGift.name" and text()="${productName}"]
+    #谁帮了TA
+    Page Should Contain Element    xpath=//div[@class="zan_frends_box"]/img[@src="/ace/image/activity/frends.png"]
+    #帮忙的好友个数
+    ${helpFriends}    Get Matching Xpath Count    //div[@class="zan_frends_list"]//div[@ng-bind="list.userInfo.nickname"]
+    Should Be Equal As Integers    ${helpFriends}    ${collectZanPrice}
+    Page Should Contain Element    xpath=//div[@id="zan_btn"]//img[@src="/ace/image/activity/zan_btn41.png"]    #炫耀一下
+    Page Should Contain Element    xpath=//div[@id="zan_btn"]//img[@src="/ace/image/activity/zan_btn42.jpg"]    #领取奖品
+    #点击炫耀一下按钮
+    Click Image    xpath=//div[@id="zan_btn"]//img[@src="/ace/image/activity/zan_btn41.png"]
+    Wait Until Element Is Visible    xpath=//img[@src="/ace/image/icon/share.png"]    #分享图片
+    Click Image    xpath=//img[@src="/ace/image/icon/share.png"]
+    sleep    1
+
+中奖信息填写
+    Wait Until Page Contains Element    id=form_btn
+    #中奖资料提交image
+    Page Should Contain Element    //img[@src="/ace/image/ad/formbg_up.jpg"]
+    Page Should Contain    恭喜你集赞完成
+    Page Should Contain Element    xpath=//span[@ng-bind="model.current_num" and text()="${collectZanPrice}"]    #集赞数
+    Page Should Contain Element    xpath=//span[@ng-bind="productName" and text()="${productName}"]    #奖品商品名
+    #输入收货信息
+    Input Text    id=name    自动化众筹测试
+    Input Text    id=mobile    15895623569
+    Input Text    id=address    广东省深圳市南山区科技园比克大厦13楼
+    #点击提交
+    Click Element    id=form_btn
+    Wait Until Page Contains Element    xpath=//a[@id="form_btn"]/span[text()="等待兑奖"]
+    ${name}    Set Variable    自动化众筹测试
+    ${mobile}    Set Variable    15895623569
+    ${address}    Set Variable    广东省深圳市南山区科技园比克大厦13楼
+    #检验收货信息
+    Textfield Value Should Be    id=name    ${name}
+    Textfield Value Should Be    id=mobile    ${mobile}
+    Textfield Value Should Be    id=address    ${address}
+    Page Should Contain Element    xpath=//a[@id="form_btn"]/span[text()="等待兑奖"]
+    [Return]    ${name}    ${mobile}    ${address}

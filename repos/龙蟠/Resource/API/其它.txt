@@ -1,0 +1,78 @@
+*** Settings ***
+Resource          Common.txt
+
+*** Keywords ***
+工作台数据
+    ${resp}    Post Request    wsh    /data-center/workbench-count-data-ajax
+    Log    Response:${resp.content}
+    #${str}    Get Substring    ${resp.content}    3
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Log    errcode is:${errcode}
+    Log    Resp:${resp.content}
+    #Log    scan_limit_amount:${scan_limit}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed
+    [Return]    ${errmsg}
+
+工作台广告
+    ${resp}    Post Request    wsh    /data-center/workbench-ad-ajax
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Log    errcode is:${errcode}
+    Log    Resp:${resp.content}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed
+    [Return]    ${errmsg}
+
+工作台公告
+    ${resp}    Post Request    wsh    /data-center/workbench-notice-ajax
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Log    errcode is:${errcode}
+    Log    Resp:${resp.content}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed
+    [Return]    ${errmsg}
+
+图片列表
+    [Arguments]    ${imageName}=${EMPTY}    ${isSearch}=False    ${categoryID}=${null}
+    [Documentation]    图片列表
+    ...
+    ...
+    ...    ${categoryID}图片分组ID,
+    ...    ${imageName}图片名称,
+    ...    ${isSearch}是否搜索,
+    ...    备注:如果需搜索图片，则需传入${name}与${isSearch}，不传则返回所有图片信息
+    ...
+    ...    author:戴斌旺
+    ${searchInfor}    Create Dictionary    _page:=1    _page_size=150    category_id=${categoryID}    name=${imageName}    is_search=${isSearch}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /document/image-ajax    data=${searchInfor}    headers=${headers}
+    Log    Response:${resp.content}
+    ${content}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！,${errmsg}
+    ${pageInfor}    Get From Dictionary    ${errmsg}    page
+    ${totalCount}    Get From Dictionary    ${pageInfor}    total_count
+    Run Keyword If    ${totalCount} == 0    log    未找到相应的图片    WARN
+    ${msgData}    Get From Dictionary    ${errmsg}    data
+    ${imageInfor}    Get From List    ${msgData}    0
+    [Return]    ${imageInfor}
+
+获取市ID
+    [Arguments]    ${provinceID}
+    ${provinceIDValue}    Create Dictionary    id=${provinceID}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /common/find-city-ajax    data=${provinceIDValue}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    Should Be Equal As Integers    ${errcode}    0
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg

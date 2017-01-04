@@ -1,0 +1,190 @@
+*** Settings ***
+Library           Selenium2Library
+Resource          ../../Resource/常用操作.robot
+Resource          ../../Resource/功能菜单.robot
+Resource          ../../Resource/配置参数.robot
+
+*** Test Cases ***
+拼团活动页面
+    [Setup]    登陆
+    点击链接菜单    微营销
+    点击链接菜单    拼团活动
+    page should contain link    添加活动
+    page should contain link    拼团活动使用说明
+    page should contain link    首页
+    page should contain link    «
+    page should contain link    »
+    page should contain link    2
+    page should contain link    末页
+    #page should contain element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[1]    活动单元名称
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[2]    活动类型
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[3]    参团人数要求
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[4]    开始时间
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[5]    结束时间
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[6]    状态
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/thead/tr/th[7]    操作
+    等待时间    1
+    点击链接菜单    2
+    等待时间    0.5
+    点击链接菜单    末页
+    等待时间    0.5
+    点击链接菜单    «
+    等待时间    0.5
+    点击链接菜单    »
+    等待时间    0.5
+    点击链接菜单    首页
+    Input Text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[4]/ul[2]/li[1]/span/input    5
+    等待时间    1
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[4]/ul[2]/li[2]/span/button    5
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[4]/ul[2]/li[2]/span/button
+    等待时间    3
+    [Teardown]    关闭浏览器
+
+拼团活动_添加活动
+    [Setup]    登陆
+    Wait Until Page Contains Element    xpath=//*[@id="headactive"]/li[5]/a    10    error
+    点击链接菜单    微营销
+    点击链接菜单    拼团活动
+    点击链接菜单    添加活动
+    Set Browser Implicit Wait    10
+    Input Text    xpath=//*[@id="home"]/div[2]/form/div[1]/div/input    参考
+    Input Text    xpath=//*[@id="form-field-8"]    成为团长带领小伙伴享受团购价，拼团活动开始啦，赶紧开团召集小伙伴一起团购吧！
+    Wait Until Page Contains Element    xpath=//*[@id="home"]/div[2]/form/div[3]/div/div/a/label/span    10    error
+    Click Element    xpath=//*[@id="home"]/div[2]/form/div[3]/div/div/a/label/span
+    sleep    1
+    Wait Until Page Contains Element    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li[3]/a/img    10    error
+    Click Element    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li[3]/a/img    #选择活动图片
+    Sleep    0.5
+    Wait Until Page Contains Element    id=submitImage    10    error
+    Click Element    id=submitImage    #点击确认按钮
+    sleep    0.5
+    Wait Until Page Contains Element    id=btnConfirm    10    error
+    click element    id=btnConfirm    #点击下一步
+    sleep    0.5
+    Wait Until Page Contains Element    xpath=//*[@id="rule"]/ng-form/div[1]/div[1]/label/input    10    error
+    click element    xpath=//*[@id="rule"]/ng-form/div[1]/div[1]/label/input    #勾选开启拼团条件
+    ${name}    Set Variable    拼团活动测试
+    Input Text    xpath=//*[@id="rule"]/ng-form/div[2]/div/input    ${name}    #输入拼团活动名称
+    Wait Until Page Contains Element    xpath=//*[@id="rule"]/ng-form/div[9]/div/a    10    error
+    click element    xpath=//*[@id="rule"]/ng-form/div[9]/div/a    #点击选择商品
+    Sleep    0.5
+    ${title}    Get Text    xpath=//*[@id="productModal"]/div/div/div[1]/h4
+    Should Contain    ${title}    商品列表    #校验标题
+    Sleep    0.5
+    Wait Until Page Contains Element    xpath=//*[@id="product"]/div[1]/table/tbody[1]/tr[1]/td[3]    10    error
+    click element    xpath=//*[@id="product"]/div[1]/table/tbody[1]/tr[1]/td[3]
+    Sleep    0.5
+    #Select Radio Button    553    radio
+    Wait Until Page Contains Element    xpath=//*[@id="product"]/div[1]/table/tbody[1]/tr[2]/td/table/tbody/tr[4]/td[3]    10    error
+    click element    xpath=//*[@id="product"]/div[1]/table/tbody[1]/tr[2]/td/table/tbody/tr[4]/td[3]    #选择商品
+    Sleep    0.5
+    Wait Until Page Contains Element    xpath=//*[@id="productModal"]/div/div/div[3]/a[2]    10    error
+    click element    xpath=//*[@id="productModal"]/div/div/div[3]/a[2]    #点击确定按钮
+    #保存商品
+    Input Text    xpath=//*[@id="tbody"]/tr/td[6]/input    0.01    #团购价
+    Input Text    xpath=//*[@id="tbody"]/tr/td[8]/input    2    #配额
+    Input Text    xpath=//*[@id="tbody"]/tr/td[9]/input    2    #参团人数
+    Input Text    xpath=//*[@id="tbody"]/tr/td[10]/input    1    #每人限购
+    #Click Button    xpath=//*[@id="tbody"]/tr/td[11]/div/a[1]/i    #保存商品
+    Wait Until Page Contains Element    xpath=//*[@id="tbody"]/tr/td[11]/div/a[1]/i    10    error
+    click element    xpath=//*[@id="tbody"]/tr/td[11]/div/a[1]/i    #保存商品
+    Sleep    0.5
+    confirm action
+    Sleep    0.5
+    Wait Until Page Contains Element    id=post    10    error
+    click element    id=post
+    Sleep    1
+    confirm action
+    #结果校验
+    Sleep    2
+    ${active_name}=    Get Text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[1]
+    log    ${active_name}    #${active_num}    Get Text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[3]    #${success}    Set Variable
+    ...    # 创建拼团活动成功    #${fail}    Set Variable    创建拼团活动失败    #${result}=    Run Keyword If
+    ...    # '${active_name}'=='${name}'    Set Variable    创建拼团活动成功    # ELSE    Set Variable    创建拼团活动失败
+    #log    ${result}
+    Run Keyword If    '${active_name}'=='${name}'    log    创建拼团活动成功
+    ...    ELSE    log    创建拼团活动失败
+    Sleep    2
+    [Teardown]    关闭浏览器
+
+拼团活动_详情、二维码、编辑、删除
+    [Setup]    登陆
+    点击链接菜单    微营销
+    点击链接菜单    拼团活动
+    #拼团活动详情
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[1]/i    10    error
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[1]/i
+    等待时间    1
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div[2]/div/div[2]/table/thead/tr/th[1]    团长昵称
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div[2]/div/div[2]/table/thead/tr/th[2]    开团时间
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div[2]/div/div[2]/table/thead/tr/th[3]    拼团进度
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div[2]/div/div[2]/table/thead/tr/th[4]    拼团状态
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div[2]/div/div[2]/table/thead/tr/th[5]    操作
+    浏览器返回/后退
+    等待时间    1
+    #拼团活动二维码
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[2]/i    10    error
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[2]/i
+    Select Window    title=二维码
+    等待时间    1
+    Wait Until Page Contains    二维码
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/table/thead/tr/th[1]    二维码归属
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/table/thead/tr/th[2]    所属代理商
+    对比校验    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/table/thead/tr/th[3]    查看二维码
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/table/tbody/tr[1]/td[3]/a/i    10    error
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/table/tbody/tr[1]/td[3]/a/i    #点击二维码
+    等待时间    1
+    Wait Until Page Contains Element    xpath=//*[@id="query"]/div/div/div[1]/a    10    error
+    Click Element    xpath=//*[@id="query"]/div/div/div[1]/a    #关闭二维码
+    等待时间    1
+    #关闭浏览器
+    Select Window    title=拼团活动管理
+    #点击编辑活动
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[3]/i    10    error
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[3]/i
+    等待时间    1
+    Wait Until Page Contains Element    xpath=//*[@id="btnConfirm"]    10    error
+    Click Element    xpath=//*[@id="btnConfirm"]
+    等待时间    1
+    Wait Until Page Contains Element    id=post    10    error
+    click element    id=post
+    等待时间    1
+    confirm action
+    等待时间    1
+    #删除活动
+    Wait Until Page Contains Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[4]    10    error
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[7]/div/a[4]
+    等待时间    1
+    Wait Until Page Contains Element    xpath=/html/body/div[4]/div/table/tbody/tr[3]/td/div[2]/button[1]    10    error
+    Click Element    xpath=/html/body/div[4]/div/table/tbody/tr[3]/td/div[2]/button[1]
+    等待时间    1
+    confirm action
+    等待时间    3
+    #关闭浏览器
+    [Teardown]    关闭浏览器
+
+拼团活动_活动开启/关闭
+    [Setup]    登陆
+    点击链接菜单    微营销
+    点击链接菜单    拼团活动
+    #Click Element    xpath = //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[6]/label/input
+    : FOR    ${i}    IN RANGE    5
+    \    Wait Until Page Contains Element    xpath = //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[6]/label/input    10    error
+    \    Click Element    xpath = //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table/tbody/tr[1]/td[6]/label/input
+    \    sleep    1
+    \    confirm action
+    \    sleep    2
+    [Teardown]    关闭浏览器
+
+拼团活动_使用说明
+    [Setup]    登陆
+    点击链接菜单    微营销
+    点击链接菜单    拼团活动
+    点击链接菜单    拼团活动使用说明
+    等待时间    3
+    Execute Javascript    $('body').scrollTop('10000')
+    等待时间    1
+    Execute Javascript    $('body').scrollTop('0')
+    等待时间    5
+    [Teardown]    关闭浏览器

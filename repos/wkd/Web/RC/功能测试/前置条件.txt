@@ -1,0 +1,87 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Library           Selenium2Library
+Resource          ../Resource/常用操作.robot
+
+*** Test Cases ***
+添加商品并激活
+    商品添加
+
+*** Keywords ***
+添加商品
+    [Arguments]    ${第一行xpath}=//*[@id="product"]/div[1]/table/tbody[1]/tr[2]/td/table/tbody/tr[1]
+    Click Element    id=goods
+    Wait Until Page Contains Element    //h4[text()="商品列表"]
+    ####添加商品
+    ${库存}    Get Text    //*[@id="product"]/div[1]/table/tbody[${商品}]/tr[2]/td/table/tbody/tr[2]/td[4]
+    Run Keyword If    ${库存}<=2    库存少重新选择商品
+    Sleep    1
+    Click Element    //*[@id="product"]/div[1]/table/tbody[1]/tr[1]/td[3]    #选择商品
+    Sleep    1
+    Click Element    ${第一行xpath}    #选择规格
+    Sleep    1.5
+    Click Element    //*[@id="main-container"]/div[3]/div/div/div[3]/a[2]
+    Sleep    2
+
+商品添加
+    [Arguments]    ${上架}=1
+    点击链接菜单    微店铺
+    ${sub}    Set Variable    商品列表
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]    20
+    ####添加商品
+    点击链接菜单    添加商品
+    等待时间
+    ####生成参数
+    ${商品名称}    随机字符    【测试商品】    12
+    Click Element    xpath=//tbody/tr[1]/td[2]/div[1]/select
+    等待时间    0.5
+    Click Element    xpath=//tbody/tr[1]/td[2]/div[1]/select/option[text()="系统分类"]    #一级菜单为系统分类，二级菜单为汽车配件，三级菜单为汽车内饰
+    等待时间    0.5
+    Input Text    xpath=//input[@ng-model="product.name"]    ${商品名称}    #商品名称
+    Input Text    xpath=//input[@ng-model="product.sales"]    0    #随机输入一个销售量0
+    等待时间    0.5
+    #添加图片广告
+    选择图片    //*[@id="home"]/form/div/div/table/tbody/tr[6]/td[2]/div/a/label/span
+    Select From List By Label    //*[@id="home"]/form/div/div/table/tbody/tr[9]/td[2]/div[1]/select    YT规格测试-忽删
+    sleep    1
+    商品规格    //*[@id="home"]/form/div/div/table/tbody/tr[9]/td[2]/div[1]/div[3]/div/ul/li[2]/input    #测试规格选择“测试2”
+    sleep    0.5
+    Click Element    //*[text()="下一步"]
+    sleep    1
+    Input Text    name=weigh    100    #产品重量
+    Input Text    name=buy    0    #每人限购
+    Input Text    name=sort    0    #排序
+    Select Frame    id=ueditor_0    #商品详情界面（iframe）
+    sleep    0.5
+    Input Text    xpath=//body    test    #输入内容
+    Unselect Frame
+    sleep    0.3
+    Click Element    xpath=//div/div[@ng-show="taba==2"]/a[2]
+    sleep    1.5
+    ${message}=    Confirm Action
+    Sleep    1
+    ####商品上架
+    ${TD}    Get Text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[4]/table/tbody/tr/td/div/span[starts-with(text(),"${商品名称}")]
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[4]/table/tbody/tr/td/div/span[starts-with(text(),"${商品名称}")] /parent::div[1]/parent::td[1]/parent::tr[1]/td[7]/label/input
+    Sleep    1.5
+    弹出信息校验
+    Sleep    1
+
+商品规格
+    [Arguments]    ${arg_path}    ${reserves}=200    ${market_price0}=100    ${retail_price0}=0.01    ${sku_no}=000001
+    Sleep    1s
+    ${z}    Evaluate    random.randint(10000,99999)    random    #随机选择一个条形码
+    Click Element    ${arg_path}
+    Sleep    0.5s
+    Input Text    name=reserves    ${reserves}    #库存
+    Input Text    name=market_price0    ${market_price0}    #原价
+    Input Text    name=retail_price0    ${retail_price0}    #零售价
+    Input Text    name=sku_no    ${sku_no}    #商家编码
+    Sleep    0.5s
+    Input Text    name=barcode    ${z}    #条形码
+    Sleep    0.5s
+    Click Element    name=status    #状态
+    Sleep    0.5s

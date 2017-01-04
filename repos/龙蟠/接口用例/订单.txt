@@ -1,0 +1,199 @@
+*** Settings ***
+Suite Setup       API登录    1    1    1
+Library           RequestsLibrary
+Resource          ../Resource/API/Common.txt
+Library           json
+Library           Collections
+Library           String
+Resource          ../Resource/常用操作.robot
+Resource          ../Resource/API/订单.txt
+Resource          ../Resource/API/商品.txt
+Resource          ../Resource/API/API操作.txt
+
+*** Test Cases ***
+创建普通订单
+    [Tags]    beta    ready
+    关闭分店模式
+    ${errmsg}    添加一个商品    上架=True
+    ${product}    Get From Dictionary    ${errmsg}    product
+    ${product_id}    Get From Dictionary    ${product}    id
+    ${errmsg}    商品.商品详情    ${product_id}
+    ${product}    Get From Dictionary    ${errmsg}    product
+    ${productSkus}    Get From Dictionary    ${product}    productSkus
+    ${sku_id}    Get From Dictionary    ${productSkus[0]}    id
+    ${errmsg}    WX_创建普通订单    ${product_id}    ${sku_id}
+    Sleep    2
+    Log    测试完成,准备清理数据...
+    商品.删除商品    ${product_id}
+    #WX_取消订单
+    开启分店模式
+
+获取订单列表
+    [Tags]    ready
+    初始化
+    后端登录
+    ${errmsg}    获取订单列表
+
+已完成订单收货
+    [Tags]    paused
+    ####    pickup_type=1 快递配送    pickup_type=2 到店自提
+    ${用户id}    ${提货码}    ${订单id号}    ${配送方式}    订单详情    3
+    Run Keyword If    ${配送方式}==1    收货（快递配送）    ${用户id}    ${订单id号}
+    ...    ELSE    收货（到店自提）    ${订单id号}    ${提货码}
+
+订单设置
+    [Documentation]    设置订单是否自动处理相关参数
+    [Tags]    ready
+    ${errmsg}    获取订单设置
+    ${id}    Get From Dictionary    ${errmsg}    id
+    ${errmsg}    更新订单设置    ${id}    2
+
+订单发货
+    订单发货    991118
+
+确认收货
+    WX_确认收货    990293
+
+订单支付
+    ${errmsg}    订单详情    990326
+    #解析订单数据
+    ${order_id}    Get From Dictionary    ${errmsg}    id
+    ${pay_type}    Evaluate    3
+    ${amount}    Set Variable    Todo...
+    ${r_points}    Get From Dictionary    ${errmsg}    r_points
+    ${customer_mark}    Get From Dictionary    ${errmsg}    customer_mark
+    #
+    ${net_weight_key}    Convert To String    orderDetails[0][kinds][总净含量]
+    ${orderDetails}    Get From Dictionary    ${errmsg}    orderDetails
+    ${orderDetails_id}    Get From Dictionary    ${orderDetails[0]}    id
+    ${product_id}    Get From Dictionary    ${orderDetails[0]}    product_id
+    ${product_name}    Get From Dictionary    ${orderDetails[0]}    product_name
+    ${product_sku_id}    Get From Dictionary    ${orderDetails[0]}    product_sku_id
+    ${product_sku_name}    Get From Dictionary    ${orderDetails[0]}    product_sku_name
+    ${price}    Get From Dictionary    ${orderDetails[0]}    price
+    ${cost_price}    Get From Dictionary    ${orderDetails[0]}    cost_price
+    ${reduction_discount}    Get From Dictionary    ${orderDetails[0]}    reduction_discount
+    ${reduction_content}    Get From Dictionary    ${orderDetails[0]}    reduction_content
+    ${member_discount_num}    Get From Dictionary    ${orderDetails[0]}    member_discount_num
+    ${num}    Get From Dictionary    ${orderDetails[0]}    num
+    ${prod_weight}    Get From Dictionary    ${orderDetails[0]}    prod_weight
+    ${product_img}    Get From Dictionary    ${orderDetails[0]}    product_img
+    #
+    ${kinds}    Get From Dictionary    ${orderDetails[0]}    kinds
+    #${net_weight}    Get From Dictionary    ${kinds}    总净含量
+    ${shop_id}    Get From Dictionary    ${orderDetails[0]}    shop_id
+    ${shop_sub_id}    Get From Dictionary    ${orderDetails[0]}    shop_sub_id
+    ${barcode}    Get From Dictionary    ${orderDetails[0]}    barcode
+    ${sku_no}    Get From Dictionary    ${orderDetails[0]}    sku_no
+    ${comment_status}    Get From Dictionary    ${orderDetails[0]}    comment_status
+    ${postage_fee_type}    Get From Dictionary    ${orderDetails[0]}    postage_fee_type
+    ${created}    Get From Dictionary    ${orderDetails[0]}    created
+    ${modified}    Get From Dictionary    ${orderDetails[0]}    modified
+    ${policy_type}    Get From Dictionary    ${orderDetails[0]}    policy_type
+    ${policy_value}    Get From Dictionary    ${orderDetails[0]}    policy_value
+    ${brokerage}    Get From Dictionary    ${orderDetails[0]}    brokerage
+    ${policy_level_id}    Get From Dictionary    ${orderDetails[0]}    policy_level_id
+    #
+    ${productImg}    Get From Dictionary    ${orderDetails[0]}    productImg
+    ${img_id}    Get From Dictionary    ${productImg}    id
+    ${img_name}    Get From Dictionary    ${productImg}    name
+    ${img_desc}    Get From Dictionary    ${productImg}    desc
+    ${img_category_id}    Get From Dictionary    ${productImg}    category_id
+    ${img_tag_id}    Get From Dictionary    ${productImg}    tag_id
+    ${file_cdn_path}    Get From Dictionary    ${productImg}    file_cdn_path
+    ${file_type}    Get From Dictionary    ${productImg}    file_type
+    ${img_shop_id}    Get From Dictionary    ${productImg}    shop_id
+    ${img_shop_sub_id}    Get From Dictionary    ${productImg}    shop_sub_id
+    ${img_created}    Get From Dictionary    ${productImg}    created
+    ${img_modified}    Get From Dictionary    ${productImg}    modified
+    ${img_deleted}    Get From Dictionary    ${productImg}    deleted
+    ${can_use_member_discount}    Get From Dictionary    ${orderDetails[0]}    can_use_member_discount
+    #订单支付
+    ${args}    Create Dictionary
+    ${data}    Create Dictionary
+    Set To Dictionary    ${args}    id=${order_id}    orderPayInfo[0][pay_type]=${pay_type}    orderPayInfo[0][amount]=${amount}    orderDetails[0][id]=${orderDetails_id}    orderDetails[0][order_id]=${order_id}
+    ...    orderDetails[0][product_id]=${product_id}
+    Set To Dictionary    ${args}    orderDetails[0][product_name]=${product_name}    orderDetails[0][product_sku_id]=${product_sku_id}    orderDetails[0][product_sku_name]=${product_sku_name}    orderDetails[0][price]=${price}    orderDetails[0][cost_price]=${cost_price}
+    Set To Dictionary    ${args}    orderDetails[0][reduction_discount]=${reduction_discount}    orderDetails[0][reduction_content]=${reduction_content}    orderDetails[0][member_discount_num]=${member_discount_num}    orderDetails[0][num]=${num}    orderDetails[0][prod_weight]=${prod_weight}
+    Set To Dictionary    ${args}    orderDetails[0][product_img]=${product_img}    orderDetails[0][shop_id]=${shop_id}    orderDetails[0][shop_sub_id]=${shop_sub_id}    orderDetails[0][barcode]=${barcode}    #orderDetails[0][kinds][总净含量]=${net_weight}
+    Set To Dictionary    ${args}    orderDetails[0][sku_no]=${sku_no}    orderDetails[0][comment_status]=${comment_status}    orderDetails[0][postage_fee_type]=${postage_fee_type}    orderDetails[0][created]=${created}    orderDetails[0][modified]=${modified}
+    Set To Dictionary    ${args}    orderDetails[0][policy_type]=${policy_type}    orderDetails[0][policy_value]=${policy_value}    orderDetails[0][brokerage]=${brokerage}    orderDetails[0][policy_level_id]=${policy_level_id}
+    Set To Dictionary    ${args}    orderDetails[0][productImg][id]=${img_id}    orderDetails[0][productImg][name]=${img_name}    orderDetails[0][productImg][desc]=${img_desc}    orderDetails[0][productImg][category_id]=${img_category_id}    orderDetails[0][productImg][tag_id]=${img_tag_id}
+    Set To Dictionary    ${args}    orderDetails[0][productImg][file_cdn_path]=${file_cdn_path}    orderDetails[0][productImg][file_type]=${file_type}    orderDetails[0][productImg][shop_id]=${img_shop_id}    orderDetails[0][productImg][shop_sub_id]=${img_shop_sub_id}    orderDetails[0][productImg][created]=${img_created}
+    Set To Dictionary    ${args}    orderDetails[0][productImg][modified]=${img_modified}    orderDetails[0][productImg][deleted]=${img_deleted}    orderDetails[0][can_use_member_discount]=${can_use_member_discount}
+    Set To Dictionary    ${args}    r_points=${r_points}    customer_mark=${customer_mark}    member_discount=1
+    #Log    Args: ${args}
+    ${errmsg}    订单支付    ${args}
+    Log    【状态】：订单已支付，待发货...
+
+订单详情
+    ${errmsg}    WX_订单详情    992687
+    ${id}    Get From Dictionary    ${errmsg}    id
+    ${r_points}    Get From Dictionary    ${errmsg}    r_points
+    ${customer_mark}    Get From Dictionary    ${errmsg}    customer_mark
+    #
+    ${orderDetails}    Get From Dictionary    ${errmsg}    orderDetails
+    ${product_id}    Get From Dictionary    ${orderDetails[0]}    product_id
+    ${product_name}    Get From Dictionary    ${orderDetails[0]}    product_name
+    ${product_sku_id}    Get From Dictionary    ${orderDetails[0]}    product_sku_id
+    ${product_sku_name}    Get From Dictionary    ${orderDetails[0]}    product_sku_name
+    ${price}    Get From Dictionary    ${orderDetails[0]}    price
+    ${cost_price}    Get From Dictionary    ${orderDetails[0]}    cost_price
+    ${reduction_discount}    Get From Dictionary    ${orderDetails[0]}    reduction_discount
+    ${reduction_content}    Get From Dictionary    ${orderDetails[0]}    reduction_content
+    ${member_discount_num}    Get From Dictionary    ${orderDetails[0]}    member_discount_num
+    ${num}    Get From Dictionary    ${orderDetails[0]}    num
+    ${prod_weight}    Get From Dictionary    ${orderDetails[0]}    prod_weight
+    ${product_img}    Get From Dictionary    ${orderDetails[0]}    product_img
+    #
+    ${kinds}    Get From Dictionary    ${orderDetails[0]}    kinds
+    ${net_weight}    Get From Dictionary    ${kinds}    重量
+    ${shop_id}    Get From Dictionary    ${orderDetails[0]}    shop_id
+    ${shop_sub_id}    Get From Dictionary    ${orderDetails[0]}    shop_sub_id
+    ${barcode}    Get From Dictionary    ${orderDetails[0]}    barcode
+    ${sku_no}    Get From Dictionary    ${orderDetails[0]}    sku_no
+    ${comment_status}    Get From Dictionary    ${orderDetails[0]}    comment_status
+    ${postage_fee_type}    Get From Dictionary    ${orderDetails[0]}    postage_fee_type
+    ${created}    Get From Dictionary    ${orderDetails[0]}    created
+    ${modified}    Get From Dictionary    ${orderDetails[0]}    modified
+    ${policy_type}    Get From Dictionary    ${orderDetails[0]}    policy_type
+    ${policy_value}    Get From Dictionary    ${orderDetails[0]}    policy_value
+    ${brokerage}    Get From Dictionary    ${orderDetails[0]}    brokerage
+    ${policy_level_id}    Get From Dictionary    ${orderDetails[0]}    policy_level_id
+    #
+    ${productImg}    Get From Dictionary    ${orderDetails[0]}    productImg
+    ${img_id}    Get From Dictionary    ${productImg}    id
+    ${img_name}    Get From Dictionary    ${productImg}    name
+    ${img_desc}    Get From Dictionary    ${productImg}    desc
+    ${img_category_id}    Get From Dictionary    ${productImg}    category_id
+    ${img_tag_id}    Get From Dictionary    ${productImg}    tag_id
+    ${file_cdn_path}    Get From Dictionary    ${productImg}    file_cdn_path
+    ${file_type}    Get From Dictionary    ${productImg}    file_type
+    ${img_shop_id}    Get From Dictionary    ${productImg}    shop_id
+    ${img_shop_sub_id}    Get From Dictionary    ${productImg}    shop_sub_id
+    ${img_created}    Get From Dictionary    ${productImg}    created
+    ${img_modified}    Get From Dictionary    ${productImg}    modified
+    ${img_deleted}    Get From Dictionary    ${productImg}    deleted
+    ${can_use_member_discount}    Get From Dictionary    ${orderDetails[0]}    can_use_member_discount
+    #
+
+申请退货
+    ${errmsg}    WX_申请退货    991190    13311221100
+    ${afterSaleService}    Get From Dictionary    ${errmsg}    afterSaleService
+    ${id}    Get From Dictionary    ${afterSaleService}    id
+
+商家同意退货
+    ${errmsg}    退货_商家同意退货    954
+
+退货发货
+    ${express_no}    Generate Random String    10    0123456789
+    ${errmsg}    WX_退货发货    805    ${express_no}
+
+商家确认收货并退款
+    ${errmsg}    退货_商家确认收货    931
+
+商家确认打款
+    ${errmsg}    退货_商家确认打款    931    991567
+
+创建一个订单
+    创建一个订单    1

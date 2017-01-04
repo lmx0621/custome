@@ -1,0 +1,152 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Resource          ../../Resource/常用操作.robot
+Library           Selenium2Library
+Resource          ../../Resource/API.robot
+
+*** Test Cases ***
+今日数据&每日操作
+    [Tags]    ready
+    ####查询API
+    Log    --查询API：工作台数据--
+    ${data}    工作台数据
+    ${pay_money}    Get From Dictionary    ${data}    pay_money
+    ${pay_money}    Convert To Integer    ${pay_money}
+    #${pay_money}    Evaluate    ${pay_money}/100
+    ${order_total}    Get From Dictionary    ${data}    order_total
+    ${payed_order_total}    Get From Dictionary    ${data}    payed_order_total
+    ${uv}    Get From Dictionary    ${data}    uv
+    ${pv}    Get From Dictionary    ${data}    pv
+    ##
+    ${need_deliver_num}    Get From Dictionary    ${data}    need_deliver_num
+    ${need_return_goods}    Get From Dictionary    ${data}    need_return_goods
+    ${need_refund}    Get From Dictionary    ${data}    need_refund
+    ${stock_warning}    Get From Dictionary    ${data}    stock_warning
+    ${unread_message}    Get From Dictionary    ${data}    unread_message
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    工作台
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]
+    Sleep    1
+    ####今日数据
+    ${销售额}    Get Text    //a[@ng-bind="lists.pay_money" and contains(@ng-href,"/order/list?createStart=")]
+    ${销售额}    Evaluate    int(${销售额}*100)
+    ${订单总数}    Get Text    //a[@ng-bind="lists.order_total" and contains(@href,"/order/list?createStart=")]
+    ${已支付订单数}    Get Text    //a[@ng-bind="lists.payed_order_total" and contains(@href,"/order/list?createStart=")]
+    ${今日UV}    Get Text    //a[@ng-bind="lists.uv" and @href="/data-center/today"]
+    ${今日PV}    Get Text    //a[@ng-bind="lists.pv" and @href="/data-center/today"]
+    Should Be Equal As Strings    ${pay_money}    ${销售额}
+    Should Be Equal As Strings    ${order_total}    ${订单总数}
+    Should Be Equal As Strings    ${payed_order_total}    ${已支付订单数}
+    Should Be Equal As Strings    ${uv}    ${今日UV}
+    Should Be Equal As Strings    ${pv}    ${今日PV}
+    ####每日操作
+    ${待发货订单}    Get Text    //a[@ng-bind="lists.need_deliver_num" and @href="/order/list?statue=3"]
+    ${待处理退货}    Get Text    //a[@ng-bind="lists.need_return_goods" and @href="/order/refund-list?type=3"]
+    ${待处理退款}    Get Text    //a[@ng-bind="lists.need_refund" and @href="/order/refund-list?type=1"]
+    ${预警库存}    Get Text    //a[@ng-bind="lists.stock_warning" and @href="/product/list?waring=1"]
+    ${未读消息}    Get Text    //a[@ng-bind="lists.unread_message" and @href="/weixin/message-list?flag=1"]
+    Should Be Equal As Strings    ${need_deliver_num}    ${待发货订单}
+    Should Be Equal As Strings    ${need_return_goods}    ${待处理退货}
+    Should Be Equal As Strings    ${need_refund}    ${待处理退款}
+    Should Be Equal As Strings    ${stock_warning}    ${预警库存}
+    Should Be Equal As Strings    ${unread_message}    ${未读消息}
+
+微商户公告
+    [Tags]    ready
+    ####查询API
+    Log    --查询API：工作台数据--
+    ${data}    工作台公告
+    ${len}    Get Length    ${data}
+    ${list1}    Create List
+    Set Suite Variable    ${list1}
+    : FOR    ${i}    IN RANGE    5
+    \    获取公告信息_API    ${data}    ${i}    ${list1}
+    #Log    List1:${list1}
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    工作台
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]
+    Sleep    1
+    ####微商户公告
+    ##获取页面数据
+    ${list2}    Create List
+    Set Suite Variable    ${list2}
+    : FOR    ${i}    IN RANGE    5
+    \    获取公告信息_页面    ${i}    ${list2}
+    Log    Titles:${list2}
+    Should Be Equal    ${list1}    ${list2}
+
+首页广告
+    [Tags]    ready
+    ####查询API
+    Log    --查询API：工作台数据--
+    ${data}    工作台广告
+    ${len}    Get Length    ${data}
+    ${ad}    Get From List    ${data}    0
+    ${describe}    Get From Dictionary    ${ad}    describe
+    ${documentLib}    Get From Dictionary    ${ad}    documentLib
+    ${file_cdn_path}    Get From Dictionary    ${documentLib}    file_cdn_path
+    ####页面信息
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    工作台
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]
+    Sleep    1
+    ${广告图片}    Get Element Attribute    //*[@id="listbox"]/div[1]/a@style
+    ${match}    Get Regexp Matches    ${广告图片}    ${file_cdn_path}
+
+其它
+    [Tags]    ready
+    ##查询API：商家信息
+    ${shop}    商家信息
+    ${name}    Get From Dictionary    ${shop}    name
+    ####商家信息
+    ${商家名称}    Get Text    //*[@id="main-container"]/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/h2/span
+    ####常用操作链接检查
+    ##
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div[4]/div[2]/div/div[2]/div/a[1]
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[text()="添加商品"]
+    Title Should Be    添加商品
+    Sleep    1
+    Go Back
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"工作台")]
+    Sleep    1
+    ##
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div[4]/div[2]/div/div[2]/div/a[2]
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[text()="商品列表"]
+    Title Should Be    商品列表
+    Sleep    1
+    Go Back
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"工作台")]
+    Sleep    1
+    ##
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div[4]/div[2]/div/div[2]/div/a[3]
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[text()="秒杀活动管理"]
+    Title Should Be    秒杀活动管理
+    Sleep    1
+    Go Back
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"工作台")]
+    Sleep    1
+    ##
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div[4]/div[2]/div/div[2]/div/a[4]
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[text()="订单列表"]
+    Title Should Be    订单列表
+    Sleep    1
+    Go Back
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"工作台")]
+    Sleep    1
+
+*** Keywords ***
+获取公告信息_页面
+    [Arguments]    ${i}    ${list2}
+    ${title}    Get Text    //*[@id="main-container"]/div/div[2]/div[2]/div[3]/div[2]/div/div[2]/div[${i+1}]/div[1]/a
+    Append To List    ${list2}    ${title}
+
+获取公告信息_API
+    [Arguments]    ${data}    ${i}    ${list1}
+    ${notice}    Get From List    ${data}    ${i}
+    ${title}    Get From Dictionary    ${notice}    title
+    ${content}    Get From Dictionary    ${notice}    content
+    Append To List    ${list1}    ${title}

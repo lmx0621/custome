@@ -1,0 +1,7 @@
+*** Settings ***
+Resource          ../Lib/配置参数.robot
+
+*** Test Cases ***
+启动参数
+    启动参数
+    Log Many    &{caps}

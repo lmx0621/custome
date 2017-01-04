@@ -1,0 +1,17 @@
+*** Settings ***
+Resource          ../../Resource/API.robot
+
+*** Test Cases ***
+test
+    ${resp}    获取店铺支付方式
+    ${resp_dict}    To Json    ${resp}
+    ${errcode}    Get From Dictionary    ${resp_dict}    errcode
+    ${data}    Get From Dictionary    ${resp_dict}    data
+    ${pay_settings}    Get From Dictionary    ${data}    pay_settings
+    Log    errcode:${errcode}
+    ${match1}    Get Matches    ${pay_settings}    delivery
+    ${match2}    Get Matches    ${pay_settings}    newwxpay
+    ${match3}    Get Matches    tester    es
+    ###
+    ${str}    Convert To String    ${pay_settings}
+    ${match}    Get Regexp Matches    ${pay_settings}    delivery

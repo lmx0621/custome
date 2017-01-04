@@ -1,0 +1,366 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Resource          ../../Resource/常用操作.robot
+Library           Selenium2Library
+Resource          ../../Resource/API.robot
+Library           AutoItLibrary
+Library           Screenshot
+Library           Ytools
+
+*** Test Cases ***
+上传图片_bak
+    [Tags]    add    bak
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    图片管理
+    Click Element    //*[@id="navList"]/li[3]/a
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"图库")]    15
+    Sleep    1
+    ####图片上传
+    Click Link    上传图片
+    Wait Until Page Contains Element    //h4[text()="图片管理器"]    15
+    Sleep    1
+    ####生成参数
+    ${分组}    Generate Random String    1    0123456789
+    @{图片}    Create List    test1.jpg    测试图片.png    test2.png    test3.png    testQQ截图2016.png
+    ...    QQ截图20160722114026ssssssssssssssssss_long.png    116x116.png
+    ${随机图片1}    Generate Random String    1    0123456
+    ${随机图片2}    Generate Random String    1    0123456
+    ####输入参数
+    ##上传第1张
+    Click Element    id=SWFUpload_0
+    Sleep    2
+    Sleep    1
+    Control Click    打开    ${EMPTY}    [CLASS:ToolbarWindow32; INSTANCE:2]    LEFT
+    Sleep    1
+    Send    C:\\Temp\\Pics
+    Sleep    1
+    Control Click    打开    ${EMPTY}    [CLASS:ToolbarWindow32; INSTANCE:3]    LEFT
+    Sleep    1
+    Control Send    打开    ${EMPTY}    [CLASS:Edit; INSTANCE:1]    ${图片[${随机图片1}]}
+    Sleep    1
+    Control Click    打开    ${EMPTY}    [CLASS:Button; INSTANCE:1]    LEFT
+    Sleep    1
+    #After uploading
+    Wait Until Element Is Visible    //*[@id="bdimg"]/form/div/div[3]/div/ul/li/div[1]/img    30
+    Sleep    2
+    ##上传第2张
+    Click Element    id=SWFUpload_0
+    Sleep    2
+    Control Send    打开    ${EMPTY}    [CLASS:Edit; INSTANCE:1]    ${图片[${随机图片2}]}
+    Sleep    1
+    Control Click    打开    ${EMPTY}    [CLASS:Button; INSTANCE:1]    LEFT
+    Wait Until Element Is Visible    //*[@id="bdimg"]/form/div/div[3]/div/ul/li[2]/div[1]/img    30
+    Sleep    2
+    ##确定
+    Click Element    submitImage
+    Sleep    2
+    ${alert}    Get Alert Message
+    Should Contain    ${alert}    成功
+    Sleep    3
+    ###结果校验
+    ${newpic}    Get Text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[2]/strong
+    Should Contain    ${图片[${随机图片2}]}    ${newpic}
+    Log    Success!
+
+图片_上传
+    [Tags]    ready    add
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    图片管理
+    Click Element    //*[@id="navList"]/li[3]/a
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"图库")]    15
+    Sleep    1
+    ####图片上传
+    Click Link    上传图片
+    Wait Until Page Contains Element    //h4[text()="图片管理器"]    15
+    Sleep    1
+    ####生成参数
+    ${分组}    Generate Random String    1    0123456789
+    @{图片}    Create List    test1.jpg    测试图片.png    test2.png    test3.png    testQQ截图2016.png
+    ...    QQ截图20160722114026ssssssssssssssssss_long.png    116x116.png
+    ${随机图片1}    Generate Random String    1    0123456
+    ${随机图片2}    Generate Random String    1    0123456
+    ####输入参数
+    ##上传第1张
+    Click Element    id=SWFUpload_0
+    Sleep    2
+    Sleep    1
+    ${x}    Control Get Pos X    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]
+    ${y}    Control Get Pos Y    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]
+    ${width}    Control Get Pos Width    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]
+    ${heigth}    Control Get Pos Height    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]
+    ${xx}    Evaluate    ${width}-20
+    ${yy}    Evaluate    ${y}-10
+    ${text}    Control Get Text    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]
+    Sleep    1
+    Control Click    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]    \    2    ${xx}
+    ...    ${yy}
+    Sleep    1
+    Send    C:\\Temp\\Pics
+    Sleep    1
+    Control Click    打开    ${EMPTY}    [CLASS:ToolbarWindow32; INSTANCE:3]    LEFT
+    Sleep    1
+    Control Send    打开    ${EMPTY}    [CLASS:Edit; INSTANCE:1]    ${图片[${随机图片1}]}
+    Sleep    1
+    Control Click    打开    ${EMPTY}    [CLASS:Button; INSTANCE:1]    LEFT
+    Sleep    1
+    #After uploading
+    Wait Until Element Is Visible    //*[@id="bdimg"]/form/div/div[3]/div/ul/li/div[1]/img    30
+    Sleep    2
+    ##上传第2张
+    Click Element    id=SWFUpload_0
+    Sleep    2
+    Control Send    打开    ${EMPTY}    [CLASS:Edit; INSTANCE:1]    ${图片[${随机图片2}]}
+    Sleep    1
+    Control Click    打开    ${EMPTY}    [CLASS:Button; INSTANCE:1]    LEFT
+    Wait Until Element Is Visible    //*[@id="bdimg"]/form/div/div[3]/div/ul/li[2]/div[1]/img    30
+    Sleep    2
+    ##确定
+    Click Element    submitImage
+    Sleep    2
+    ${alert}    Get Alert Message
+    Should Contain    ${alert}    成功
+    Sleep    3
+    ###结果校验
+    ${newpic}    Get Text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[2]/strong
+    Should Contain    ${图片[${随机图片2}]}    ${newpic}
+    Log    Success!
+
+图片_全选&取消
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    图片管理
+    Click Element    //*[@id="navList"]/li[3]/a
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"图库")]
+    Sleep    1
+    ####全选
+    ${ems}    Get Webelements    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li/div[2]/em
+    ${len}    Get Length    ${ems}
+    Click Link    全选
+    Sleep    1
+    ${ems_checked}    Get Webelements    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li/div[2]/em[contains(@class,"choose")]
+    ${len_checked}    Get Length    ${ems_checked}
+    Should Be Equal As Integers    ${len_checked}    ${len}
+    ####取消
+    Click Link    取消选择
+    Sleep    1
+    Page Should Not Contain Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li/div[2]/em[contains(@class,"choose")]
+    ####删除
+
+图片_分组
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    图片管理
+    Click Element    //*[@id="navList"]/li[3]/a
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"图库")]
+    Sleep    1
+    ####上方工具移动分组
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[2]/em
+    Sleep    1
+    Click Link    移动分组
+    Sleep    2
+    Select From List By Label    //*[@id="imgcategory"]/div/div/div[2]/form/div/div/select    ytest
+    Sleep    1
+    Click Element    //*[@id="imgcategory"]/div/div/div[3]/button[text()="确定"]
+    Sleep    1.5
+    ${alert}    Get Alert Message
+    Should Contain    ${alert}    成功
+    Sleep    2
+    ####下方工具移动分组
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[2]/em
+    Sleep    1
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[3]/span[2]
+    Sleep    2
+    Select From List By Label    //*[@id="imgcategory"]/div/div/div[2]/form/div/div/select    aaa
+    Sleep    1
+    Click Element    //*[@id="imgcategory"]/div/div/div[3]/button[text()="确定"]
+    Sleep    1.5
+    ${alert}    Get Alert Message
+    Should Contain    ${alert}    成功
+    Sleep    2
+
+图片_编辑名称
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    图片管理
+    Click Element    //*[@id="navList"]/li[3]/a
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"图库")]
+    Sleep    1
+    ####修改名称
+    ${newname}    随机字符    测试-    15
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[2]/em
+    Sleep    1
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[3]/span[1]/em
+    Wait Until Page Contains Element    //h4[text()="编辑名称"]
+    Sleep    1
+    Input Text    id=inputimgname_ng    ${newname}
+    Sleep    0.8
+    ##确定
+    Click Element    id=btnConfirm
+    Sleep    1.5
+    ${alert}    Get Alert Message
+    Should Contain    ${alert}    成功
+    Sleep    3
+    ####结果校验
+    ${name}    Get Text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[2]/strong
+    Should Be Equal As Strings    ${name}    ${newname}
+
+图片_搜索
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    图片管理
+    Click Element    //*[@id="navList"]/li[3]/a
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"图库")]
+    Sleep    1
+    ####搜索图片
+    Input Text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[1]/div[2]/div/input    测试
+    Sleep    1
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[1]/div[2]/div/span/a
+    Sleep    2
+    ####结果校验
+    ${ems}    Get Webelements    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li/div[2]/strong
+    ${ems测试}    Get Webelements    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li/div[2]/strong[contains(text(),"测试")]
+    ${len1}    Get Length    ${ems}
+    ${len2}    Get Length    ${ems测试}
+    Should Be Equal As Integers    ${len1}    ${len2}
+
+图片_删除
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    图片管理
+    Click Element    //*[@id="navList"]/li[3]/a
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"图库")]
+    Sleep    1
+    ####上方工具栏删除
+    ${pic1}    Get Text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[2]/strong
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[2]/em
+    Sleep    1
+    Click Link    删除
+    Sleep    1.5
+    Click Element    //button[@data-id="ok" and text()="确定"]
+    Sleep    1
+    ${alert}    Get Alert Message
+    Should Contain    ${alert}    成功
+    Sleep    1
+    ##结果校验
+    Page Should Not Contain Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[2]/em[text()="${pic1}"]
+    ####下方工具栏删除
+    ${pic2}    Get Text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[2]/strong
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[2]/em
+    Sleep    1
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[3]/span[3]/em
+    Sleep    1.5
+    Click Element    //button[@data-id="ok" and text()="确定"]
+    Sleep    1
+    ${alert}    Get Alert Message
+    Should Contain    ${alert}    成功
+    Sleep    1
+    ##结果校验
+    Page Should Not Contain Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[2]/em[text()="${pic2}"]
+
+图片_查看
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    图片管理
+    Click Element    //*[@id="navList"]/li[3]/a
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"图库")]
+    Sleep    1
+    ####上方工具栏删除
+    ${img}    Get Element Attribute    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[1]/a/div/img@ng-src
+    Sleep    3
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[3]/ul/li[1]/div[1]/a/div/img
+    Sleep    1
+    Wait Until Page Contains Element    //*[@id="cboxLoadedContent"]/img[@class="cboxPhoto"]
+    Sleep    1
+    #Page Should Contain Element    //*[@id="cboxLoadedContent"]/img[@class="cboxPhoto"]
+    ${img2}    Get Element Attribute    //*[@id="cboxLoadedContent"]/img[@class="cboxPhoto"]@src
+    Should Be Equal As Strings    ${img}    ${img2}
+    Sleep    1
+    Click Element    id=cboxClose    #关闭
+    Sleep    2
+
+分组管理_添加
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    图片管理
+    Click Element    //*[@id="navList"]/li[3]/a
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"图库")]
+    Sleep    1
+    ####添加分组
+    ${分组名称}    随机字符    【测试】    12
+    Click Button    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div[1]/button    #添加
+    Wait Until Page Contains Element    //h4[text()="添加分组"]
+    Sleep    1
+    Input Text    //*[@id="myModal"]/div/div/div[2]/div/form/div/div/div/div/input    ${分组名称}
+    Sleep    1
+    Click Element    //*[@id="myModal"]/div/div/div[3]/a[2]
+    Sleep    1.5
+    ${alert}    Get Alert Message
+    Should Contain    ${alert}    成功
+    Sleep    2
+    ####结果校验
+    ${test}    Get Text    //*[@id="img-cate-scroll"]/ul/li[31]/span
+    #Page Should Contain Element    //*[@id="img-cate-scroll"]/ul/li/span[text()="${分组名称}"]
+
+分组管理_编辑
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    图片管理
+    Click Element    //*[@id="navList"]/li[3]/a
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"图库")]
+    Sleep    1
+    ####编辑分组
+    ${分组名称}    随机字符    【测试】改    12
+    ${els}    Get Webelements    //*[@id="img-cate-scroll"]/ul/li/span[starts-with(text(),"【测试】")]
+    ${len}    Get Length    ${els}
+    ${el}    Get Webelement    //*[@id="img-cate-scroll"]/ul/li/span[starts-with(text(),"【测试】")][1]
+    Log    Len:${len}
+    Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="img-cate-scroll"]/ul/li/span[starts-with(text(),"【测试】")][1]', document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();
+    Sleep    1
+    Mouse Over    //*[@id="img-cate-scroll"]/ul/li/span[starts-with(text(),"【测试】")][1]/parent::li[1]
+    Wait Until Element Is Visible    //*[@id="img-cate-scroll"]/ul/li/span[starts-with(text(),"【测试】")][1]/parent::li[1]/div/a[1]
+    Click Element    //*[@id="img-cate-scroll"]/ul/li/span[starts-with(text(),"【测试】")][1]/parent::li[1]/div/a[1]
+    Wait Until Page Contains Element    //h4[contains(text(),"编辑分组")]
+    Sleep    1
+    Input Text    //*[@id="myModal"]/div/div/div[2]/div/form/div/div/div/div/input    ${分组名称}
+    Sleep    1
+    Click Element    //*[@id="myModal"]//a[text()="确定"]
+    Sleep    1.5
+    弹出信息校验    成功
+    Sleep    2
+
+分组管理_删除
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    图片管理
+    Click Element    //*[@id="navList"]/li[3]/a
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"图库")]
+    Sleep    1
+    ####编辑分组
+    ${分组名称}    随机字符    【测试】改
+    ${els}    Get Webelements    //*[@id="img-cate-scroll"]/ul/li/span[starts-with(text(),"【测试】")]
+    ${len}    Get Length    ${els}
+    Log    Len:${len}
+    Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="img-cate-scroll"]/ul/li/span[starts-with(text(),"【测试】")][1]', document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();
+    Sleep    1
+    Mouse Over    //*[@id="img-cate-scroll"]/ul/li/span[starts-with(text(),"【测试】")][1]/parent::li[1]
+    Wait Until Element Is Visible    //*[@id="img-cate-scroll"]/ul/li/span[starts-with(text(),"【测试】")][1]/parent::li[1]/div/a[2]
+    Click Element    //*[@id="img-cate-scroll"]/ul/li/span[starts-with(text(),"【测试】")][1]/parent::li[1]/div/a[2]
+    #Wait Until Page Contains Element    xpath=/html/body/div[8]/div/table/tbody/tr[3]/td/div[2]/button[text()="确定"]
+    Sleep    2
+    Click Element    xpath=/html/body/div[7]/div/table/tbody/tr[3]/td/div[2]/button[1]    #确定删除
+    Sleep    1.5
+    弹出信息校验
+    Sleep    1

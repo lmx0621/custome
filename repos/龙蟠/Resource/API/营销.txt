@@ -1,0 +1,1200 @@
+*** Settings ***
+Library           DateTime
+Resource          Common.txt
+Resource          ../常用操作.robot
+
+*** Keywords ***
+添加卡券
+    [Arguments]    ${args}
+    Log    准备添加卡券...
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    ${args}
+    ${resp}    Post Request    wsh    /card-coupons/add-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    #${res_content}    Get Substring    ${resp.content}    3
+    ${json_content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${json_content}    errcode
+    ${errmsg}    Get From Dictionary    ${json_content}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    Log    添加卡券成功...
+    [Return]    ${errmsg}
+
+手动派发卡券
+    [Arguments]    ${用户ID}    ${卡券ID}
+    Log    准备派发卡券...
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"user_type":1,"card_type_id":${卡券ID},"to_user_ids":[${用户ID}]}
+    ${resp}    Post Request    wsh    /card-coupons/send-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${json_content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${json_content}    errcode
+    ${errmsg}    Get From Dictionary    ${json_content}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！${errmsg}
+    Log    派发卡券成功...
+    [Return]    ${errmsg}
+
+获取卡券列表
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${resp}    Post Request    wsh    /card-coupons/list-ajax    \    headers=${headers}
+    Log    Response:${resp.content}
+    ${json_content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${json_content}    errcode
+    ${errmsg}    Get From Dictionary    ${json_content}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+删除卡券
+    [Arguments]    ${id}
+    API登录
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wsh    /card-coupons/del-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${json_content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${json_content}    errcode
+    ${errmsg}    Get From Dictionary    ${json_content}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    Log    删除卡券成功...
+    [Return]    ${errmsg}
+
+添加拼团活动
+    ${newscontent}    Create Dictionary    title=成为团长带领小伙伴享受团购价！    description=拼团活动开始啦，赶紧开团召集小伙伴一起团购吧！    document_id=187381
+    ${news}    Create Dictionary    news=${newscontent}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /together-buy/add-ajax    data=${news}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    Should Be Equal As Integers    ${errcode}    0
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    ${togetherinfor}    Get From Dictionary    ${errmsg}    0
+    [Return]    ${togetherinfor}
+
+添加拼团活动商品
+    [Arguments]    ${togetherbuyID}    ${productID}    ${productSkuID}    ${buyPrice}=${5}    ${quota}=10    ${limitBuy}=3
+    ...    ${togetherNum}=3
+    [Documentation]    添加拼团活动商品：
+    ...    1.together_buy_id:拼团ID
+    ...    2.product_id:商品ID
+    ...    3.product_sku_id:商品SKU ID
+    ...    4.buy_price:团购价格
+    ...    5.quota:配额
+    ...    6.limit_buy:限购
+    ...    7.together_num:参团人数
+    ${together}    Create Dictionary    together_buy_id=${togetherbuyID}    product_id=${productID}    product_sku_id=${productSkuID}    buy_price=${buyPrice}    quota=${quota}
+    ...    limit_buy=${limitBuy}    together_num=${togetherNum}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /together-buy/together-buy-goods-add-ajax    data=${together}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    Should Be Equal As Integers    ${errcode}    0
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    [Return]    ${errmsg}
+
+编辑拼团活动
+    [Arguments]    ${togetherbuyID}    ${activityID}
+    ${dateString}    Get Current Date    result_format=%m%d%H%M
+    ${baseTime}    Get Current Date    result_format=epoch
+    ${end}    Add Time To Date    ${baseTime}    1 days    result_format=epoch
+    ${start}    Add Time To Date    ${baseTime}    - 10 min    result_format=epoch
+    ${starttime}    Convert To Integer    ${start}
+    ${endtime}    Convert To Integer    ${end}
+    #expire_type    有效期类型1.指定时间范围、2.无时间限制（拼团目前只能设置1）    share_type    显示和分享模式（1.显示且能分享、2.不能显示且能分享、3.不能显示且不能分享）
+    ${activityinfo}    Create Dictionary    id=${activityID}    name=${dateString}拼团活动自动化测试    desc=拼团活动自动化测试    expire_type=${1}    start_time=${starttime}
+    ...    end_time=${endtime}    share_type=${1}
+    #type    包邮类型（1.满金额包邮、2.满件数包邮、3.免邮费）    num    数量    amount    金额（分为单位）
+    ${postage}    Create Dictionary    type=${3}    num=${null}    amount=${null}
+    ${authicons}    Create List
+    ${togetherBuy}    Create Dictionary    id=${togetherbuyID}    is_agree=${2}    is_discount=1    is_time_limit=${2}    head_price=${1}
+    ...    time_limit=${null}    is_open=${2}    is_more=${2}    is_auto_share=${1}    auth_icons=${authicons}    description=${EMPTY}
+    ${shareMessage}    Create Dictionary    title=爱拼才会赢抱团才优惠    desc=参与拼团召集小伙伴，一起静享团购优惠    pic_id=${187380}
+    ${editorinfor}    Create Dictionary    activity=${activityinfo}    postageSetting=${postage}    togetherBuy=${togetherBuy}    shareMessage=${shareMessage}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /together-buy/edit-ajax    data=${editorinfor}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    Should Be Equal As Integers    ${errcode}    0
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    [Return]    ${errmsg}
+
+开启拼团活动
+    [Arguments]    ${activityID}
+    ${activityID}    Create Dictionary    id=${activityID}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /together-buy/open-ajax    data=${activityID}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    Should Be Equal As Integers    ${errcode}    0
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    [Return]    ${errmsg}
+
+关闭拼团活动
+    [Arguments]    ${activityID}
+    ${activityID}    Create Dictionary    id=${activityID}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /together-buy/close-ajax    data=${activityID}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    Should Be Equal As Integers    ${errcode}    0
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    [Return]    ${errmsg}
+
+删除拼团活动
+    [Arguments]    ${activityID}
+    [Documentation]    删除拼团活动
+    ...
+    ...    1、${activityID} 活动ID
+    ...
+    ...    author：戴斌旺
+    ${activityIdDict}    Create Dictionary    id=${activityID}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /together-buy/del-ajax    data=${activityIdDict}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    Should Be Equal As Integers    ${errcode}    0
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    [Return]    ${errmsg}
+
+添加积分抵扣活动
+    [Arguments]    ${expireType}=${2}    ${startTime}=${null}    ${endTime}=${null}    ${minConsumption}=${2}    ${Type}=${1}    ${unitPoints}=10
+    ...    ${unitAmount}=${1}    ${maxAmount}=${10}    ${seckillFlag}=${1}    ${togetherBuyFlag}=${1}    ${scanFlag}=${1}    ${normalFlag}=${1}
+    [Documentation]    添加积分抵扣活动
+    ...
+    ...    1、expire_type 1为指定活动时间，2为无时间限制
+    ...    2、end_time结束时间，expire_type 为2，值为null
+    ...    3、start_time开始时间，expire_type 为2，值为null
+    ...    4、max_amount当type为1为最高抵扣金额，值为分；当type为2，为订单金额的百分比（如22%，则值为2200）
+    ...    5、min_consumption为订单最低金额，值为分
+    ...    6、seckill_flag,together_buy_flag,scan_flag,normal_flag为秒杀、拼团、扫码、普通订单开启标识，1为开启2为不开启
+    ...    7、type，最高兑换方式，1为指定金额，2为订单金额比
+    ...    8、unit_points为积分抵扣基数
+    ...    9、unit_amount为unit_points抵扣金额，值为分（多少unit_points抵扣多少unit_amount）
+    ...
+    ...    author：戴斌旺
+    ${dateString}    Get Current Date    result_format=%m%d%H%M
+    ${redeeminfor}    Create Dictionary    name=${dateString}积分抵扣测试    expire_type=${expireType}    start_time=${startTime}    end_time=${endTime}    min_consumption=${minConsumption}
+    ...    type=${Type}    unit_points=${unitPoints}    unit_amount=${unitAmount}    max_amount=${maxAmount}    seckill_flag=${seckillFlag}    together_buy_flag=${togetherBuyFlag}
+    ...    scan_flag=${scanFlag}    normal_flag=${normalFlag}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /points-redeem/add-ajax    data=${redeeminfor}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    ${respdict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${respdict}    errcode
+    Should Be Equal As Integers    ${errcode}    0
+    ${errmsg}    Get From Dictionary    ${respdict}    errmsg
+    [Return]    ${errmsg}
+
+启用积分抵扣活动
+    [Arguments]    ${redeemInfor}
+    ${id}    Get From Dictionary    ${redeemInfor}    id
+    ${redeemID}    Create Dictionary    id=${id}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /points-redeem/open-ajax    data=${redeemID}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    ${respdict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${respdict}    errcode
+    Should Be Equal As Integers    ${errcode}    0
+
+关闭积分抵扣活动
+    [Arguments]    ${redeemInfor}
+    ${id}    Get From Dictionary    ${redeemInfor}    id
+    ${redeemID}    Create Dictionary    id=${id}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /points-redeem/close-ajax    data=${redeemID}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    ${respdict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${respdict}    errcode
+    Should Be Equal As Integers    ${errcode}    0
+
+删除积分抵扣活动
+    [Arguments]    ${redeemInfor}
+    ${id}    Get From Dictionary    ${redeemInfor}    id
+    ${redeemID}    Create Dictionary    id=${id}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /points-redeem/del-ajax    data=${redeemID}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    ${respdict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${respdict}    errcode
+    Should Be Equal As Integers    ${errcode}    0
+
+WX_订单可用卡券
+    [Arguments]    ${order_id}    ${order_amount}=100
+    [Documentation]    注：${order_amount}可填任意整数作为参数，这个参数为向下兼容而保留的
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"order_id":${order_id},"order_amount":${order_amount}}
+    ${resp}    Post Request    wx    /card-coupons/can-use-by-order    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+添加满减活动
+    [Arguments]    ${params_jsonstr}
+    [Documentation]    说明：此关键字需自行传递JSON字符串
+    ...
+    ...    例：添加满减活动|${params_jsonstr}
+    ...
+    ...    注：${params_jsonstr}JSON字符串参数
+    ...
+    ...    JSON参数模板：
+    ...    {"name":"满减活动测试0919","is_relate_all":1,"start_time":1474278573,"end_time":1475228976,"conditions":[{"condition_type":1,"level":1,"condition_min":2000,"strategys":[{"reduction_type":1,"amount":200,"discount":"","point":"","card_type_id":"","red_packet_id":"","is_all_area":1,"area_id":"","area_cn":"","is_limit":1}]}],"products":[]}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    ${params_jsonstr}
+    ${resp}    Post Request    wsh    /reduction/add-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+开启满减活动
+    [Arguments]    ${id}
+    [Documentation]    说明：此关键字需自行传递JSON字符串
+    ...
+    ...    例：添加满减活动|${params_jsonstr}
+    ...
+    ...    注：${params_jsonstr}JSON字符串参数
+    ...
+    ...    JSON参数模板：
+    ...    {"name":"满减活动测试0919","is_relate_all":1,"start_time":1474278573,"end_time":1475228976,"conditions":[{"condition_type":1,"level":1,"condition_min":2000,"strategys":[{"reduction_type":1,"amount":200,"discount":"","point":"","card_type_id":"","red_packet_id":"","is_all_area":1,"area_id":"","area_cn":"","is_limit":1}]}],"products":[]}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wsh    /reduction/open-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+关闭满减活动
+    [Arguments]    ${id}
+    [Documentation]    参数id为满减活动ID
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wsh    /reduction/close-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+删除满减活动
+    [Arguments]    ${id}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wsh    /reduction/delete-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+添加积分赠送活动
+    [Arguments]    ${name}=积分赠送活动    ${amount}=20    ${points}=1
+    [Documentation]    说明：添加积分赠送活动（订单完成后赠送积分）
+    ...
+    ...    参数：
+    ...
+    ...    name: 活动名称
+    ...
+    ...    amount: 订单金额要求（优惠前金额）
+    ...
+    ...    points: 赠送点数
+    ...
+    ...    返回值: 活动ID
+    ...
+    ...    注：该参数模板不累积赠送，即无论金额是amount的多少倍都只赠送一份points
+    ${amount}    Evaluate    ${amount}*100
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"activity":{"name":"${name}","expire_type":2,"start_time":0,"end_time":0},"pointsConsumption":{"type":2,"amount":2000,"points":"${points}","count_type":1,"together_buy_flag":1,"seckill_flag":2,"scan_flag":2,"normal_flag":1}}
+    ${resp}    Post Request    wsh    /activity-points/add-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    ${activity}    Get From Dictionary    ${errmsg}    activity
+    ${id}    Get From Dictionary    ${activity}    id
+    [Return]    ${id}
+
+开启积分赠送活动
+    [Arguments]    ${id}
+    [Documentation]    说明：开启积分赠送活动
+    ...
+    ...    参数：
+    ...
+    ...    id: 活动ID
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wsh    /activity-points/open-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+关闭积分赠送活动
+    [Arguments]    ${id}
+    [Documentation]    说明：关闭积分赠送活动
+    ...
+    ...    参数：
+    ...
+    ...    id: 活动ID
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wsh    /activity-points/close-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+删除积分赠送活动
+    [Arguments]    ${id}
+    [Documentation]    说明：删除积分赠送活动
+    ...
+    ...    参数：
+    ...
+    ...    id: 活动ID
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wsh    /activity-points/del-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+满减活动列表
+    [Documentation]    说明：此关键字需自行传递JSON字符串
+    ...
+    ...    例：添加满减活动|${params_jsonstr}
+    ...
+    ...    注：${params_jsonstr}JSON字符串参数
+    ...
+    ...    JSON参数模板：
+    ...    {"name":"满减活动测试0919","is_relate_all":1,"start_time":1474278573,"end_time":1475228976,"conditions":[{"condition_type":1,"level":1,"condition_min":2000,"strategys":[{"reduction_type":1,"amount":200,"discount":"","point":"","card_type_id":"","red_packet_id":"","is_all_area":1,"area_id":"","area_cn":"","is_limit":1}]}],"products":[]}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    #${jsonstr}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wsh    /reduction/list-ajax    \    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+添加秒杀活动
+    ${newscontent}    Create Dictionary    title=只要一秒时间，顺手就捡个便宜！    description=秒杀进行时，走过路过不容错过，随手一点，没准捡个大便宜呢~    document_id=1
+    ${news}    Create Dictionary    news=${newscontent}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /second-kill/add-ajax    data=${news}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    ${secondKillinfor}    Get From Dictionary    ${errmsg}    0
+    [Return]    ${secondKillinfor}
+
+添加秒杀活动商品
+    [Arguments]    ${secondKillID}    ${productID}    ${productSkuID}    ${buyPrice}    ${quota}    ${limitBuy}
+    ${secondKill}    Create Dictionary    second_kill_id=${secondKillID}    product_id=${productID}    product_sku_id=${productSkuID}    buy_price=${buyPrice}    quota=${quota}
+    ...    limit_buy=${limitBuy}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /second-kill/seckill-goods-add-ajax    data=${secondKill}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+编辑秒杀活动
+    [Arguments]    ${secondKillID}    ${activityID}    ${secondKillName}=自动化秒杀测试    ${startTime}=${null}    ${endTime}=${null}    ${postageType}=${3}
+    ...    ${postageNum}=${null}    ${postageAmount}=${null}
+    [Documentation]    编辑秒杀活动
+    ...
+    ...    ${secondKillID}秒杀ID
+    ...    ${activityID}秒杀活动ID
+    ...
+    ...    author:戴斌旺
+    ${baseTime}    Get Current Date    result_format=epoch
+    ${end}    Add Time To Date    ${baseTime}    1 days    result_format=epoch
+    ${start}    Add Time To Date    ${baseTime}    - 10 min    result_format=epoch
+    ${starttimeString}    Convert To Integer    ${start}
+    ${endtimeString}    Convert To Integer    ${end}
+    ${startString}    Set Variable If    ${startTime} == ${null}    ${starttimeString}    ${startTime}
+    ${endString}    Set Variable If    ${endTime} == ${null}    ${endtimeString}    ${endTime}
+    ${activityinfo}    Run Keyword If    ${postageType} != ${0}    Create Dictionary    id=${activityID}    name=${secondKillName}    desc=秒杀活动自动化测试
+    ...    expire_type=${1}    start_time=${startString}    end_time=${endString}    share_type=${1}
+    ...    ELSE    Create Dictionary    id=${activityID}    name=${secondKillName}    desc=秒杀活动自动化测试    expire_type=${1}
+    ...    start_time=${startString}    end_time=${endString}    share_type=${1}    postage_setting_id=${0}
+    ${postage}    Run Keyword If    ${postageType} != ${0}    Create Dictionary    type=${postageType}    num=${postageNum}    amount=${postageAmount}
+    ${secondKill}    Create Dictionary    id=${secondKillID}
+    ${shareMessage}    Create Dictionary    title=只要一秒时间，顺手就捡个便宜！    desc=秒杀进行时，走过路过不容错过，随手一点，没准捡个大便宜呢~    pic_id=${7}
+    ${editorinfor}    Run Keyword If    ${postageType} != ${0}    Create Dictionary    activity=${activityinfo}    postageSetting=${postage}    secondKill=${secondKill}
+    ...    shareMessage=${shareMessage}
+    ...    ELSE    Create Dictionary    activity=${activityinfo}    secondKill=${secondKill}    shareMessage=${shareMessage}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /second-kill/edit-ajax    data=${editorinfor}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    ${editSecondKill}    Get From Dictionary    ${errmsg}    0
+    [Return]    ${editSecondKill}
+
+开启秒杀活动
+    [Arguments]    ${activityID}
+    [Documentation]    开启秒杀活动
+    ...
+    ...    ${activityID}秒杀活动ID
+    ...
+    ...    author:戴斌旺
+    ${activityID}    Create Dictionary    id=${activityID}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /second-kill/open-ajax    data=${activityID}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+关闭秒杀活动
+    [Arguments]    ${activityID}
+    [Documentation]    关闭秒杀活动
+    ...
+    ...    ${activityID}秒杀活动ID
+    ...
+    ...    author:戴斌旺
+    ${activityID}    Create Dictionary    id=${activityID}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /second-kill/close-ajax    data=${activityID}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+删除秒杀活动
+    [Arguments]    ${activityID}
+    [Documentation]    删除秒杀活动
+    ...
+    ...    1、${activityID} 活动ID
+    ...
+    ...    author：戴斌旺
+    ${activityIdDict}    Create Dictionary    id=${activityID}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /second-kill/del-ajax    data=${activityIdDict}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+添加现金红包
+    [Arguments]    ${type}=1    ${min_value}=1    ${max_value}=1    ${act_name}=随机    ${启用}=1    ${数量}=100
+    ${name}    Run Keyword If    '${act_name}'=='随机'    随机字符    红包    6
+    ...    ELSE    Set Variable    ${name}
+    ${min_value}    Evaluate    ${min_value}*100
+    ${max_value}    Evaluate    ${max_value}*100
+    ${max_value}    Set Variable If    ${type}==1    ${min_value}    ${max_value}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${jsonstr}    Convert To String    {"type":${type},"act_name":"${name}","send_name":"测试商户","wishing":"恭喜发财！大吉大利！","remark":"红包测试。。。","min_value":${min_value},"max_value":${max_value},"quantity":"${数量}","deleted":${启用},"can_share":1}
+    ${resp}    Post Request    wsh    /cash-redpack/add-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+删除现金红包
+    [Arguments]    ${id}
+    [Documentation]    删除现金红包
+    ...
+    ...    <参数说明>
+    ...
+    ...    id：红包ID(必要)
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wsh    /cash-redpack/del-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+添加商城红包
+    [Arguments]    ${name}=随机    ${amount}=8    ${order_limit}=20    ${start_time}=默认    ${end_time}=默认    ${remark}=随机
+    ${name}    Run Keyword If    '${name}'=='随机'    随机字符    红包    6
+    ...    ELSE    Set Variable    ${name}
+    ${remark}    Run Keyword If    '${remark}'=='随机'    随机字符    备注说明：    20
+    ...    ELSE    Set Variable    ${remark}
+    ${time}    Get Time    epoch
+    ${start_time}    Run Keyword If    '${start_time}'=='默认'    Evaluate    ${time}-3600
+    ${end_time}    Run Keyword If    '${end_time}'=='默认'    Evaluate    ${start_time}+(3600*24*2)
+    ${amount}    Evaluate    ${amount}*100
+    ${order_limit}    Evaluate    ${order_limit}*100
+    #
+    &{headers}    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    &{data}    Create Dictionary    name=${name}    type=1    total_amount=${amount}    order_limit=${order_limit}    start_time=${start_time}
+    ...    end_time=${end_time}    remark=${remark}
+    ${resp}    Post Request    wsh    /redpack-manage/add-ajax    data=&{data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+删除商城红包
+    [Arguments]    ${id}
+    [Documentation]    删除现金红包
+    ...
+    ...    <参数说明>
+    ...
+    ...    id：红包ID(必要)
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wsh    /redpack-manage/del-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+添加商城红包活动
+    [Arguments]    ${red_packet_id}    ${num_per_packet}=4    ${red_packet_num}=10    ${name}=随机    ${start_time}=默认    ${end_time}=默认
+    ${name}    Run Keyword If    '${name}'=='随机'    随机字符    红包活动    12
+    ...    ELSE    Set Variable    ${name}
+    ${time}    Get Time    epoch
+    ${start_time}    Run Keyword If    '${start_time}'=='默认'    Evaluate    ${time}-(3600*3)
+    ...    ELSE    Set Variable    ${start_time}
+    ${end_time}    Run Keyword If    '${end_time}'=='默认'    Evaluate    ${start_time}+(3600*24*5)
+    ...    ELSE    Set Variable    ${end_time}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    &{activity}    Create Dictionary    name=${name}    desc=1. 活动时间：#年#月#日#时 至 #年#月#日#时；\n2. 用户进入活动主页抢群红包，分享给好友瓜分群红包，瓜分到的红包金额自动发放到用户的商城账户；\n3. 用户必须关注微信公众号才能抢群红包；（打开强制关注后）；\n4. 每个用户只能发起一次活动，但可以瓜分不同用户转发的群红包；\n5. 瓜分群红包，先到先得，该群红包分完为止；\n6. 本活动最终解释权归XX商家所有。    start_time=${start_time}    end_time=${end_time}    share_type=1
+    &{redPacketEvent}    Create Dictionary    type=1    red_packet_id=${red_packet_id}    num_per_packet=5    red_packet_num=10    is_attention=2
+    &{shareMessage}    Create Dictionary    title=拼的是手气，抢的是红包~    desc=#商家店名#发红包啦，不要白不要啊！    pic_id=10
+    &{news}    Create Dictionary    title=拼的是手气，抢的是红包~    description=亲，点击进入活动主页，意外惊喜等着你！    document_id=4
+    &{params}    Create Dictionary    activity=&{activity}    redPacketEvent=&{redPacketEvent}    shareMessage=&{shareMessage}    news=&{news}
+    ${resp}    Post Request    wsh    /redpack/add-ajax    data=&{params}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+开启商城红包活动
+    [Arguments]    ${id}
+    [Documentation]    <参数说明>
+    ...
+    ...    id：活动ID(必要)
+    ...
+    ...    作者：胡永堂
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wsh    /redpack/open-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+关闭商城红包活动
+    [Arguments]    ${id}
+    [Documentation]    <参数说明>
+    ...
+    ...    id：活动ID(必要)
+    ...
+    ...    作者：胡永堂
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wsh    /redpack/close-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+删除商城红包活动
+    [Arguments]    ${id}
+    [Documentation]    <参数说明>
+    ...
+    ...    id：活动ID(必要)
+    ...
+    ...    作者：胡永堂
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wsh    /redpack/del-ajax    data=${jsonstr}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+添加大转盘活动_old
+    [Arguments]    ${name}=随机    ${start_time}=默认    ${end_time}=默认
+    ${name}    Run Keyword If    '${name}'=='随机'    随机字符    大转盘活动    12
+    ...    ELSE    Set Variable    ${name}
+    ${start_time}    Run Keyword If    '${start_time}'=='默认'    Get Time    epoch
+    ...    ELSE    Set Variable    ${start_time}
+    ${end_time}    Run Keyword If    '${end_time}'=='默认'    Evaluate    ${start_time}+(3600*24*5)
+    ...    ELSE    Set Variable    ${end_time}
+    ${expiry_time}    Evaluate    ${end_time}+(3600*24*5)
+    #
+    &{headers}    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    &{data}    Create Dictionary    activity_name=${name}    template=1    buy_limit=1    start_time=${start_time}    end_time=${end_time}
+    Set To Dictionary    ${data}    is_subscribe=2    share_award=2    use_points=2    points_num=0    limit_type=1
+    ...    try_limit=5
+    Set To Dictionary    ${data}    winning_limit=2    activity_desc=1. 抽奖对象：所有用户； 2. 活动参与人必须关注活动商家微信公众号才能参与活动；（打开强制关注后） 3. #积分可以兑换一次抽奖机会，限制#次； 4. 中奖限制：每人限中奖一次； 5. 本活动最终解释权归XX商家所有。
+    Set To Dictionary    ${data}    prize[0][level]=0    prize[0][type]=1    prize[0][name]=谢谢参与！    prize[0][num]=0    prize[0][probability]=30
+    Set To Dictionary    ${data}    prize[1][level]=1    prize[1][type]=1    prize[1][name]=华为P9
+    Set To Dictionary    ${data}    prize[1][prize_pic]=91751    prize[1][documentLib][file_cdn_path]=http://imgcache.vikduo.com/static/463ad47a800772aa84aade7879749216.png    prize[1][num]=1    prize[1][probability]=10
+    Set To Dictionary    ${data}    prize[2][level]=2    prize[2][type]=5    prize[2][name]=红包测试    prize[2][type_id]=583    prize[2][prize_pic]=91753
+    Set To Dictionary    ${data}    prize[2][documentLib][file_cdn_path]=http://imgcache.vikduo.com/static/b5e7d2d43dbac650c358c1c2f77e1188.png    prize[2][num]=10    prize[2][probability]=20
+    Set To Dictionary    ${data}    prize[3][level]=3    prize[3][type]=3    prize[3][name]=10    prize[3][prize_pic]=91752    prize[3][documentLib][file_cdn_path]=http://imgcache.vikduo.com/static/8d665aa70eedd30e5ad62edcc7dc4979.png
+    Set To Dictionary    ${data}    prize[3][num]=20    prize[3][probability]=40
+    Set To Dictionary    ${data}    expiry_time=${expiry_time}    share_type=1    startNews[title]=极速大转盘，幸运转转转~    startNews[description]=亲，点击进入活动主页，意外惊喜等着你！    startNews[document_id]=3
+    Set To Dictionary    ${data}    shareMessage[title]=玩大转盘，轻轻一转好礼不断！    shareMessage[desc]=玩抽奖大转盘，千万奖品等你来，百分百赢中奖哟~    shareMessage[pic_id]=9
+    Log    ${data}
+    ${resp}    Post Request    wsh    /market-activity/add-ajax    data=&{data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    Log    添加大转盘活动成功...
+    [Return]    ${errmsg}
+
+开启大转盘活动
+    [Arguments]    ${id}
+    [Documentation]    <参数说明>
+    ...
+    ...    id：活动ID(必要)
+    ...
+    ...    作者：胡永堂
+    &{headers}    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    &{data}    Create Dictionary    id=${id}
+    ${resp}    Post Request    wsh    /market-activity/open-ajax    data=&{data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    Log    开启大转盘活动成功...
+
+关闭大转盘活动
+    [Arguments]    ${id}
+    [Documentation]    <参数说明>
+    ...
+    ...    id：活动ID(必要)
+    ...
+    ...    作者：胡永堂
+    &{headers}    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    &{data}    Create Dictionary    id=${id}
+    ${resp}    Post Request    wsh    /market-activity/close-ajax    data=&{data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    Log    关闭大转盘活动成功...
+
+大转盘活动列表
+    [Documentation]    <参数说明>
+    ...
+    ...    id：活动ID(必要)
+    ...
+    ...    作者：胡永堂
+    &{headers}    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    &{data}    Create Dictionary
+    ${resp}    Post Request    wsh    /market-activity/list-ajax    data=&{data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+删除大转盘活动
+    [Arguments]    ${id}
+    [Documentation]    <参数说明>
+    ...
+    ...    id：活动ID(必要)
+    ...
+    ...    作者：胡永堂
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${data}    Convert To String    {"id":${id}}
+    ${resp}    Post Request    wsh    /market-activity/del-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    Log    删除大转盘活动成功...
+
+添加砸金蛋活动
+    [Arguments]    ${一等奖机率}=10    ${二等奖机率}=20    ${三等奖机率}=30    ${limit_type}=1    ${try_limit}=5    ${name}=随机
+    ...    ${start_time}=默认    ${end_time}=默认
+    [Documentation]    <参数说明>
+    ...
+    ...    略
+    ...
+    ...    作者：胡永堂
+    ${name}    Run Keyword If    '${name}'=='随机'    随机字符    砸金蛋活动    12
+    ...    ELSE    Set Variable    ${name}
+    ${start_time}    Run Keyword If    '${start_time}'=='默认'    Get Time    epoch
+    ...    ELSE    Set Variable    ${start_time}
+    ${end_time}    Run Keyword If    '${end_time}'=='默认'    Evaluate    ${start_time}+(3600*24*5)
+    ...    ELSE    Set Variable    ${end_time}
+    ${expiry_time}    Evaluate    ${end_time}+(3600*24*5)
+    ${不中奖机率}    Evaluate    100-(${一等奖机率}+${二等奖机率}+${三等奖机率})
+    #
+    &{headers}    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    &{data}    Create Dictionary    activity_name=${name}    template=4    buy_limit=1    start_time=${start_time}    end_time=${end_time}
+    Set To Dictionary    ${data}    is_subscribe=2    share_award=2    use_points=2    points_num=0    limit_type=${limit_type}
+    ...    try_limit=${try_limit}
+    Set To Dictionary    ${data}    winning_limit=2    activity_desc=1.抽奖对象：所有用户/购买过商品的用户；\n 2.用户必须关注微信公众号才能参与活动；（打开强制关注后）\n 3.分享并成功邀请好友赠送一次机会，同一个好友只有一次；\n 4.次数限制：每天限制#次/总共可参加#次；\n 5.积分抽奖：#积分可换取一次抽奖机会，最多可换取#次；\n 6.中奖次数：每人限中奖一次；\n 7.本活动最终解释权归XX商家所有。
+    Set To Dictionary    ${data}    prize[0][level]=0    prize[0][type]=1    prize[0][name]=谢谢参与！    prize[0][num]=0    prize[0][probability]=${不中奖机率}
+    Set To Dictionary    ${data}    prize[1][level]=1    prize[1][type]=1    prize[1][name]=华为P9
+    Set To Dictionary    ${data}    prize[1][prize_pic]=91751    prize[1][documentLib][file_cdn_path]=http://imgcache.vikduo.com/static/463ad47a800772aa84aade7879749216.png    prize[1][num]=1    prize[1][probability]=${一等奖机率}
+    Set To Dictionary    ${data}    prize[2][level]=2    prize[2][type]=5    prize[2][name]=红包测试    prize[2][type_id]=583    prize[2][prize_pic]=91753
+    Set To Dictionary    ${data}    prize[2][documentLib][file_cdn_path]=http://imgcache.vikduo.com/static/b5e7d2d43dbac650c358c1c2f77e1188.png    prize[2][num]=10    prize[2][probability]=${二等奖机率}
+    Set To Dictionary    ${data}    prize[3][level]=3    prize[3][type]=3    prize[3][name]=10    prize[3][prize_pic]=91752    prize[3][documentLib][file_cdn_path]=http://imgcache.vikduo.com/static/8d665aa70eedd30e5ad62edcc7dc4979.png
+    Set To Dictionary    ${data}    prize[3][num]=20    prize[3][probability]=${三等奖机率}
+    Set To Dictionary    ${data}    expiry_time=${expiry_time}    share_type=1    startNews[title]=一锤定音，开心砸金蛋~    startNews[description]=亲，点击进入活动主页，意外惊喜等着你！    startNews[document_id]=36791
+    Set To Dictionary    ${data}    shareMessage[title]=轻轻一锤，砸出精彩！    shareMessage[desc]=玩抽奖砸金蛋，千万奖品等你来，百分百赢中奖哟~    shareMessage[pic_id]=36790
+    Log    ${data}
+    ${resp}    Post Request    wsh    /market-activity/add-ajax    data=&{data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    Log    添加砸金蛋活动成功...
+    [Return]    ${errmsg}
+
+开启砸金蛋活动
+    [Arguments]    ${id}
+    [Documentation]    <参数说明>
+    ...
+    ...    id：活动ID(必要)
+    ...
+    ...    作者：胡永堂
+    &{headers}    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    &{data}    Create Dictionary    id=${id}
+    ${resp}    Post Request    wsh    /market-activity/open-smashegg-ajax    data=&{data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    Log    开启砸金蛋活动成功...
+
+关闭砸金蛋活动
+    [Arguments]    ${id}
+    [Documentation]    <参数说明>
+    ...
+    ...    id：活动ID(必要)
+    ...
+    ...    作者：胡永堂
+    &{headers}    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    &{data}    Create Dictionary    id=${id}
+    ${resp}    Post Request    wsh    /market-activity/close-smashegg-ajax    data=&{data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    Log    关闭砸金蛋活动成功...
+
+删除砸金蛋活动
+    [Arguments]    ${id}
+    [Documentation]    <参数说明>
+    ...
+    ...    id：活动ID(必要)
+    ...
+    ...    作者：胡永堂
+    &{headers}    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    &{data}    Create Dictionary    id=${id}
+    ${resp}    Post Request    wsh    /market-activity/del-smashegg-ajax    data=&{data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    Log    删除砸金蛋活动成功...
+
+活动中奖记录
+    [Arguments]    ${id}
+    [Documentation]    <参数说明>
+    ...
+    ...    id：活动ID(必要)
+    ...
+    ...    作者：胡永堂
+    &{headers}    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    &{data}    Create Dictionary    id=${id}
+    ${resp}    Post Request    wsh    /market-activity/record-list-ajax    data=&{data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+砸金蛋手动兑换奖品
+    [Arguments]    ${record_id}    ${activity_id}
+    [Documentation]    <参数说明>
+    ...
+    ...    record_id：记录ID(必要)
+    ...
+    ...    activity_id：活动ID(必要)
+    ...
+    ...    作者：胡永堂
+    &{headers}    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    &{data}    Create Dictionary    id=${record_id}    marketing_activity_id=${activity_id}
+    ${resp}    Post Request    wsh    /market-activity/smashegg-exchange-record-ajax    data=&{data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    Log    手动兑换奖品成功...
+
+添加大转盘活动
+    [Arguments]    ${一等奖机率}=10    ${二等奖机率}=20    ${三等奖机率}=30    ${limit_type}=1    ${try_limit}=5    ${name}=随机
+    ...    ${start_time}=默认    ${end_time}=默认
+    ${name}    Run Keyword If    '${name}'=='随机'    随机字符    大转盘活动    12
+    ...    ELSE    Set Variable    ${name}
+    ${start_time}    Run Keyword If    '${start_time}'=='默认'    Get Time    epoch
+    ...    ELSE    Set Variable    ${start_time}
+    ${end_time}    Run Keyword If    '${end_time}'=='默认'    Evaluate    ${start_time}+(3600*24*5)
+    ...    ELSE    Set Variable    ${end_time}
+    ${expiry_time}    Evaluate    ${end_time}+(3600*24*5)
+    ${不中奖机率}    Evaluate    100-(${一等奖机率}+${二等奖机率}+${三等奖机率})
+    #
+    &{headers}    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    ${postdata}    Set Variable    activity_name=JustaTest1&template=1&buy_limit=1&start_time=1475893849&end_time=1476253054&is_subscribe=2&share_award=2&use_points=2&points_num=0&limit_type=1&try_limit=5&winning_limit=2&activity_desc=1.+%E6%8A%BD%E5%A5%96%E5%AF%B9%E8%B1%A1%EF%BC%9A%E6%89%80%E6%9C%89%E7%94%A8%E6%88%B7%EF%BC%9B%0A2.+%E6%B4%BB%E5%8A%A8%E5%8F%82%E4%B8%8E%E4%BA%BA%E5%BF%85%E9%A1%BB%E5%85%B3%E6%B3%A8%E6%B4%BB%E5%8A%A8%E5%95%86%E5%AE%B6%E5%BE%AE%E4%BF%A1%E5%85%AC%E4%BC%97%E5%8F%B7%E6%89%8D%E8%83%BD%E5%8F%82%E4%B8%8E%E6%B4%BB%E5%8A%A8%EF%BC%9B%EF%BC%88%E6%89%93%E5%BC%80%E5%BC%BA%E5%88%B6%E5%85%B3%E6%B3%A8%E5%90%8E%EF%BC%89%0A3.+%23%E7%A7%AF%E5%88%86%E5%8F%AF%E4%BB%A5%E5%85%91%E6%8D%A2%E4%B8%80%E6%AC%A1%E6%8A%BD%E5%A5%96%E6%9C%BA%E4%BC%9A%EF%BC%8C%E9%99%90%E5%88%B6%23%E6%AC%A1%EF%BC%9B%0A4.+%E4%B8%AD%E5%A5%96%E9%99%90%E5%88%B6%EF%BC%9A%E6%AF%8F%E4%BA%BA%E9%99%90%E4%B8%AD%E5%A5%96%E4%B8%80%E6%AC%A1%EF%BC%9B%0A5.+%E6%9C%AC%E6%B4%BB%E5%8A%A8%E6%9C%80%E7%BB%88%E8%A7%A3%E9%87%8A%E6%9D%83%E5%BD%92XX%E5%95%86%E5%AE%B6%E6%89%80%E6%9C%89%E3%80%82&prize%5B0%5D%5Blevel%5D=0&prize%5B0%5D%5Btype%5D=1&prize%5B0%5D%5Bname%5D=%E8%B0%A2%E8%B0%A2%E5%8F%82%E4%B8%8E%EF%BC%81&prize%5B0%5D%5Btype_id%5D=&prize%5B0%5D%5Bprize_pic%5D=&prize%5B0%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=&prize%5B0%5D%5Bnum%5D=0&prize%5B0%5D%5Bprobability%5D=30&prize%5B0%5D%5B%24%24hashKey%5D=object%3A42&prize%5B1%5D%5Blevel%5D=1&prize%5B1%5D%5Btype%5D=1&prize%5B1%5D%5Bname%5D=%E5%8D%8E%E4%B8%BAP9&prize%5B1%5D%5Btype_id%5D=&prize%5B1%5D%5Bprize_pic%5D=91751&prize%5B1%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=http%3A%2F%2Fimgcache.vikduo.com%2Fstatic%2F463ad47a800772aa84aade7879749216.png&prize%5B1%5D%5Bnum%5D=1&prize%5B1%5D%5Bprobability%5D=10&prize%5B1%5D%5B%24%24hashKey%5D=object%3A43&prize%5B1%5D%5BinvalidInfo%5D=&prize%5B2%5D%5Blevel%5D=2&prize%5B2%5D%5Btype%5D=5&prize%5B2%5D%5Bname%5D=%E7%BA%A2%E5%8C%85%E6%B5%8B%E8%AF%95&prize%5B2%5D%5Btype_id%5D=583&prize%5B2%5D%5Bprize_pic%5D=91753&prize%5B2%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=http%3A%2F%2Fimgcache.vikduo.com%2Fstatic%2Fb5e7d2d43dbac650c358c1c2f77e1188.png&prize%5B2%5D%5Bnum%5D=10&prize%5B2%5D%5Bprobability%5D=20&prize%5B2%5D%5B%24%24hashKey%5D=object%3A44&prize%5B2%5D%5BinvalidInfo%5D=&prize%5B3%5D%5Blevel%5D=3&prize%5B3%5D%5Btype%5D=3&prize%5B3%5D%5Bname%5D=10&prize%5B3%5D%5Btype_id%5D=&prize%5B3%5D%5Bprize_pic%5D=91752&prize%5B3%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=http%3A%2F%2Fimgcache.vikduo.com%2Fstatic%2F8d665aa70eedd30e5ad62edcc7dc4979.png&prize%5B3%5D%5Bnum%5D=20&prize%5B3%5D%5Bprobability%5D=40&prize%5B3%5D%5B%24%24hashKey%5D=object%3A45&prize%5B3%5D%5BinvalidInfo%5D=&expiry_time=1477632103&share_type=1&startNews%5Btitle%5D=%E6%9E%81%E9%80%9F%E5%A4%A7%E8%BD%AC%E7%9B%98%EF%BC%8C%E5%B9%B8%E8%BF%90%E8%BD%AC%E8%BD%AC%E8%BD%AC~&startNews%5Bdescription%5D=%E4%BA%B2%EF%BC%8C%E7%82%B9%E5%87%BB%E8%BF%9B%E5%85%A5%E6%B4%BB%E5%8A%A8%E4%B8%BB%E9%A1%B5%EF%BC%8C%E6%84%8F%E5%A4%96%E6%83%8A%E5%96%9C%E7%AD%89%E7%9D%80%E4%BD%A0%EF%BC%81&startNews%5Bdocument_id%5D=3&shareMessage%5Btitle%5D=%E7%8E%A9%E5%A4%A7%E8%BD%AC%E7%9B%98%EF%BC%8C%E8%BD%BB%E8%BD%BB%E4%B8%80%E8%BD%AC%E5%A5%BD%E7%A4%BC%E4%B8%8D%E6%96%AD%EF%BC%81&shareMessage%5Bdesc%5D=%E7%8E%A9%E6%8A%BD%E5%A5%96%E5%A4%A7%E8%BD%AC%E7%9B%98%EF%BC%8C%E5%8D%83%E4%B8%87%E5%A5%96%E5%93%81%E7%AD%89%E4%BD%A0%E6%9D%A5%EF%BC%8C%E7%99%BE%E5%88%86%E7%99%BE%E8%B5%A2%E4%B8%AD%E5%A5%96%E5%93%9F~&shareMessage%5Bpic_id%5D=9
+    ${data}    Set Variable    activity_name=${name}&template=1&buy_limit=1&start_time=${start_time}&end_time=${end_time}&is_subscribe=2&share_award=2&use_points=2&points_num=0&limit_type=1&try_limit=5&winning_limit=2&activity_desc=1.+%E6%8A%BD%E5%A5%96%E5%AF%B9%E8%B1%A1%EF%BC%9A%E6%89%80%E6%9C%89%E7%94%A8%E6%88%B7%EF%BC%9B%0A2.+%E6%B4%BB%E5%8A%A8%E5%8F%82%E4%B8%8E%E4%BA%BA%E5%BF%85%E9%A1%BB%E5%85%B3%E6%B3%A8%E6%B4%BB%E5%8A%A8%E5%95%86%E5%AE%B6%E5%BE%AE%E4%BF%A1%E5%85%AC%E4%BC%97%E5%8F%B7%E6%89%8D%E8%83%BD%E5%8F%82%E4%B8%8E%E6%B4%BB%E5%8A%A8%EF%BC%9B%EF%BC%88%E6%89%93%E5%BC%80%E5%BC%BA%E5%88%B6%E5%85%B3%E6%B3%A8%E5%90%8E%EF%BC%89%0A3.+%23%E7%A7%AF%E5%88%86%E5%8F%AF%E4%BB%A5%E5%85%91%E6%8D%A2%E4%B8%80%E6%AC%A1%E6%8A%BD%E5%A5%96%E6%9C%BA%E4%BC%9A%EF%BC%8C%E9%99%90%E5%88%B6%23%E6%AC%A1%EF%BC%9B%0A4.+%E4%B8%AD%E5%A5%96%E9%99%90%E5%88%B6%EF%BC%9A%E6%AF%8F%E4%BA%BA%E9%99%90%E4%B8%AD%E5%A5%96%E4%B8%80%E6%AC%A1%EF%BC%9B%0A5.+%E6%9C%AC%E6%B4%BB%E5%8A%A8%E6%9C%80%E7%BB%88%E8%A7%A3%E9%87%8A%E6%9D%83%E5%BD%92XX%E5%95%86%E5%AE%B6%E6%89%80%E6%9C%89%E3%80%82&prize%5B0%5D%5Blevel%5D=0&prize%5B0%5D%5Btype%5D=1&prize%5B0%5D%5Bname%5D=%E8%B0%A2%E8%B0%A2%E5%8F%82%E4%B8%8E%EF%BC%81&prize%5B0%5D%5Btype_id%5D=&prize%5B0%5D%5Bprize_pic%5D=&prize%5B0%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=&prize%5B0%5D%5Bnum%5D=0&prize%5B0%5D%5Bprobability%5D=${不中奖机率}&prize%5B0%5D%5B%24%24hashKey%5D=object%3A42&prize%5B1%5D%5Blevel%5D=1&prize%5B1%5D%5Btype%5D=1&prize%5B1%5D%5Bname%5D=%E5%8D%8E%E4%B8%BAP9&prize%5B1%5D%5Btype_id%5D=&prize%5B1%5D%5Bprize_pic%5D=91751&prize%5B1%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=http%3A%2F%2Fimgcache.vikduo.com%2Fstatic%2F463ad47a800772aa84aade7879749216.png&prize%5B1%5D%5Bnum%5D=1&prize%5B1%5D%5Bprobability%5D=${一等奖机率}&prize%5B1%5D%5B%24%24hashKey%5D=object%3A43&prize%5B1%5D%5BinvalidInfo%5D=&prize%5B2%5D%5Blevel%5D=2&prize%5B2%5D%5Btype%5D=5&prize%5B2%5D%5Bname%5D=%E7%BA%A2%E5%8C%85%E6%B5%8B%E8%AF%95&prize%5B2%5D%5Btype_id%5D=583&prize%5B2%5D%5Bprize_pic%5D=91753&prize%5B2%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=http%3A%2F%2Fimgcache.vikduo.com%2Fstatic%2Fb5e7d2d43dbac650c358c1c2f77e1188.png&prize%5B2%5D%5Bnum%5D=10&prize%5B2%5D%5Bprobability%5D=${二等奖机率}&prize%5B2%5D%5B%24%24hashKey%5D=object%3A44&prize%5B2%5D%5BinvalidInfo%5D=&prize%5B3%5D%5Blevel%5D=3&prize%5B3%5D%5Btype%5D=3&prize%5B3%5D%5Bname%5D=10&prize%5B3%5D%5Btype_id%5D=&prize%5B3%5D%5Bprize_pic%5D=91752&prize%5B3%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=http%3A%2F%2Fimgcache.vikduo.com%2Fstatic%2F8d665aa70eedd30e5ad62edcc7dc4979.png&prize%5B3%5D%5Bnum%5D=20&prize%5B3%5D%5Bprobability%5D=${三等奖机率}&prize%5B3%5D%5B%24%24hashKey%5D=object%3A45&prize%5B3%5D%5BinvalidInfo%5D=&expiry_time=${expiry_time}&share_type=1&startNews%5Btitle%5D=%E6%9E%81%E9%80%9F%E5%A4%A7%E8%BD%AC%E7%9B%98%EF%BC%8C%E5%B9%B8%E8%BF%90%E8%BD%AC%E8%BD%AC%E8%BD%AC~&startNews%5Bdescription%5D=%E4%BA%B2%EF%BC%8C%E7%82%B9%E5%87%BB%E8%BF%9B%E5%85%A5%E6%B4%BB%E5%8A%A8%E4%B8%BB%E9%A1%B5%EF%BC%8C%E6%84%8F%E5%A4%96%E6%83%8A%E5%96%9C%E7%AD%89%E7%9D%80%E4%BD%A0%EF%BC%81&startNews%5Bdocument_id%5D=3&shareMessage%5Btitle%5D=%E7%8E%A9%E5%A4%A7%E8%BD%AC%E7%9B%98%EF%BC%8C%E8%BD%BB%E8%BD%BB%E4%B8%80%E8%BD%AC%E5%A5%BD%E7%A4%BC%E4%B8%8D%E6%96%AD%EF%BC%81&shareMessage%5Bdesc%5D=%E7%8E%A9%E6%8A%BD%E5%A5%96%E5%A4%A7%E8%BD%AC%E7%9B%98%EF%BC%8C%E5%8D%83%E4%B8%87%E5%A5%96%E5%93%81%E7%AD%89%E4%BD%A0%E6%9D%A5%EF%BC%8C%E7%99%BE%E5%88%86%E7%99%BE%E8%B5%A2%E4%B8%AD%E5%A5%96%E5%93%9F~&shareMessage%5Bpic_id%5D=9
+    Log    ${data}
+    ${resp}    Post Request    wsh    /market-activity/add-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    Log    添加大转盘活动成功...
+    [Return]    ${errmsg}
+
+添加抽奖活动
+    [Arguments]    ${一等奖机率}=0    ${二等奖机率}=0    ${三等奖机率}=0    ${四等奖机率}=0    ${五等奖机率}=0    ${template}=1
+    ...    ${limit_type}=1    ${try_limit}=5    ${name}=随机    ${start_time}=默认    ${end_time}=默认    ${expiry_time}=默认
+    [Documentation]    添加抽奖活动
+    ...
+    ...    <参数说明>
+    ...
+    ...    template：模板类型（1 大转盘；4 砸金蛋）
+    ...
+    ...    <奖项说明>
+    ...
+    ...    一等奖：iPhone7
+    ...
+    ...    二等奖：卡券
+    ...
+    ...    三等奖：积分
+    ...
+    ...    四等奖：商城红包
+    ...
+    ...    五等奖：现金红包
+    ...
+    ...    作者：胡永堂
+    ${name}    Run Keyword If    '${name}'=='随机'    随机字符    大转盘活动    12
+    ...    ELSE    Set Variable    ${name}
+    ${start_time}    Run Keyword If    '${start_time}'=='默认'    Get Time    epoch
+    ...    ELSE    Set Variable    ${start_time}
+    ${end_time}    Run Keyword If    '${end_time}'=='默认'    Evaluate    ${start_time}+(3600*24*5)
+    ...    ELSE    Set Variable    ${end_time}
+    ${expiry_time}    Run Keyword If    '${expiry_time}'=='默认'    Evaluate    ${end_time}+(3600*24*5)
+    ...    ELSE    Set Variable    ${expiry_time}
+    ${不中奖机率}    Evaluate    100-(${一等奖机率}+${二等奖机率}+${三等奖机率}+${四等奖机率}+${五等奖机率})
+    #
+    &{headers}    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    ${postdata}    Set Variable    activity_name=JustaTest1&template=1&buy_limit=1&start_time=1475893849&end_time=1476253054&is_subscribe=2&share_award=2&use_points=2&points_num=0&limit_type=1&try_limit=5&winning_limit=2&activity_desc=1.+%E6%8A%BD%E5%A5%96%E5%AF%B9%E8%B1%A1%EF%BC%9A%E6%89%80%E6%9C%89%E7%94%A8%E6%88%B7%EF%BC%9B%0A2.+%E6%B4%BB%E5%8A%A8%E5%8F%82%E4%B8%8E%E4%BA%BA%E5%BF%85%E9%A1%BB%E5%85%B3%E6%B3%A8%E6%B4%BB%E5%8A%A8%E5%95%86%E5%AE%B6%E5%BE%AE%E4%BF%A1%E5%85%AC%E4%BC%97%E5%8F%B7%E6%89%8D%E8%83%BD%E5%8F%82%E4%B8%8E%E6%B4%BB%E5%8A%A8%EF%BC%9B%EF%BC%88%E6%89%93%E5%BC%80%E5%BC%BA%E5%88%B6%E5%85%B3%E6%B3%A8%E5%90%8E%EF%BC%89%0A3.+%23%E7%A7%AF%E5%88%86%E5%8F%AF%E4%BB%A5%E5%85%91%E6%8D%A2%E4%B8%80%E6%AC%A1%E6%8A%BD%E5%A5%96%E6%9C%BA%E4%BC%9A%EF%BC%8C%E9%99%90%E5%88%B6%23%E6%AC%A1%EF%BC%9B%0A4.+%E4%B8%AD%E5%A5%96%E9%99%90%E5%88%B6%EF%BC%9A%E6%AF%8F%E4%BA%BA%E9%99%90%E4%B8%AD%E5%A5%96%E4%B8%80%E6%AC%A1%EF%BC%9B%0A5.+%E6%9C%AC%E6%B4%BB%E5%8A%A8%E6%9C%80%E7%BB%88%E8%A7%A3%E9%87%8A%E6%9D%83%E5%BD%92XX%E5%95%86%E5%AE%B6%E6%89%80%E6%9C%89%E3%80%82&prize%5B0%5D%5Blevel%5D=0&prize%5B0%5D%5Btype%5D=1&prize%5B0%5D%5Bname%5D=%E8%B0%A2%E8%B0%A2%E5%8F%82%E4%B8%8E%EF%BC%81&prize%5B0%5D%5Btype_id%5D=&prize%5B0%5D%5Bprize_pic%5D=&prize%5B0%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=&prize%5B0%5D%5Bnum%5D=0&prize%5B0%5D%5Bprobability%5D=30&prize%5B0%5D%5B%24%24hashKey%5D=object%3A42&prize%5B1%5D%5Blevel%5D=1&prize%5B1%5D%5Btype%5D=1&prize%5B1%5D%5Bname%5D=%E5%8D%8E%E4%B8%BAP9&prize%5B1%5D%5Btype_id%5D=&prize%5B1%5D%5Bprize_pic%5D=91751&prize%5B1%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=http%3A%2F%2Fimgcache.vikduo.com%2Fstatic%2F463ad47a800772aa84aade7879749216.png&prize%5B1%5D%5Bnum%5D=1&prize%5B1%5D%5Bprobability%5D=10&prize%5B1%5D%5B%24%24hashKey%5D=object%3A43&prize%5B1%5D%5BinvalidInfo%5D=&prize%5B2%5D%5Blevel%5D=2&prize%5B2%5D%5Btype%5D=5&prize%5B2%5D%5Bname%5D=%E7%BA%A2%E5%8C%85%E6%B5%8B%E8%AF%95&prize%5B2%5D%5Btype_id%5D=583&prize%5B2%5D%5Bprize_pic%5D=91753&prize%5B2%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=http%3A%2F%2Fimgcache.vikduo.com%2Fstatic%2Fb5e7d2d43dbac650c358c1c2f77e1188.png&prize%5B2%5D%5Bnum%5D=10&prize%5B2%5D%5Bprobability%5D=20&prize%5B2%5D%5B%24%24hashKey%5D=object%3A44&prize%5B2%5D%5BinvalidInfo%5D=&prize%5B3%5D%5Blevel%5D=3&prize%5B3%5D%5Btype%5D=3&prize%5B3%5D%5Bname%5D=10&prize%5B3%5D%5Btype_id%5D=&prize%5B3%5D%5Bprize_pic%5D=91752&prize%5B3%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=http%3A%2F%2Fimgcache.vikduo.com%2Fstatic%2F8d665aa70eedd30e5ad62edcc7dc4979.png&prize%5B3%5D%5Bnum%5D=20&prize%5B3%5D%5Bprobability%5D=40&prize%5B3%5D%5B%24%24hashKey%5D=object%3A45&prize%5B3%5D%5BinvalidInfo%5D=&expiry_time=1477632103&share_type=1&startNews%5Btitle%5D=%E6%9E%81%E9%80%9F%E5%A4%A7%E8%BD%AC%E7%9B%98%EF%BC%8C%E5%B9%B8%E8%BF%90%E8%BD%AC%E8%BD%AC%E8%BD%AC~&startNews%5Bdescription%5D=%E4%BA%B2%EF%BC%8C%E7%82%B9%E5%87%BB%E8%BF%9B%E5%85%A5%E6%B4%BB%E5%8A%A8%E4%B8%BB%E9%A1%B5%EF%BC%8C%E6%84%8F%E5%A4%96%E6%83%8A%E5%96%9C%E7%AD%89%E7%9D%80%E4%BD%A0%EF%BC%81&startNews%5Bdocument_id%5D=3&shareMessage%5Btitle%5D=%E7%8E%A9%E5%A4%A7%E8%BD%AC%E7%9B%98%EF%BC%8C%E8%BD%BB%E8%BD%BB%E4%B8%80%E8%BD%AC%E5%A5%BD%E7%A4%BC%E4%B8%8D%E6%96%AD%EF%BC%81&shareMessage%5Bdesc%5D=%E7%8E%A9%E6%8A%BD%E5%A5%96%E5%A4%A7%E8%BD%AC%E7%9B%98%EF%BC%8C%E5%8D%83%E4%B8%87%E5%A5%96%E5%93%81%E7%AD%89%E4%BD%A0%E6%9D%A5%EF%BC%8C%E7%99%BE%E5%88%86%E7%99%BE%E8%B5%A2%E4%B8%AD%E5%A5%96%E5%93%9F~&shareMessage%5Bpic_id%5D=9
+    ${data}    Set Variable    activity_name=${name}&template=${template}&buy_limit=1&start_time=${start_time}&end_time=${end_time}&is_subscribe=2&share_award=2&use_points=2&points_num=0&limit_type=${limit_type}&try_limit=${try_limit}&winning_limit=2&activity_desc=1.+%E6%8A%BD%E5%A5%96%E5%AF%B9%E8%B1%A1%EF%BC%9A%E6%89%80%E6%9C%89%E7%94%A8%E6%88%B7%EF%BC%9B%0A2.+%E6%B4%BB%E5%8A%A8%E5%8F%82%E4%B8%8E%E4%BA%BA%E5%BF%85%E9%A1%BB%E5%85%B3%E6%B3%A8%E6%B4%BB%E5%8A%A8%E5%95%86%E5%AE%B6%E5%BE%AE%E4%BF%A1%E5%85%AC%E4%BC%97%E5%8F%B7%E6%89%8D%E8%83%BD%E5%8F%82%E4%B8%8E%E6%B4%BB%E5%8A%A8%EF%BC%9B%EF%BC%88%E6%89%93%E5%BC%80%E5%BC%BA%E5%88%B6%E5%85%B3%E6%B3%A8%E5%90%8E%EF%BC%89%0A3.+%23%E7%A7%AF%E5%88%86%E5%8F%AF%E4%BB%A5%E5%85%91%E6%8D%A2%E4%B8%80%E6%AC%A1%E6%8A%BD%E5%A5%96%E6%9C%BA%E4%BC%9A%EF%BC%8C%E9%99%90%E5%88%B6%23%E6%AC%A1%EF%BC%9B%0A4.+%E4%B8%AD%E5%A5%96%E9%99%90%E5%88%B6%EF%BC%9A%E6%AF%8F%E4%BA%BA%E9%99%90%E4%B8%AD%E5%A5%96%E4%B8%80%E6%AC%A1%EF%BC%9B%0A5.+%E6%9C%AC%E6%B4%BB%E5%8A%A8%E6%9C%80%E7%BB%88%E8%A7%A3%E9%87%8A%E6%9D%83%E5%BD%92XX%E5%95%86%E5%AE%B6%E6%89%80%E6%9C%89%E3%80%82&prize%5B0%5D%5Blevel%5D=0&prize%5B0%5D%5Btype%5D=1&prize%5B0%5D%5Bname%5D=%E5%BE%88%E9%81%97%E6%86%BE%E6%9C%AA%E4%B8%AD%E5%A5%96%EF%BC%8C%E8%B0%A2%E8%B0%A2%E5%8F%82%E4%B8%8E%EF%BC%81&prize%5B0%5D%5Btype_id%5D=&prize%5B0%5D%5Bprize_pic%5D=&prize%5B0%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=&prize%5B0%5D%5Bnum%5D=0&prize%5B0%5D%5Bprobability%5D=${不中奖机率}&prize%5B0%5D%5B%24%24hashKey%5D=object%3A42&prize%5B1%5D%5Blevel%5D=1&prize%5B1%5D%5Btype%5D=1&prize%5B1%5D%5Bname%5D=iPhone7&prize%5B1%5D%5Btype_id%5D=&prize%5B1%5D%5Bprize_pic%5D=91751&prize%5B1%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=http%3A%2F%2Fimgcache.vikduo.com%2Fstatic%2F463ad47a800772aa84aade7879749216.png&prize%5B1%5D%5Bnum%5D=2&prize%5B1%5D%5Bprobability%5D=${一等奖机率}&prize%5B1%5D%5B%24%24hashKey%5D=object%3A43&prize%5B1%5D%5BinvalidInfo%5D=&prize%5B2%5D%5Blevel%5D=2&prize%5B2%5D%5Btype%5D=2&prize%5B2%5D%5Bname%5D=YT%E6%8A%98%E6%89%A3%E5%8D%A1&prize%5B2%5D%5Btype_id%5D=2359&prize%5B2%5D%5Bprize_pic%5D=91750&prize%5B2%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=http%3A%2F%2Fimgcache.vikduo.com%2Fstatic%2F105807a761f0383a34502b0f5776b9ad.png&prize%5B2%5D%5Bnum%5D=20&prize%5B2%5D%5Bprobability%5D=${二等奖机率}&prize%5B2%5D%5B%24%24hashKey%5D=object%3A44&prize%5B2%5D%5BinvalidInfo%5D=&prize%5B3%5D%5Blevel%5D=3&prize%5B3%5D%5Btype%5D=3&prize%5B3%5D%5Bname%5D=10&prize%5B3%5D%5Btype_id%5D=&prize%5B3%5D%5Bprize_pic%5D=91752&prize%5B3%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=http%3A%2F%2Fimgcache.vikduo.com%2Fstatic%2F8d665aa70eedd30e5ad62edcc7dc4979.png&prize%5B3%5D%5Bnum%5D=20&prize%5B3%5D%5Bprobability%5D=${三等奖机率}&prize%5B3%5D%5B%24%24hashKey%5D=object%3A45&prize%5B3%5D%5BinvalidInfo%5D=&prize%5B4%5D%5Blevel%5D=4&prize%5B4%5D%5Btype%5D=4&prize%5B4%5D%5Bprobability%5D=${四等奖机率}&prize%5B4%5D%5Bnum%5D=30&prize%5B4%5D%5Bprize_pic%5D=91754&prize%5B4%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=http%3A%2F%2Fimgcache.vikduo.com%2Fstatic%2F68897ebd2baa044df7da38994b106d80.png&prize%5B4%5D%5B%24%24hashKey%5D=object%3A179&prize%5B4%5D%5Btype_id%5D=563&prize%5B4%5D%5Bname%5D=YT%E5%95%86%E5%9F%8E%E7%BA%A2%E5%8C%85&prize%5B4%5D%5BinvalidInfo%5D=&prize%5B5%5D%5Blevel%5D=5&prize%5B5%5D%5Btype%5D=5&prize%5B5%5D%5Bprobability%5D=${五等奖机率}&prize%5B5%5D%5Bnum%5D=20&prize%5B5%5D%5Bprize_pic%5D=91753&prize%5B5%5D%5BdocumentLib%5D%5Bfile_cdn_path%5D=http%3A%2F%2Fimgcache.vikduo.com%2Fstatic%2Fb5e7d2d43dbac650c358c1c2f77e1188.png&prize%5B5%5D%5B%24%24hashKey%5D=object%3A191&prize%5B5%5D%5Btype_id%5D=583&prize%5B5%5D%5Bname%5D=%E7%BA%A2%E5%8C%85%E6%B5%8B%E8%AF%95&prize%5B5%5D%5BinvalidInfo%5D=&expiry_time=${expiry_time}&share_type=1&startNews%5Btitle%5D=%E6%9E%81%E9%80%9F%E5%A4%A7%E8%BD%AC%E7%9B%98%EF%BC%8C%E5%B9%B8%E8%BF%90%E8%BD%AC%E8%BD%AC%E8%BD%AC~&startNews%5Bdescription%5D=%E4%BA%B2%EF%BC%8C%E7%82%B9%E5%87%BB%E8%BF%9B%E5%85%A5%E6%B4%BB%E5%8A%A8%E4%B8%BB%E9%A1%B5%EF%BC%8C%E6%84%8F%E5%A4%96%E6%83%8A%E5%96%9C%E7%AD%89%E7%9D%80%E4%BD%A0%EF%BC%81&startNews%5Bdocument_id%5D=3&shareMessage%5Btitle%5D=%E7%8E%A9%E5%A4%A7%E8%BD%AC%E7%9B%98%EF%BC%8C%E8%BD%BB%E8%BD%BB%E4%B8%80%E8%BD%AC%E5%A5%BD%E7%A4%BC%E4%B8%8D%E6%96%AD%EF%BC%81&shareMessage%5Bdesc%5D=%E7%8E%A9%E6%8A%BD%E5%A5%96%E5%A4%A7%E8%BD%AC%E7%9B%98%EF%BC%8C%E5%8D%83%E4%B8%87%E5%A5%96%E5%93%81%E7%AD%89%E4%BD%A0%E6%9D%A5%EF%BC%8C%E7%99%BE%E5%88%86%E7%99%BE%E8%B5%A2%E4%B8%AD%E5%A5%96%E5%93%9F~&shareMessage%5Bpic_id%5D=9
+    Log    ${data}
+    ${resp}    Post Request    wsh    /market-activity/add-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    Log    添加抽奖活动成功...
+    [Return]    ${errmsg}
+
+添加众筹活动
+    [Documentation]    添加众筹活动
+    ...
+    ...    author:戴斌旺
+    ${newscontent}    Create Dictionary    title=顺手点个赞，有惊喜哦~    description=亲，点击进入活动主页，意外惊喜等着你！    document_id=6
+    ${news}    Create Dictionary    news=${newscontent}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /collect-zan/add-ajax    data=${news}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    ${collectZanInfor}    Get From Dictionary    ${errmsg}    0
+    [Return]    ${collectZanInfor}
+
+添加众筹活动商品
+    [Arguments]    ${collectID}    ${productID}    ${productSkuID}    ${number}    ${reserves}    ${count}
+    [Documentation]    添加众筹活动商品
+    ...
+    ...    ${collectID} 众筹活动ID
+    ...    ${productID} 商品ID
+    ...    ${productSkuID} 商品SKU ID
+    ...    ${number} 集赞数
+    ...    ${reserves} 库存
+    ...    ${count} 配额
+    ...
+    ...    autho:戴斌旺
+    ${collectZan}    Create Dictionary    collect_id=${collectID}    product_id=${productID}    product_sku_id=${productSkuID}    price=${number}    number=${number}
+    ...    reserves=${reserves}    count=${count}    lastCount=${count}
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded; charset=UTF-8
+    ${resp}    Post Request    wsh    /collect-zan/add-collect-product-ajax    data=${collectZan}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+添加众筹活动自定义商品
+    [Arguments]    ${collectID}    ${productName}    ${zanNumber}    ${productNumber}    ${documentID}
+    [Documentation]    添加众筹活动自定义奖品
+    ...
+    ...    ${productName}商品名称,
+    ...    ${zanNumber}集赞个数,
+    ...    ${productNumber}奖品数,
+    ...    ${documentID}商品图片ID
+    ...
+    ...    author:戴斌旺
+    ${collectZan}    Create Dictionary    collect_id=${collectID}    name=${productName}    number=${zanNumber}    count=${productNumber}    price=${zanNumber}
+    ...    lastCount=${productNumber}    document_id=${documentID}
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded; charset=UTF-8
+    ${resp}    Post Request    wsh    /collect-zan/add-custom-gift-ajax    data=${collectZan}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+编辑众筹活动
+    [Arguments]    ${collectZanID}
+    [Documentation]    编辑众筹活动
+    ...
+    ...    ${collectZanID}众筹活动ID
+    ...
+    ...    author:戴斌旺
+    ${dateString}    Get Current Date    result_format=%m%d%H%M
+    ${baseTime}    Get Current Date    result_format=epoch
+    ${end}    Add Time To Date    ${baseTime}    1 days    result_format=epoch
+    ${start}    Add Time To Date    ${baseTime}    - 10 min    result_format=epoch
+    ${starttime}    Convert To Integer    ${start}
+    ${endtime}    Convert To Integer    ${end}
+    ${editCollectZanInfor}    Create Dictionary    collect[id]=${collectZanID}    collect[name]=${dateString}众筹自动化测试    collect[rule]=众筹自动化测试    collect[is_attention]=${2}    collect[start_time]=${starttime}
+    ...    collect[end_time]=${endtime}    collect[share_type]=${1}    shareMessage[title]=谁是点赞狂魔，一点就知道！    shareMessage[desc]=让好友来点赞，集够赞数免费获得指定大奖~    shareMessage[pic_id]=${11}
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded; charset=UTF-8
+    ${resp}    Post Request    wsh    /collect-zan/edit-ajax    data=${editCollectZanInfor}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    ${collectZanInfor}    Get From Dictionary    ${errmsg}    0
+    [Return]    ${collectZanInfor}
+
+开启众筹活动
+    [Arguments]    ${collectZanID}
+    [Documentation]    开启众筹活动
+    ...
+    ...    ${collectZanID}众筹活动ID
+    ...
+    ...    author:戴斌旺
+    ${collectZan}    Create Dictionary    id=${collectZanID}
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded; charset=UTF-8
+    ${resp}    Post Request    wsh    /collect-zan/open-ajax    data=${collectZan}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+关闭众筹活动
+    [Arguments]    ${collectZanID}
+    [Documentation]    关闭众筹活动
+    ...
+    ...    ${collectZanID}众筹活动ID
+    ...
+    ...    author:戴斌旺
+    ${collectZan}    Create Dictionary    id=${collectZanID}
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded; charset=UTF-8
+    ${resp}    Post Request    wsh    /collect-zan/close-ajax    data=${collectZan}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+删除众筹活动
+    [Arguments]    ${collectZanID}
+    [Documentation]    删除众筹活动
+    ...
+    ...    ${collectZanID}众筹活动ID
+    ...
+    ...    author:戴斌旺
+    ${collectZan}    Create Dictionary    id=${collectZanID}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /collect-zan/del-ajax    data=${collectZan}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+获取众筹活动参与用户
+    [Arguments]    ${collectZanID}    ${nickName}=${EMPTY}
+    [Documentation]    获取众筹活动参与用户
+    ...
+    ...    ${collectZanID}众筹活动ID,
+    ...    ${nickName}用户微信昵称(不传则默认为${EMPTY}获取所有参与用户信息),
+    ...
+    ...    author:戴斌旺
+    ${collectZan}    Create Dictionary    id=${collectZanID}    _page=${1}    nickname=${nickName}    _page_size=${10}
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded; charset=UTF-8
+    ${resp}    Post Request    wsh    /collect-zan/join-user-ajax    data=${collectZan}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+众筹奖品手动兑换
+    [Arguments]    ${collectZanID}    ${joinUserUID}    ${collectID}
+    [Documentation]    众筹活动奖品手动兑换
+    ...
+    ...    ${collectZanID}众筹活动用户参与ID,
+    ...    ${joinUserUID}参与用户微信ID,
+    ...    ${collectID}众筹活动ID
+    ...
+    ...    author:戴斌旺
+    ${collectZan}    Create Dictionary    id=${collectZanID}    uid=${joinUserUID}    collect_id=${collectID}
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded; charset=UTF-8
+    ${resp}    Post Request    wsh    /collect-zan/exchange-ajax    data=${collectZan}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+添加商城红包活动_bak
+    [Arguments]    ${red_packet_id}    ${num_per_packet}=4    ${red_packet_num}=10    ${name}=随机    ${start_time}=默认    ${end_time}=默认
+    ${name}    Run Keyword If    '${name}'=='随机'    随机字符    红包活动    12
+    ...    ELSE    Set Variable    ${name}
+    ${time}    Get Time    epoch
+    ${start_time}    Run Keyword If    '${start_time}'=='默认'    Evaluate    ${time}-(3600*3)
+    ...    ELSE    Set Variable    ${start_time}
+    ${end_time}    Run Keyword If    '${end_time}'=='默认'    Evaluate    ${start_time}+(3600*24*5)
+    ...    ELSE    Set Variable    ${end_time}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    &{activity}    Create Dictionary    name=${name}    desc=1. 活动时间：#年#月#日#时 至 #年#月#日#时；\n2. 用户进入活动主页抢群红包，分享给好友瓜分群红包，瓜分到的红包金额自动发放到用户的商城账户；\n3. 用户必须关注微信公众号才能抢群红包；（打开强制关注后）；\n4. 每个用户只能发起一次活动，但可以瓜分不同用户转发的群红包；\n5. 瓜分群红包，先到先得，该群红包分完为止；\n6. 本活动最终解释权归XX商家所有。    start_time=${start_time}    end_time=${end_time}    share_type=1
+    &{redPacketEvent}    Create Dictionary    type=1    red_packet_id=${red_packet_id}    num_per_packet=5    red_packet_num=10    is_attention=2
+    &{shareMessage}    Create Dictionary    title=拼的是手气，抢的是红包~    desc=#商家店名#发红包啦，不要白不要啊！    pic_id=10
+    &{params}    Create Dictionary    activity=&{activity}    redPacketEvent=&{redPacketEvent}    shareMessage=&{shareMessage}
+    ${resp}    Post Request    wsh    /redpack/add-ajax    data=&{params}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+WX_领取红包
+    [Arguments]    ${act_id}    ${shop_sub_id}=0
+    [Documentation]    微信端领取红包接口
+    &{headers}=    Get Headers    xform
+    &{data}=    Create Dictionary    id=${act_id}    shop_sub_id=${shop_sub_id}
+    ${resp}    Post Request    wx    /grouppack/receive-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    Log    领取红包成功...
+    [Return]    ${errmsg}
+
+WX_打开红包
+    [Arguments]    ${item_id}    ${shop_sub_id}=0
+    [Documentation]    微信端打开红包接口
+    &{headers}=    Get Headers    xform
+    &{data}=    Create Dictionary    id=${item_id}    shop_sub_id=${shop_sub_id}
+    ${resp}    Post Request    wx    /grouppack/open-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    Log    打开红包成功...
+    [Return]    ${errmsg}

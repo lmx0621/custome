@@ -1,0 +1,217 @@
+*** Settings ***
+Resource          Common.txt
+
+*** Keywords ***
+商品列表
+    ${resp}    Post Request    wsh    /product/list-ajax
+    ${预期返回码}    Set Variable    0
+    Log    Response:${resp.content}
+    ${商品列表响应}    loads    ${resp.content}
+    ${返回码}    Get From Dictionary    ${商品列表响应}    errcode
+    Log    errcode is:${返回码}
+    Should Be Equal As Strings    ${返回码}    ${预期返回码}
+    ${返回码信息}    Get From Dictionary    ${商品列表响应}    errmsg
+    ${列表数据}    Get From Dictionary    ${返回码信息}    data
+    [Return]    ${返回码信息}
+
+商品详情
+    [Arguments]    ${id}
+    #商品详情
+    &{data}=    Create Dictionary    id=${id}
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    ${resp}    Post Request    wsh    /product/product-detail-ajax    data=${data}    headers=${headers}
+    Log    Response:${resp.content}
+    ${json_content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${json_content}    errcode
+    ${errmsg}    Get From Dictionary    ${json_content}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+添加商品
+    [Arguments]    ${args}
+    [Documentation]    {"productInfo":{"detail_pic":"504875,504865,","detail":"<p>YT的测试商品介绍。。。</p>"},"product":{"product_type":1,"name":"${产品名称}","sales":"${销量}","covers_id":504875,"quota":"3","sort":"0","sale_scope":"1","product_category_id":33694,"product_category_path":"/33691/33694/","status":2,"postage_fee_type":0,"product_kind_ids":"205477;","show_sale_num":2,"prod_weight":"200"},"shareMessage":{"desc":"优惠多多,欢迎选购","title":"YT测试商品0905","file_cdn_path":"http://imgcache.vikduo.com/static/89c357c48d8830326acfa5fb4b4cc3f7.png","pic_id":504875},"kindBody":[{"firstName":"50g","firstRowSpan":1,"firstShow":true,"id":"50g","status":false},{"firstName":"150g","firstRowSpan":1,"firstShow":true,"id":"150g","status":false}],"skus":[{"status":1,"reserves":${库存},"market_price":"80","retail_price":"${价格}","sku_no":"T000101","barcode":"${条件码1}","sales":0,"name":"YT测试商品0905","kind_value_ids":[846106],"kind_ids":[205477]},{"status":1,"reserves":300,"market_price":"120","retail_price":"99","sku_no":"T000102","barcode":"${条件码2}","sales":0,"name":"YT测试商品0905","kind_value_ids":[846108],"kind_ids":[205477]}]}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    ${args}
+    ${resp}    Post Request    wsh    /product/add-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    #${str}    Get Substring    ${resp.content}    3
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+商品上架
+    [Arguments]    ${id}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"ids":[${id}]}
+    ${resp}    Post Request    wsh    /product/on-sale-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    #${str}    Get Substring    ${resp.content}    3
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！${errmsg}
+    [Return]    ${errmsg}
+
+商品下架
+    [Arguments]    ${id}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"ids":[${id}]}
+    ${resp}    Post Request    wsh    /product/off-sale-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+删除商品
+    [Arguments]    ${id}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"ids":[${id}]}
+    ${resp}    Post Request    wsh    /product/del-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+商品规格列表
+    ${resp}    Post Request    wsh    /product/kind-list-ajax
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+获取商品分类列表
+    [Arguments]    ${pid}=0
+    [Documentation]    获取商品分类列表
+    ...
+    ...    1.${pid} 父类id
+    ...
+    ...    如果父类ID值为0，则获取所有商品分类列表，如果父类ID值不为0，则获取父类ID下的商品子分类
+    ...
+    ...    author:戴斌旺
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    &{data1}=    Create Dictionary    _page=1    _page_size=20
+    &{data2}=    Create Dictionary    pid=${pid}
+    &{data}    Set Variable If    ${pid} == 0    &{data1}    ${pid} != 0    &{data2}
+    ${resp}    Post Request    wsh    /product/category-list-ajax    data=${data}    headers=${headers}
+    Log    Response:${resp.content}
+    ${content}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    ${sortInforList}    Get From Dictionary    ${errmsg}    data
+    ${pageInfor}    Get From Dictionary    ${errmsg}    page
+    ${totalPage}    Get From Dictionary    ${pageInfor}    total_page
+    ${totalCount}    Get From Dictionary    ${pageInfor}    total_count
+    : FOR    ${page}    IN RANGE    2    ${totalPage}+1
+    \    &{forData}=    Create Dictionary    _page=${page}    _page_size=20
+    \    ${forResp}    Post Request    wsh    /product/category-list-ajax    data=&{forData}    headers=${headers}
+    \    Should Be Equal As Integers    ${forResp.status_code}    200
+    \    ${tmpdict}    to json    ${forResp.content}
+    \    ${tmpErrcode}    Get From Dictionary    ${tmpdict}    errcode
+    \    ${tmpErrmsg}    Get From Dictionary    ${tmpdict}    errmsg
+    \    Run Keyword If    ${errcode}!=0    Fail    接口返回异常:${tmpErrmsg}
+    \    ${subList}    Get From Dictionary    ${tmpErrmsg}    data
+    \    ${sortInforList}    Evaluate    @{sortInforList} + @{subList}
+    ${count}    Get Length    ${sortInforList}
+    Should Be Equal As Integers    ${count}    ${totalCount}
+    [Return]    ${sortInforList}
+
+添加商品分类
+    [Arguments]    ${name}    ${desc}=分类描述    ${sort}=1    ${pid}=0
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    &{data}=    Create Dictionary    name=${name}    desc=${desc}    sort=${sort}    pid=${pid}
+    ${resp}    Post Request    wsh    /product/category-add-ajax    data=${data}    headers=${headers}
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常!,${errmsg}
+    [Return]    ${errmsg}
+
+WX_商品列表
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${data}    Convert To String    {"_page":1,"_page_size":20,"category_id":"","sort":1,"order":0,"name":"","is_member_discount":""}
+    ${resp}    Post Request    wx    /product/list-ajax    data=${data}    headers=${headers}
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！错误信息：${errmsg}
+    [Return]    ${errmsg}
+
+删除商品分类
+    [Arguments]    ${classificationID}
+    [Documentation]    删除商品分类
+    ...
+    ...    1.${classificationID} 商品分类ID
+    ...
+    ...    author:戴斌旺
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    &{classificationData}=    Create Dictionary    id=${classificationID}
+    ${resp}    Post Request    wsh    /product/category-del-ajax    data=&{classificationData}    headers=${headers}
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    [Return]    ${errmsg}
+
+添加商品规格
+    [Arguments]    ${name}    @{kindValue}
+    [Documentation]    添加商品规格:
+    ...
+    ...    1.${name} 规格名称
+    ...    2.@{kindValue} 规格值
+    ...
+    ...    author：戴斌旺
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${kindInfor}=    Create Dictionary    name=${name}    kind_value=@{kindValue}
+    ${resp}    Post Request    wsh    /product/kind-add-ajax    data=${kindInfor}    headers=${headers}
+    Log    Response:${resp.content}
+    ${content}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常!,${errmsg}
+
+查询商品
+    [Arguments]    ${name}    ${status}=1
+    [Documentation]    根据条件查询商品
+    ...
+    ...    1、${name}:商品名称
+    ...    2、status：上下架状态
+    ...
+    ...    author:戴斌旺
+    ${searchInfor}    Create Dictionary    _page:=1    _page_size=1    is_search=True    name=${name}    status=${status}
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${resp}    Post Request    wsh    /product/list-ajax    data=${searchInfor}    headers=${headers}
+    Log    Response:${resp.content}
+    ${content}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！,${errmsg}
+    ${pageInfor}    Get From Dictionary    ${errmsg}    page
+    ${totalCount}    Get From Dictionary    ${pageInfor}    total_count
+    Run Keyword If    ${totalCount} == 0    log    未找到相应的商品    WARN
+    ${msgData}    Get From Dictionary    ${errmsg}    data
+    ${productInfor}    Get From List    ${msgData}    0
+    [Return]    ${productInfor}
+
+WX_商品详情
+    [Arguments]    ${id}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json;charset=utf-8
+    ${productData}    Create Dictionary    id=${id}    mid=${null}
+    ${resp}    Post Request    wx    /product/get-detail-ajax    data=${productData}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200    接口异常!,返回码为:${resp.status_code}
+    ${jsondict}    to json    ${resp.content}
+    ${errcode}    Get From Dictionary    ${jsondict}    errcode
+    ${errmsg}    Get From Dictionary    ${jsondict}    errmsg
+    Should Be Equal As Integers    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}

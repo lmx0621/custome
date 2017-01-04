@@ -1,0 +1,17 @@
+*** Settings ***
+Library           RequestsLibrary
+Library           String
+Library           json
+Library           Collections
+Resource          ../Resource/配置参数.robot
+
+*** Test Cases ***
+获取店铺支付方式
+    Create Session    baseapi    ${URL_BASEAPI}
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"shop_id":97320}
+    ${resp}    Post Request    baseapi    /payment/find-paytype-list    data=${jsonstr}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode:${errcode}

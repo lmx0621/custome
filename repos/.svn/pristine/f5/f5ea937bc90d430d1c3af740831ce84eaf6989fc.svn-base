@@ -1,0 +1,18 @@
+*** Settings ***
+Library           Selenium2Library
+Resource          配置参数.robot
+
+*** Keywords ***
+登陆
+    Open Browser    ${url}    Chrome    #打开浏览器
+    界面最大化
+    Input Text    id=staff_id    ${username}    #输入用户名
+    Input Text    id=password    ${password}    #输入密码
+    Input Text    id=captcha    111111    #输入验证码
+    Click Button    id=login    #点击登陆
+
+界面最大化
+    Maximize Browser Window
+
+关闭浏览器
+    Close Browser

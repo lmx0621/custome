@@ -1,0 +1,18 @@
+*** Settings ***
+Library           RequestsLibrary
+Library           String
+Library           json
+Library           Collections
+
+*** Test Cases ***
+baseapi
+    Create Session    baseapi    http://betanewapi.snsshop.net/v1
+    #&{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"shop_id":97320}
+    &{data}=    Create Dictionary    shop_id=97320
+    #${resp}    Post Request    baseapi    /payment/find-paytype-list    data=${data}    headers=${headers}
+    ${resp}    Post Request    baseapi    /payment/find-paytype-list    data=${jsonstr}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode

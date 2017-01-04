@@ -1,0 +1,43 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Resource          ../../Resource/常用操作.robot
+Library           Selenium2Library
+
+*** Test Cases ***
+新增核销员
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    绑定核销员
+    Click Link    绑定核销员
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"绑定核销员")]
+    Sleep    1
+    ####新增核销员
+    Click Link    新增核销员
+    Wait Until Page Contains Element    //h4[contains(text(),"新增核销员")]
+    Sleep    1
+    ${员工}    Generate Random String    1    123456789
+    ${核销员}    Get Text    //*[@id="staffTable"]/table/tbody/tr[${员工}]/td[2]
+    Set Suite Variable    ${核销员}
+    Click Element    //*[@id="staffTable"]/table/tbody/tr[${员工}]/td[1]
+    Sleep    1
+    Click Element    //div[@class="modal-footer"]/a[text()="确定"]
+    Sleep    1.5
+    弹出信息校验
+    Sleep    2
+    Page Should Contain Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[2]/div/div/table/tbody/tr/td[text()="${核销员}"]
+
+撤销核销员
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    绑定核销员
+    Click Link    绑定核销员
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"绑定核销员")]
+    Sleep    1
+    ####撤销核销员
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[2]/div/div/table/tbody/tr/td[text()="${核销员}"]/parent::tr/td[4]/a
+    Sleep    1.5
+    弹出信息校验

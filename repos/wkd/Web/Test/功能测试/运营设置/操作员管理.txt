@@ -1,0 +1,171 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Resource          ../../Resource/常用操作.robot
+Library           Selenium2Library
+
+*** Test Cases ***
+操作员_添加
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    操作员管理
+    Click Element    //*[@id="navList"]/li[4]/a/span
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"操作员管理")]
+    Sleep    1
+    ####添加操作员
+    Click Link    添加操作员
+    ####生成参数
+    ${账号}    随机字符    \    8
+    ${密码}    随机字符    \    6
+    ${姓名}    Set Variable    自动化测试
+    ${性别}    Generate Random String    1    12
+    ${角色组}    Create List    【操作员】    【管理员】    【测试员】
+    ${角色}    Generate Random String    1    123
+    ${Email-pre}    Generate Random String    6    [LOWER]
+    ${Email-suffx}    Generate Random String    6    [LOWER]
+    ${Email}    Set Variable    ${Email-pre}@${Email-suffx}.com
+    ${电话}    随机手机号
+    ${新角色名}    随机字符    【临时测试】    10
+    ####输入参数
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[1]/div/input    ${账号}
+    Sleep    1
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[2]/div/input    ${密码}
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[3]/div/input    ${姓名}
+    Sleep    1
+    Click Element    //*[@id="radio"]/label[${性别}]/input
+    Sleep    1
+    ##添加新角色
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[5]/div/a
+    Wait Until Page Contains Element    id=roleAdda
+    Sleep    1
+    Input Text    //*[@id="roleAddb"]    ${新角色名}
+    Click Element    id=btnConfirm    #确定
+    Sleep    2
+    弹出信息校验
+    Sleep    1
+    Select From List By Label    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[5]/div/select    ${角色组[1]}
+    Sleep    1
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/input    ${Email}
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[7]/div/input    ${电话}
+    Sleep    1
+    ####保存
+    Click Link    确定
+    Sleep    1.5
+    弹出信息校验
+    Sleep    3
+    ####结果校验
+    ${姓名2}    Get Text    //*[@id="home"]/form/table/tbody/tr[1]/td[1]
+    ${电话2}    Get Text    //*[@id="home"]/form/table/tbody/tr[1]/td[2]
+    ${角色2}    Get Text    //*[@id="home"]/form/table/tbody/tr[1]/td[3]
+    Should Be Equal As Strings    ${姓名2}    ${姓名}
+    Should Be Equal As Strings    ${电话2}    ${电话}
+    Should Be Equal As Strings    ${角色2}    ${角色组[1]}
+    Log    Sucess!
+
+操作员_编辑
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    操作员管理
+    Click Element    //*[@id="navList"]/li[4]/a/span
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"操作员管理")]
+    Sleep    1
+    ####编辑操作员
+    Click Element    //*[@id="home"]/form/table/tbody/tr[1]/td[6]/a[1]
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"编辑操作员")]
+    Sleep    1
+    ####生成参数
+    ${账号}    随机字符    \    8
+    ${是否修改密码}    Generate Random String    1    01
+    ${密码}    随机字符    \    6
+    ${姓名}    Set Variable    自动化测试
+    ${性别}    Generate Random String    1    12
+    ${角色组}    Create List    【操作员】    【管理员】    【测试员】
+    ${角色}    Generate Random String    1    123
+    ${Email-pre}    Generate Random String    6    [LOWER]
+    ${Email-suffx}    Generate Random String    6    [LOWER]
+    ${Email}    Set Variable    ${Email-pre}@${Email-suffx}.com
+    ${电话}    随机手机号
+    ####输入参数
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[1]/div/input    ${账号}
+    Sleep    1
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[2]/div/input    ${姓名}
+    Sleep    1
+    Click Element    //*[@id="radio"]/label[${性别}]/input
+    Sleep    1
+    Select From List By Label    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[4]/div/select    ${角色组[1]}
+    Sleep    1
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[5]/div/input    ${Email}
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/input    ${电话}
+    Sleep    1
+    Run Keyword If    ${是否修改密码}==1    修改密码    ${密码}
+    ####保存
+    Click Link    确定
+    Sleep    1.5
+    弹出信息校验
+    Sleep    3
+    ####结果校验
+    ${姓名2}    Get Text    //*[@id="home"]/form/table/tbody/tr[1]/td[1]
+    ${电话2}    Get Text    //*[@id="home"]/form/table/tbody/tr[1]/td[2]
+    ${角色2}    Get Text    //*[@id="home"]/form/table/tbody/tr[1]/td[3]
+    Run Keyword If    ${是否修改密码}==0    Should Be Equal As Strings    ${姓名2}    ${姓名}
+    Run Keyword If    ${是否修改密码}==0    Should Be Equal As Strings    ${电话2}    ${电话}
+    ...    ELSE    Should Not Be Equal As Strings    ${电话2}    ${电话}
+    Run Keyword If    ${是否修改密码}==0    Should Be Equal As Strings    ${角色2}    ${角色组[1]}
+    Log    Sucess!
+
+操作员_删除
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    操作员管理
+    Click Element    //*[@id="navList"]/li[4]/a/span
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"操作员管理")]
+    Sleep    1
+    ####删除操作员
+    Click Element    //*[@id="home"]/form/table/tbody/tr[1]/td[6]/a[2]
+    Wait Until Page Contains Element    //td[@i="header"]/div[text()="删除提示"]
+    Sleep    1
+    Click Element    //div[@i="button"]/button[text()="确定"]
+    Sleep    1
+    弹出信息校验
+    Sleep    2
+
+角色_添加
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    运营设置
+    ${sub}    Set Variable    操作员管理
+    Click Element    //*[@id="navList"]/li[4]/a/span
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"操作员管理")]
+    Sleep    1
+    ####添加角色
+    Click Link    角色管理
+    Wait Until Page Contains Element    link=添加角色
+    Click Link    添加角色
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[text()="添加角色"]
+    Sleep    2
+    ####生成参数
+    ${角色名称}    随机字符    【测试角色】    10
+    ${权限模块}    Generate Random String    1    123456789
+    ####输入参数
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[1]/div/input    ${角色名称}
+    Sleep    1
+    Click Element    //ul[@id="treeDemo"]/li[3]/span[2]
+    Sleep    3
+
+角色_编辑
+
+角色_删除
+
+*** Keywords ***
+修改密码
+    [Arguments]    ${密码}=password
+    ##修改密码
+    Click Link    修改密码
+    Wait Until Page Contains Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[2]/div/input[@type="password"]
+    Sleep    1
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[2]/div/input[@type="password"]    ${密码}
+    Sleep    1

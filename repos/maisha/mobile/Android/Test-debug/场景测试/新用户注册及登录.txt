@@ -1,0 +1,21 @@
+*** Settings ***
+Library           AppiumLibrary
+Resource          ../../Lib/常用操作.robot
+
+*** Test Cases ***
+QQ登录
+    启动App
+    Sleep    1s
+    点击我的
+    Sleep    1s
+    点击QQ登录
+    Sleep    1s
+    切换Web视图
+    Sleep    2s
+
+注册
+    启动App
+    Sleep    1s
+    点击我的
+    Sleep    1s
+    Click Element    id=tvRegister

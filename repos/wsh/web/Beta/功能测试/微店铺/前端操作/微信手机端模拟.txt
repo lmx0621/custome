@@ -1,0 +1,32 @@
+*** Settings ***
+Test Teardown     失败重置
+Library           Dialogs
+Library           AppiumLibrary
+
+*** Test Cases ***
+WexinEmu
+    Open Application    http://localhost:4722/wd/hub    alias=browser    platformName=Android    platformVersion=5.1    deviceName='emulator-5554'    appPackage=com.android.browser
+    ...    appActivity=.BrowserActivity
+    ${a}    Get Contexts
+    Log    ${a}
+    ${url}    Get Element Attribute    id=com.android.browser:id/url    text
+    Input Text    id=com.android.browser:id/url    http://weishanghuzhushou.betanewwx.snsshop.net/weishanghuzhushou/product/category
+    Press Keycode    66
+    ${status}    run keyword and return status    Get Element Attribute    id=com.android.browser:id/share_button    text
+    Log    Status is: ${status}
+    #Run Keyword If    ${status}==True    Click Element    id=com.android.browser:id/share_button
+    Log    ${url}
+    Switch To Context    ${a[1]}
+    #Log Source
+    #Pause Execution
+    #Input Text    //*[@id="index-kw"]    Test
+    Sleep    3
+    Switch To Context    ${a[0]}
+    Go To Url    http://www.sina.com
+    Sleep    3
+    Close All Applications
+
+*** Keywords ***
+失败重置
+    Sleep    3
+    Run Keyword If Test Failed    Close All Applications

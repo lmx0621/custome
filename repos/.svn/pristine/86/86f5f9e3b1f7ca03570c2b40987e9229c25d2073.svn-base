@@ -1,0 +1,18 @@
+*** Settings ***
+Library           RequestsLibrary
+Library           json
+Library           Collections
+
+*** Test Cases ***
+获取Token
+    Create Session    wechat    https://api.weixin.qq.com
+    ${appid}    Set Variable    wxb86466a5cc0bdf0f
+    ${secret}    Set Variable    11e82aa7c2f30c4149fa49606da6529e
+    ${data}    Set Variable    grant_type=client_credential&appid=${appid}&secret=${secret}
+    ${resp}=    Get Request    wechat    /cgi-bin/token?${data}
+    Log    ResContent:${resp.content}
+    ${respdata}    json.Loads    ${resp.content}
+    Log    Json Data:${respdata}
+    ${token}    Get From Dictionary    ${respdata}    access_token
+    Log    access_token:${token}
+    Set Global Variable    ${token}

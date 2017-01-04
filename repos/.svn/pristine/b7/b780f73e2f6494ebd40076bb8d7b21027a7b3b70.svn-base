@@ -1,0 +1,178 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Library           Selenium2Library
+Resource          ../../Resource/常用操作.robot
+Resource          ../../Resource/功能菜单.robot
+Resource          ../../Resource/配置参数.robot
+Library           Screenshot
+Resource          ../../Resource/API.robot
+
+*** Test Cases ***
+会员卡设置_页面校验
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    会员卡设置
+    点击链接菜单    ${sub}
+    Wait Until Element Is Visible    //*[@id="main-container"]//ng-form/h4[text()="会员卡详情"]
+    Sleep    1
+    #
+    Element Should Be Visible    //*[@id="main-container"]//ng-form/h4[text()="服务信息"]
+    Element Should Contain    id=phone_page1    积分
+    Element Should Contain    id=phone_page1    等级
+    Element Should Contain    id=phone_page1    折扣
+    ##
+    ${商户名}    Get Text    //span[@ng-bind="model.brand_name"]
+    ${会员卡标题}    Get Text    //p[@ng-bind="model.title"]
+    Page Should Contain Element    //div[@class="uc-card"]//div[@ng-bind="model.brand_name" and text()="${商户名}"]
+    Page Should Contain Element    //div[@class="uc-card"]//div[@ng-bind="model.title" and text()="${会员卡标题}"]
+    #
+
+会员卡设置_查看终端店二维码
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    会员卡设置
+    点击链接菜单    ${sub}
+    Wait Until Element Is Visible    //*[@id="breadcrumbs"]/ul/li[text()="会员卡设置"]
+    Sleep    1
+    ####进入投放界面
+    Click Element    //a[@href="/members/delivery" and contains(text(),"投放")]
+    Wait Until Element Is Visible    //*[@id="breadcrumbs"]/ul/li[text()="直接投放"]
+    Title Should Be    直接投放
+    ##直接投放
+    Click Link    查看带终端店参数二维码
+    Sleep    1
+    Wait Until Element Is Visible    //*[@id="breadcrumbs"]/ul/li[text()="二维码"]
+    ####查询API
+    ${errmsg}    API.微信_获取二维码列表
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${len}    Get Length    ${data}
+    ${page}    Get From Dictionary    ${errmsg}    page
+    ${total_count }    Get From Dictionary    ${page}    total_count
+    Run Keyword If    ${total_count }>20    分页工具条校验    ${total_count }
+    ${Agents_count}    Set Variable    ${0}
+    :FOR    ${i}    IN RANGE    ${len}
+    \    ${二维码归属}    Get Text    xpath=(//tr[@ng-repeat="list in lists"]/td[1])[${i+1}]
+    \    ${所属代理商}    Get Text    xpath=(//tr[@ng-repeat="list in lists"]/td[2])[${i+1}]
+    \    #---
+    \    ${data_i}    Get From List    ${data}    ${i}
+    \    ${shopInfo}    Get From Dictionary    ${data_i}    shopInfo
+    \    ${二维码归属_API}    Get From Dictionary    ${shopInfo}    name
+    \    Should Be Equal As Strings    ${二维码归属}    ${二维码归属_API}
+    \    ${flag}    Run Keyword And Return Status    Get From Dictionary    ${data_i}    shopAgents
+    \    ${shopAgents}    Run Keyword If    ${flag}==True    Get From Dictionary    ${data_i}    shopAgents
+    \    ${len}    Run Keyword If    ${flag}==True    Get Length    ${shopAgents}
+    \    ${所属代理商_API}    Run Keyword If    ${flag}==True and ${len}!=0    Get From Dictionary    ${shopAgents}    agent_name
+    \    ${Agents_count}    Set Variable If    ${flag}==True and ${len}!=0    ${Agents_count+1}    ${Agents_count}
+    \    Run Keyword If    ${flag}==True and ${len}!=0    Should Be Equal As Strings    ${所属代理商}    ${所属代理商_API}
+    \    #---二维码
+    \    ${flag2}    Run Keyword And Return Status    Get From Dictionary    ${shopInfo}    shop_sub_id
+    \    ${shop_sub_id }    Run Keyword If    ${flag2}==True    Get From Dictionary    ${shopInfo}    shop_sub_id
+    \    ...    ELSE    Set Variable    ${EMPTY}
+    \    Run Keyword If    ${i}<3    二维码校验    ${i}    ${shop_sub_id }
+    #
+
+会员卡设置_编辑投放信息
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    会员卡设置
+    点击链接菜单    ${sub}
+    Wait Until Element Is Visible    //*[@id="breadcrumbs"]/ul/li[text()="会员卡设置"]
+    Sleep    1
+    ####进入修改界面
+    Click Element    //a[@ng-if="$root.hasPermission('members/card-edit')"]
+    #Click Element    //div[contains(@class,"hy-card-setcont")]//a[@ng-if="$root.hasPermission('members/card-edit')" and href="/members/card-edit" and contains(text(),"修改")]
+    Wait Until Element Is Visible    //*[@id="breadcrumbs"]/ul/li[text()="编辑会员卡"]
+    Title Should Be    会员卡设置
+    ####生成参数
+    ${会员卡标题}    随机字符    【会员卡】    12
+    ${特权说明}    随机字符    【特权说明】    50
+    ${使用须知}    随机字符    【使用须知】    50
+    ####参数输入
+    选择颜色
+    Input Text    //input[@ng-model="model.title" and @placeholder="最多9个汉字或者18个英文字母"]    ${会员卡标题}
+    Input Text    //textarea[@name="prerogative" and @ng-model="model.prerogative"]    ${特权说明}
+    Input Text    //textarea[@ng-model="model.description"]    ${使用须知}
+    Sleep    1
+    ##基本设置
+    ${flag}    Run Keyword And Return Status    Page Should Contain Element    //div[starts-with(@ng-show,"isCustom.indexOf")]/h4[contains(text(),"入口")]
+    Run Keyword If    ${flag}!=True    自定义入口
+    Sleep    3
+    #下一步
+    Click Element    //a[@ng-click="nextBtn()" and contains(text(),"下一步")]
+    ##功能设置
+    #${激活信息}
+    ${核销展示_list}    Create List    CODE_TYPE_BARCODE    CODE_TYPE_QRCODE    CODE_TYPE_TEXT
+    ${核销展示_rand}    Generate Random String    1    012
+    Select Radio Button    shows    ${核销展示_list[${核销展示_rand}]}
+    Sleep    1
+    #保存
+    Click Element    //a[@ng-click="saveBtnAdd()"]
+    Sleep    2
+    弹出信息校验
+    Wait Until Element Is Visible    //*[@id="breadcrumbs"]/ul/li[text()="会员卡设置"]
+    Sleep    1
+    ####结果校验
+    ${会员卡标题2}    Get Text    //p[@ng-bind="model.title"]
+    Should Be Equal As Strings    ${会员卡标题2}    ${会员卡标题}
+    #
+
+会员卡设置_修改
+
+开卡优惠设置
+
+长成值管理
+
+会员等级管理_页面校验
+
+会员等级管理_新增
+
+会员等级管理_编辑
+
+会员等级管理_删除
+
+*** Keywords ***
+二维码校验
+    [Arguments]    ${i}    ${shop_sub_id }=${EMPTY}
+    Click Element    xpath=(//tr[@ng-repeat="list in lists"]/td[3])[${i+1}]
+    Wait Until Element Is Visible    //div[@class="modal-header"]//h4[@class="modal-title" and text()="查看二维码"]
+    Sleep    1
+    ${errmsg}    API.微信_获取二维码详情    ${shop_sub_id }
+    ${src}    Get Element Attribute    //div[@class="bootbox-body"]//img@src
+    Should Be Equal As Strings    ${src}    ${errmsg}
+    Sleep    1
+    Click Element    //div[@class="modal-header"]//a[@data-dismiss="modal"]
+    Sleep    1
+
+选择颜色
+    Click Element    id=selectColor
+    Wait Until Element Is Visible    id=tipscolor
+    Sleep    1
+    ${trs}    Generate Random String    1    12
+    ${td_rand}    Generate Random String    1    123456
+    Click Element    //*[@id="tipscolor"]/tbody/tr[${trs}]/td[${td_rand}]
+    Sleep    1
+    #
+
+自定义入口
+    #---自定义入口
+    ${入口名称}    随机字符    \    8
+    ${引导语}    随机字符    \    8
+    ${链接内容_rand}    Evaluate    str(random.randint(1,10))    random
+    ${链接内容_url}    随机URL
+    Click Element    //input[@ng-click="customClick()" and @value="添加自定义入口"]
+    Sleep    1
+    Input Text    //input[@ng-model="model.custom_url_name"]    ${入口名称}
+    Press Key    //input[@ng-model="model.custom_url_name"]    \\27
+    Sleep    1
+    Input Text    //input[@ng-model="model.custom_url_sub_title"]    ${引导语}
+    Sleep    1
+    Select From List By Value    //select[@ng-model="model.customurlId"]    ${链接内容_rand}
+    Run Keyword If    ${链接内容_rand}==10    Element Should Be Visible    //input[@ng-model="model.custom_url"]
+    Sleep    1
+    Run Keyword If    ${链接内容_rand}==10    Input Text    //input[@ng-model="model.custom_url"]    ${链接内容_url}
+    Sleep    1

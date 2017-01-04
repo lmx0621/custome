@@ -1,0 +1,30 @@
+*** Settings ***
+Suite Setup       API登录    1    0    1
+Library           RequestsLibrary
+Library           json
+Library           Collections
+Library           String
+Resource          ../Resource/配置参数.robot
+Resource          ../Resource/常用操作.robot
+Resource          ../Resource/API/Common.txt
+Resource          ../Resource/API/分店.txt
+Library           requests
+
+*** Test Cases ***
+激活分店商品
+    [Tags]    auto
+    分店商品激活    291480    ${GLOBAL_CONFIG.shop_sub_id}
+
+开启关闭分店模式
+    [Tags]    auto
+    关闭分店模式
+    开启分店模式
+
+分店列表
+    [Tags]    auto
+    ${errmsg}    分店列表
+
+独立库存设置
+    [Tags]    auto
+    开启独立库存
+    关闭独立库存

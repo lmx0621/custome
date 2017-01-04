@@ -1,0 +1,82 @@
+*** Settings ***
+Suite Setup       启动App
+Suite Teardown    关闭App
+Library           SongzAppiumLibrary
+Resource          ../../Lib/常用操作.robot
+Resource          ../../Lib/菜单库.robot
+Resource          ../../Lib/系统按键.robot
+Resource          ../../Lib/配置参数.robot
+
+*** Test Cases ***
+QQ登录
+    启动App
+    Wait Until Page Contains Element    id=ivDiscover    10
+    Sleep    2
+    Click Element    id=ivMine
+    Sleep    1
+    ${status}    状态判断-不应该包含    //android.widget.TextView[@text='我的订单']
+    Run Keyword If    '${status}'=='False'    退出登录
+    Click Element After Find It    id=ivQQLogin
+    Wait Until Page Contains Element    xpath=//android.widget.Button[@text='登录']    8
+    Sleep    1
+    #Click Element    xpath=//android.widget.Button[@text='登录']
+    Click Element    xpath=//android.widget.Button[contains(@clickable,'true')][contains(@index,'1')]
+    Sleep    5
+    Page Should Contain Element    xpath=//android.widget.TextView[@text='我的订单']
+    Page Should Contain Text    日志
+    Log    ---Over---
+    Sleep    2
+    Close All Applications
+
+手机验证码登录
+
+拼团
+    校验等待
+    Sleep    2
+    Click Element    xpath=//android.view.View[@resource-id='com.maishalei.seller:id/flexboxGroupBuyCommodities']/android.widget.LinearLayout[1]
+    Wait Until Page Contains Element    id=centerView
+    Sleep    3
+    切换Web视图
+    #Wait Until Page Contains    立即开团
+    Sleep    1
+    #Get Element Attribute    xpath=//li[contains(@class,'people')][contains(@class,'cell')]/a    text
+    Click Element    xpath=/html/body/div/div/section[8]/ul/li[2]/a
+    Sleep    2
+    #----下面的是未登录的情况
+    #Get Element Attribute    xpath=//button[@onclick='app_login()']    text
+    #${status}    Run Keyword And Return Status    Page Should Contain Element    xpath=
+    #Wait Until Keyword Succeeds    10x    800ms    Get Element Attribute    xpath=/html/body/div/div/section[8]/ul/li[2]/a    href
+    #Sleep    20
+    #Get Element Attribute    xpath=//a[@text='立即开团']    href
+    #Get Element Attribute    xpath=//li[contains(@class='people')][contains(@class='cell')]/a[@text='立即开团']    href
+    #Get Element Attribute    xpath=/html/body/div/div/section[8]/ul/li[2]/a    text
+    Sleep    2
+
+产品购买
+
+手机密码登录
+    [Tags]    ready
+    校验等待
+    Sleep    2
+    Click Element    id=ivMine
+    Sleep    2
+    ${status}    状态判断-不应该包含    //android.widget.TextView[@text='我的订单']
+    Run Keyword If    '${status}'=='False'    退出登录
+    Run Keyword If    '${status}'=='False'    Click Element    id=ivMine
+    Run Keyword If    '${status}'=='False'    Sleep    1
+    Input Text    id=etPhoneByPwd    ${PHONE NUM}
+    Input Password    id=etPwdByPwd    ${PHONE PWD}
+    Click Element    id=btnLoginByPwd
+    Sleep    4
+    Page Should Contain Element    xpath=//android.widget.TextView[@text='我的订单']
+    Page Should Contain Text    日志
+    Log    ------手机密码登录-完成------
+
+Temp
+
+添加收货地址
+    Sleep    2
+    ${status}    Run Keyword And Return Status    Page Should Contain Element    id=layoutAddress
+    Run Keyword If    '${status}'=='False'    手机密码登录
+    Click Element    id=layoutAddress
+    Sleep    3

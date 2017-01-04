@@ -1,0 +1,514 @@
+*** Settings ***
+Suite Setup       API登录    1    1
+Test Teardown     Run Keywords    失败截图
+...               AND    关闭浏览器
+Library           Selenium2Library
+Resource          ../../Resource/常用操作.robot
+Resource          ../../Resource/功能菜单.robot
+Resource          ../../Resource/配置参数.robot
+Resource          ../../Resource/API/营销.txt
+Resource          ../../Resource/微信模拟端/操作单元.robot
+Resource          ../../Resource/微信模拟端/点击按钮.robot
+Resource          ../../Resource/API/店铺.txt
+Resource          ../../Resource/API/API操作.txt
+
+*** Test Cases ***
+活动未开启
+    [Tags]    auto    yt
+    ####前置操作
+    ${errmsg}    添加砸金蛋活动
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=4"]
+    Element Should Contain    //a[@href="../market-activity/list?type=4"]    砸金蛋
+    Element Should Contain    //a[@href="../market-activity/list?type=4"]    一锤锤出千万惊喜，谁砸谁知道！
+    Sleep    1
+    #进入红包活动页
+    Click Element    //a[@href="../market-activity/list?type=4"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Not Contain Element    //li[@ng-bind="list.activity_name" and text()="${name}"]
+    Sleep    1
+    #数据清理
+    Log    测试成功，准备清理数据...
+    删除砸金蛋活动    ${id}
+    #
+
+活动已开启未开始
+    [Tags]    auto    yt
+    ####前置操作
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}+3600
+    ${errmsg}    添加砸金蛋活动    start_time=${start_time}
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+    开启砸金蛋活动    ${id}
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=4"]
+    Element Should Contain    //a[@href="../market-activity/list?type=4"]    砸金蛋
+    Element Should Contain    //a[@href="../market-activity/list?type=4"]    一锤锤出千万惊喜，谁砸谁知道！
+    Sleep    1
+    #进入活动列表
+    Click Element    //a[@href="../market-activity/list?type=4"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Not Contain Element    //li[@ng-bind="list.activity_name" and text()="${name}"]
+    Sleep    1
+    #进入活动页
+    Click Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Wait Until Element Is Visible    id=errorpage
+    Title Should Be    活动未开始
+    Sleep    8
+    #数据清理
+    Log    测试成功，准备清理数据...
+    删除砸金蛋活动    ${id}
+    #
+
+参与活动
+    [Tags]
+    ####前置操作
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}-600
+    ${errmsg}    添加砸金蛋活动    start_time=${start_time}
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+    开启砸金蛋活动    ${id}
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=4"]
+    Element Should Contain    //a[@href="../market-activity/list?type=4"]    砸金蛋
+    Element Should Contain    //a[@href="../market-activity/list?type=4"]    一锤锤出千万惊喜，谁砸谁知道！
+    Sleep    1
+    #进入活动列表
+    Click Element    //a[@href="../market-activity/list?type=4"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Not Contain Element    //li[@ng-bind="list.activity_name" and text()="${name}"]
+    Sleep    1
+    #进入活动页
+    Click Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Wait Until Element Is Visible    //div[@class="egg_index_box"]
+    Page Should Contain Element    //a[@href="http://wkdianshang.betanewwx.snsshop.net/wkdianshang/market-activity/activity?id=${id}&eggview=home"]
+    #砸蛋
+    Click Element    //a[@href="http://wkdianshang.betanewwx.snsshop.net/wkdianshang/market-activity/activity?id=${id}&eggview=home"]
+    Wait Until Element Is Visible    //div[@ng-click="showPrize()"]
+    Title Should Be    砸金蛋
+    Wait Until Element Is Visible    //div[@id="shape"]/div/span
+    ${rand}    Evaluate    random.randint(1,3)    random
+    Click Element    //div[@id="shape"]/div[${rand}]/span
+    Sleep    20
+    #数据清理
+    Log    测试成功，准备清理数据...
+    关闭砸金蛋活动    ${id}
+    删除砸金蛋活动    ${id}
+    #
+
+未中奖流程
+    [Tags]    auto    yt
+    ####前置操作
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}-600
+    ${errmsg}    添加砸金蛋活动    一等奖机率=0    二等奖机率=0    三等奖机率=0    start_time=${start_time}
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+    开启砸金蛋活动    ${id}
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=4"]
+    Element Should Contain    //a[@href="../market-activity/list?type=4"]    砸金蛋
+    Element Should Contain    //a[@href="../market-activity/list?type=4"]    一锤锤出千万惊喜，谁砸谁知道！
+    Sleep    1
+    #进入活动列表
+    Click Element    //a[@href="../market-activity/list?type=4"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Not Contain Element    //li[@ng-bind="list.activity_name" and text()="${name}"]
+    Sleep    1
+    #进入活动页
+    Click Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Wait Until Element Is Visible    //div[@class="egg_index_box"]
+    Page Should Contain Element    //a[@href="http://wkdianshang.betanewwx.snsshop.net/wkdianshang/market-activity/activity?id=${id}&eggview=home"]
+    #砸蛋
+    Click Element    //a[@href="http://wkdianshang.betanewwx.snsshop.net/wkdianshang/market-activity/activity?id=${id}&eggview=home"]
+    Wait Until Element Is Visible    //div[@ng-click="showPrize()"]
+    Title Should Be    砸金蛋
+    Wait Until Element Is Visible    //div[@id="shape"]/div/span
+    Sleep    1
+    ${rand}    Evaluate    random.randint(1,3)    random
+    Click Element    //div[@id="shape"]/div[${rand}]/span
+    Sleep    2
+    #未中奖
+    Wait Until Element Is Visible    //div[@ng-show="statusLayer === 2"]
+    Wait Until Element Is Visible    //div[@class="layer_head wzjh"]
+    Sleep    1
+    Element Should Contain    //div[@ng-show="statusLayer === 2"]    谢谢参与！
+    Element Should Be Visible    //div[@ng-show="statusLayer === 2"]//div[@class="get_form_btn"]
+    Sleep    3
+    #数据清理
+    Log    测试成功，准备清理数据...
+    关闭砸金蛋活动    ${id}
+    删除砸金蛋活动    ${id}
+    #
+
+使用次数用尽
+    [Tags]    auto    yt
+    ####前置操作
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}-600
+    ${try_limit}    Evaluate    2
+    ${errmsg}    添加砸金蛋活动    一等奖机率=0    二等奖机率=0    三等奖机率=0    try_limit=${try_limit}    start_time=${start_time}
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+    开启砸金蛋活动    ${id}
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=4"]
+    Element Should Contain    //a[@href="../market-activity/list?type=4"]    砸金蛋
+    Element Should Contain    //a[@href="../market-activity/list?type=4"]    一锤锤出千万惊喜，谁砸谁知道！
+    Sleep    1
+    #进入活动列表
+    Click Element    //a[@href="../market-activity/list?type=4"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Not Contain Element    //li[@ng-bind="list.activity_name" and text()="${name}"]
+    Sleep    1
+    #进入活动页
+    Click Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Wait Until Element Is Visible    //div[@class="egg_index_box"]
+    Page Should Contain Element    //a[@href="http://wkdianshang.betanewwx.snsshop.net/wkdianshang/market-activity/activity?id=${id}&eggview=home"]
+    #砸蛋
+    Click Element    //a[@href="http://wkdianshang.betanewwx.snsshop.net/wkdianshang/market-activity/activity?id=${id}&eggview=home"]
+    ${times}    Evaluate    ${try_limit}+1
+    : FOR    ${i}    IN RANGE    ${times}
+    \    Wait Until Element Is Visible    //div[@ng-click="showPrize()"]
+    \    Title Should Be    砸金蛋
+    \    Wait Until Element Is Visible    //div[@id="shape"]/div/span
+    \    Sleep    1
+    \    ${rand}    Evaluate    random.randint(1,3)    random
+    \    Click Element    //div[@id="shape"]/div[${rand}]/span
+    \    Sleep    2
+    \    Log    ${i}
+    \    ${flag}    Evaluate    ${times}-${i}
+    \    Exit For Loop If    ${flag}==1    #用尽后退出
+    \    #未中奖
+    \    Wait Until Element Is Visible    //div[@ng-show="statusLayer === 2"]
+    \    Wait Until Element Is Visible    //div[@class="layer_head wzjh"]
+    \    Sleep    1
+    \    Element Should Contain    //div[@ng-show="statusLayer === 2"]    谢谢参与！
+    \    Element Should Be Visible    //div[@ng-show="statusLayer === 2"]//div[@class="get_form_btn"]
+    \    Click Element    //div[@ng-show="statusLayer === 2"]//div[@class="get_form_btn"]
+    #次数用尽
+    Wait Until Element Is Visible    //div[@ng-show="statusLayer === 3"]
+    Wait Until Element Is Visible    //div[@class="layer_head no_chance"]
+    Element Should Contain    //div[@ng-show="statusLayer === 3"]    对不起，您已经没有砸金蛋机会。
+    Log    Success!
+    Sleep    3
+    #数据清理
+    Log    测试成功，准备清理数据...
+    关闭砸金蛋活动    ${id}
+    删除砸金蛋活动    ${id}
+    #
+
+积分中奖
+    [Tags]    auto    yt
+    ####前置操作
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}-600
+    ${try_limit}    Evaluate    2
+    ${errmsg}    添加砸金蛋活动    一等奖机率=0    二等奖机率=0    三等奖机率=100    try_limit=${try_limit}    start_time=${start_time}
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+    开启砸金蛋活动    ${id}
+    ${user_info}    会员.客户详情    ${GLOBAL_CONFIG.user_id}
+    ${model}    Get From Dictionary    ${user_info}    model
+    ${会员积分}    Get From Dictionary    ${model}    point
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=4"]
+    Element Should Contain    //a[@href="../market-activity/list?type=4"]    砸金蛋
+    Element Should Contain    //a[@href="../market-activity/list?type=4"]    一锤锤出千万惊喜，谁砸谁知道！
+    Sleep    1
+    #进入活动列表
+    Click Element    //a[@href="../market-activity/list?type=4"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Not Contain Element    //li[@ng-bind="list.activity_name" and text()="${name}"]
+    Sleep    1
+    #进入活动页
+    Click Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Wait Until Element Is Visible    //div[@class="egg_index_box"]
+    Page Should Contain Element    //a[@href="http://wkdianshang.betanewwx.snsshop.net/wkdianshang/market-activity/activity?id=${id}&eggview=home"]
+    #砸蛋
+    Click Element    //a[@href="http://wkdianshang.betanewwx.snsshop.net/wkdianshang/market-activity/activity?id=${id}&eggview=home"]
+    Wait Until Element Is Visible    //div[@ng-click="showPrize()"]
+    Title Should Be    砸金蛋
+    Wait Until Element Is Visible    //div[@id="shape"]/div/span
+    Sleep    1
+    ${rand}    Evaluate    random.randint(1,3)    random
+    Click Element    //div[@id="shape"]/div[${rand}]/span
+    Sleep    2
+    #中奖
+    Wait Until Element Is Visible    //div[@ng-show="statusLayer === 1"]
+    Wait Until Element Is Visible    //div[@class="layer_head zjh"]
+    Sleep    1
+    Element Should Contain    //div[@ng-show="statusLayer === 1"]    恭喜您获得
+    Element Should Contain    //div[@ng-show="statusLayer === 1"]    积分10个
+    Element Should Contain    //div[@ng-show="statusLayer === 1"]    领奖之后奖品会自动放在会员中心
+    Element Should Be Visible    //div[@ng-show="statusLayer === 1"]//img[@ng-show="againByPrizeType"]
+    Click Element    //div[@ng-show="statusLayer === 1"]//img[@ng-show="againByPrizeType"]    #点击领取
+    #
+    Wait Until Element Is Visible    //div[@class="smash_counts"]
+    Sleep    1
+    Element Should Contain    //div[@class="smash_counts"]    现有砸金蛋次数
+    ${times_left}    Evaluate    ${try_limit}-1
+    Element Should Be Visible    //em[@ng-bind="model.surplusCnt" and text()="${times_left}"]
+    Sleep    1
+    #积分校验
+    ${会员积分}    Evaluate    str(${会员积分}+10)
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入个人中心
+    点击底部菜单    我
+    Wait Until Element Is Visible    //a[@href="../member/member-point"]
+    Element Should Contain    //a[@href="../member/member-point"]    ${会员积分}
+    Sleep    2
+    #数据清理
+    Log    测试成功，准备清理数据...
+    关闭砸金蛋活动    ${id}
+    删除砸金蛋活动    ${id}
+    #
+
+现金红包中奖
+    [Tags]    auto    yt
+    ####前置操作
+    ${红包名称}    Set Variable    红包测试
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}-1200
+    ${try_limit}    Evaluate    2
+    ${errmsg}    添加砸金蛋活动    一等奖机率=0    二等奖机率=100    三等奖机率=0    try_limit=${try_limit}    start_time=${start_time}
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+    开启砸金蛋活动    ${id}
+    ${user_info}    会员.客户详情    ${GLOBAL_CONFIG.user_id}
+    ${model}    Get From Dictionary    ${user_info}    model
+    ${会员积分}    Get From Dictionary    ${model}    point
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=4"]
+    Element Should Contain    //a[@href="../market-activity/list?type=4"]    砸金蛋
+    Element Should Contain    //a[@href="../market-activity/list?type=4"]    一锤锤出千万惊喜，谁砸谁知道！
+    Sleep    1
+    #进入活动列表
+    Click Element    //a[@href="../market-activity/list?type=4"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Not Contain Element    //li[@ng-bind="list.activity_name" and text()="${name}"]
+    Sleep    1
+    #进入活动页
+    Click Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Wait Until Element Is Visible    //div[@class="egg_index_box"]
+    Page Should Contain Element    //a[@href="http://wkdianshang.betanewwx.snsshop.net/wkdianshang/market-activity/activity?id=${id}&eggview=home"]
+    #砸蛋
+    Click Element    //a[@href="http://wkdianshang.betanewwx.snsshop.net/wkdianshang/market-activity/activity?id=${id}&eggview=home"]
+    Wait Until Element Is Visible    //div[@ng-click="showPrize()"]
+    Title Should Be    砸金蛋
+    ${rand}    Evaluate    random.randint(1,3)    random
+    Wait Until Element Is Visible    //div[@id="shape"]/div[${rand}]/span
+    Sleep    1
+    Click Element    //div[@id="shape"]/div[${rand}]/span
+    Sleep    2
+    #中奖
+    Wait Until Element Is Visible    //div[@ng-show="statusLayer === 1"]
+    Wait Until Element Is Visible    //div[@class="layer_head zjh"]
+    Sleep    1
+    Element Should Contain    //div[@ng-show="statusLayer === 1"]    恭喜您获得
+    Element Should Contain    //div[@ng-show="statusLayer === 1"]    现金红包${红包名称}一个
+    Element Should Contain    //div[@ng-show="statusLayer === 1"]    领奖之后奖品会自动放在会员中心
+    Element Should Be Visible    //div[@ng-show="statusLayer === 1"]//img[@ng-show="againByPrizeType"]
+    Click Element    //div[@ng-show="statusLayer === 1"]//img[@ng-show="againByPrizeType"]    #点击领取
+    #
+    Wait Until Element Is Visible    //div[@class="smash_counts"]
+    Sleep    1
+    Element Should Contain    //div[@class="smash_counts"]    现有砸金蛋次数
+    ${times_left}    Evaluate    ${try_limit}-1
+    Element Should Be Visible    //em[@ng-bind="model.surplusCnt" and text()="${times_left}"]
+    Sleep    1
+    #校验中奖记录
+    ${errmsg}    活动中奖记录    ${id}
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${record_id}    Get From Dictionary    ${data[0]}    id
+    ${level}    Get From Dictionary    ${data[0]}    level
+    ${prizes_name}    Get From Dictionary    ${data[0]}    prizes_name
+    ${prize_type}    Get From Dictionary    ${data[0]}    prize_type
+    ${username_API}    Get From Dictionary    ${data[0]}    username
+    ${wxUserInfos}    Get From Dictionary    ${data[0]}    wxUserInfos
+    ${user_id}    Get From Dictionary    ${wxUserInfos}    id
+    Should Be Equal As Strings    ${level}    2
+    Should Be Equal As Strings    ${prizes_name}    红包测试
+    Should Be Equal As Strings    ${user_id}    ${GLOBAL_CONFIG.user_id}
+    Sleep    2
+    #数据清理
+    Log    测试成功，准备清理数据...
+    关闭砸金蛋活动    ${id}
+    删除砸金蛋活动    ${id}
+    #
+
+实物中奖
+    [Documentation]    模拟实物中奖流程
+    ...
+    ...    实物奖项：华为P9
+    [Tags]    auto    yt
+    ####前置操作
+    ${time}    Get Time    epoch
+    ${start_time}    Evaluate    ${time}-1200
+    ${errmsg}    添加砸金蛋活动    一等奖机率=100    二等奖机率=0    三等奖机率=0    start_time=${start_time}
+    ${marketingActivity}    Get From Dictionary    ${errmsg}    marketingActivity
+    ${id}    Get From Dictionary    ${marketingActivity}    id
+    ${name}    Get From Dictionary    ${marketingActivity}    activity_name
+    开启砸金蛋活动    ${id}
+    ####进入前端页面
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    #进入惊喜页面
+    点击底部菜单    惊喜
+    Wait Until Element Is Visible    //a[@href="../market-activity/list?type=4"]
+    Element Should Contain    //a[@href="../market-activity/list?type=4"]    砸金蛋
+    Element Should Contain    //a[@href="../market-activity/list?type=4"]    一锤锤出千万惊喜，谁砸谁知道！
+    Sleep    1
+    #进入活动列表
+    Click Element    //a[@href="../market-activity/list?type=4"]
+    Wait Until Page Contains Element    //div[@class="banner_img"]
+    Sleep    1
+    Title Should Be    抽奖活动列表
+    Page Should Not Contain Element    //li[@ng-bind="list.activity_name" and text()="${name}"]
+    Sleep    1
+    #进入活动页
+    Click Element    //span[@ng-bind="list.activity_name" and text()="${name}"]
+    Wait Until Element Is Visible    //div[@class="egg_index_box"]
+    Page Should Contain Element    //a[@href="http://wkdianshang.betanewwx.snsshop.net/wkdianshang/market-activity/activity?id=${id}&eggview=home"]
+    #砸蛋
+    Click Element    //a[@href="http://wkdianshang.betanewwx.snsshop.net/wkdianshang/market-activity/activity?id=${id}&eggview=home"]
+    Wait Until Element Is Visible    //div[@ng-click="showPrize()"]
+    Title Should Be    砸金蛋
+    Wait Until Element Is Visible    //div[@id="shape"]/div/span
+    Sleep    1
+    ${rand}    Evaluate    random.randint(1,3)    random
+    Click Element    //div[@id="shape"]/div[${rand}]/span
+    Sleep    2
+    #中奖
+    Wait Until Element Is Visible    //div[@ng-show="statusLayer === 1"]
+    Wait Until Element Is Visible    //div[@class="layer_head zjh"]
+    Sleep    1
+    Element Should Contain    //div[@ng-show="statusLayer === 1"]    恭喜您获得
+    Element Should Contain    //div[@ng-show="statusLayer === 1"]    华为P9一份
+    Element Should Be Visible    //div[@ng-show="statusLayer === 1"]//img[@ng-show="!againByPrizeType"]
+    Click Element    //div[@ng-show="statusLayer === 1"]//img[@ng-show="!againByPrizeType"]    #点击领取
+    #填写兑奖信息
+    Wait Until Element Is Visible    id=egg_form_layer
+    ${name}    随机字符    李德云    6
+    ${mobile}    随机手机号
+    ${address}    Set Variable    广东省深圳市南山区XX花园XX号
+    Input Text    //div[@id="egg_form_layer"]//input[@name="username"]    ${name}
+    Input Text    //div[@id="egg_form_layer"]//input[@name="mobile"]    ${mobile}
+    Input Text    //div[@id="egg_form_layer"]//input[@name="address"]    ${address}
+    Sleep    1
+    Element Should Be Visible    //div[@ng-click="saveUserForm($event)"]
+    Click Element    //div[@ng-click="saveUserForm($event)"]
+    Sleep    2
+    #校验中奖记录
+    ${errmsg}    活动中奖记录    ${id}
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${record_id}    Get From Dictionary    ${data[0]}    id
+    ${level}    Get From Dictionary    ${data[0]}    level
+    ${prizes_name}    Get From Dictionary    ${data[0]}    prizes_name
+    ${prize_type}    Get From Dictionary    ${data[0]}    prize_type
+    ${username_API}    Get From Dictionary    ${data[0]}    username
+    ${mobile_API}    Get From Dictionary    ${data[0]}    mobile
+    ${address_API}    Get From Dictionary    ${data[0]}    address
+    ${wxUserInfos}    Get From Dictionary    ${data[0]}    wxUserInfos
+    ${user_id}    Get From Dictionary    ${wxUserInfos}    id
+    Should Be Equal As Strings    ${level}    1
+    Should Be Equal As Strings    ${prizes_name}    华为P9
+    Should Be Equal As Strings    ${username_API}    ${name}
+    Should Be Equal As Strings    ${mobile_API}    ${mobile}
+    Should Be Equal As Strings    ${address_API}    ${address}
+    Should Be Equal As Strings    ${user_id}    ${GLOBAL_CONFIG.user_id}
+    Sleep    1
+    #手动兑换
+    砸金蛋手动兑换奖品    record_id=${record_id}    activity_id=${id}
+    #数据清理
+    Log    测试成功，准备清理数据...
+    关闭砸金蛋活动    ${id}
+    删除砸金蛋活动    ${id}
+    #
+
+*** Keywords ***
+中奖_积分校验
+    #
+
+中奖_现金券校验

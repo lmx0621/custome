@@ -1,0 +1,59 @@
+*** Settings ***
+Library           AutoItLibrary
+Library           Screenshot
+
+*** Test Cases ***
+explorer
+    Run    explorer.exe
+    Sleep    1
+    Control Get Focus    库    ${EMPTY}
+    Control Click    库    ${EMPTY}    [CLASS:DirectUIHWND; INSTANCE:1]    LEFT
+    Sleep    1
+    Control Send    库    ${EMPTY}    [CLASS:DirectUIHWND; INSTANCE:1]    test autoit
+
+notepad
+    Run    notepad.exe
+    #Win Wait    记事本
+    #Wait For Active Window    记事本
+    #Control Get Focus    记事本
+    #Send    记事本    test autoit
+    #Control Send    记事本    ${EMPTY}    test autoit
+    #Mouse Click    LEFT    355    200
+    Sleep    1
+    Control Send    无标题    ${EMPTY}    Edit1    test autoit
+    #Send    test autoit
+
+notepad2
+    Run    notepad.exe
+    Sleep    1
+    Control Send    无标题    ${EMPTY}    [CLASS:Edit; INSTANCE:1]    test autoit
+    #Send    test autoit
+
+notepad-args
+    @{list}    Create List    test1    test2    test3    测试4
+    &{dict} =    Create Dictionary    str1=test1    str2=test2    str3=test3    str4=test4
+    ${len_list}    Get Length    ${list}
+    ${len_dict}    Get Length    ${dict}
+    Run    notepad.exe
+    Sleep    1
+    #:FOR    ${i}    IN RANGE
+    Control Send    无标题    ${EMPTY}    [CLASS:Edit; INSTANCE:1]    ${list[3]}
+
+explorer2
+    Run    explorer.exe
+    Sleep    1
+    Control Get Focus    库    ${EMPTY}
+    Control Click    库    ${EMPTY}    [CLASS:ToolbarWindow32; INSTANCE:2]    LEFT
+    Sleep    1
+    Send    D:\\Temp\\Pics
+    Sleep    1
+    Control Click    库    ${EMPTY}    [CLASS:ToolbarWindow32; INSTANCE:3]    LEFT
+    Sleep    1
+    Control Send    D:\\Temp\\Pics    ${EMPTY}    [CLASS:DirectUIHWND; INSTANCE:3]    test2
+    Sleep    3
+
+screenshot
+    Log    ScreenShot testing
+    Log    Output dir:${OUTPUT_DIR}
+    Set Screenshot Directory    ${OUTPUT_DIR}
+    Take Screenshot

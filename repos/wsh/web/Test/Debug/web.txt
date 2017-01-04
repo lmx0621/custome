@@ -1,0 +1,12 @@
+*** Settings ***
+Library           Selenium2Library    timeout=5    implicit_wait=5
+Resource          ../Web/Resource/配置参数.robot
+
+*** Test Cases ***
+login
+    Open Browser    ${url}    Chrome    #打开浏览器
+    #界面最大化
+    Input Text    id=staff_id    ${username}    #输入用户名
+    Input Text    id=password    ${password}    #输入密码
+    Input Text    id=captcha    111111    #输入验证码
+    Click Button    id=login    #点击登陆

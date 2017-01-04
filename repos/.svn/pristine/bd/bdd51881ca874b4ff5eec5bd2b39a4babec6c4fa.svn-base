@@ -1,0 +1,68 @@
+*** Settings ***
+Resource          ../Resource/常用操作.robot
+Library           Selenium2Library
+Resource          ../Resource/API.robot
+
+*** Test Cases ***
+Run
+    ${失败数}    Set Variable    ${0}
+    Log    失败数：${失败数}
+    : FOR    ${i}    IN RANGE    4
+    \    登录
+    \    ${flag}    Run Keyword And Return Status    工作台今日数据
+    \    ${失败数}    Set Variable If    ${flag}==False    ${失败数+1}    ${失败数}
+    \    关闭浏览器
+    \    Sleep    2
+    Log    失败数：${失败数}
+
+Temp
+    ${失败数}    Set Variable    ${0}
+    ${type}    Evaluate    type(${0})
+    Log    ${失败数}
+
+*** Keywords ***
+工作台今日数据
+    ####查询API
+    Log    --查询API：工作台数据--
+    ${data}    工作台数据
+    ${pay_money}    Get From Dictionary    ${data}    pay_money
+    ${pay_money}    Convert To Integer    ${pay_money}
+    #${pay_money}    Evaluate    ${pay_money}/100
+    ${order_total}    Get From Dictionary    ${data}    order_total
+    ${payed_order_total}    Get From Dictionary    ${data}    payed_order_total
+    ${uv}    Get From Dictionary    ${data}    uv
+    ${pv}    Get From Dictionary    ${data}    pv
+    ##
+    ${need_deliver_num}    Get From Dictionary    ${data}    need_deliver_num
+    ${need_return_goods}    Get From Dictionary    ${data}    need_return_goods
+    ${need_refund}    Get From Dictionary    ${data}    need_refund
+    ${stock_warning}    Get From Dictionary    ${data}    stock_warning
+    ${unread_message}    Get From Dictionary    ${data}    unread_message
+    ####进入页面
+    #点击链接菜单    运营设置
+    ${sub}    Set Variable    工作台
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]
+    Sleep    5
+    ####今日数据
+    ${销售额}    Get Text    //a[@ng-bind="lists.pay_money" and contains(@ng-href,"/order/list?createStart=")]
+    ${销售额}    Evaluate    int(${销售额}*100)
+    ${订单总数}    Get Text    //a[@ng-bind="lists.order_total" and contains(@href,"/order/list?createStart=")]
+    ${已支付订单数}    Get Text    //a[@ng-bind="lists.payed_order_total" and contains(@href,"/order/list?createStart=")]
+    ${今日UV}    Get Text    //a[@ng-bind="lists.uv" and @href="/data-center/today"]
+    ${今日PV}    Get Text    //a[@ng-bind="lists.pv" and @href="/data-center/today"]
+    Should Be Equal As Strings    ${pay_money}    ${销售额}
+    Should Be Equal As Strings    ${order_total}    ${订单总数}
+    Should Be Equal As Strings    ${payed_order_total}    ${已支付订单数}
+    Should Be Equal As Strings    ${uv}    ${今日UV}
+    Should Be Equal As Strings    ${pv}    ${今日PV}
+    ####每日操作
+    ${待发货订单}    Get Text    //a[@ng-bind="lists.need_deliver_num" and @href="/order/list?statue=3"]
+    ${待处理退货}    Get Text    //a[@ng-bind="lists.need_return_goods" and @href="/order/refund-list?type=3"]
+    ${待处理退款}    Get Text    //a[@ng-bind="lists.need_refund" and @href="/order/refund-list?type=1"]
+    ${预警库存}    Get Text    //a[@ng-bind="lists.stock_warning" and @href="/product/list?waring=1"]
+    ${未读消息}    Get Text    //a[@ng-bind="lists.unread_message" and @href="/weixin/message-list?flag=1"]
+    Should Be Equal As Strings    ${need_deliver_num}    ${待发货订单}
+    Should Be Equal As Strings    ${need_return_goods}    ${待处理退货}
+    Should Be Equal As Strings    ${need_refund}    ${待处理退款}
+    Should Be Equal As Strings    ${stock_warning}    ${预警库存}
+    Should Be Equal As Strings    ${unread_message}    ${未读消息}

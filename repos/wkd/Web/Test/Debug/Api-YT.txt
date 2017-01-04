@@ -1,0 +1,8 @@
+*** Settings ***
+Library           ApiWsh
+
+*** Test Cases ***
+first
+    ${session}    Wsh Get Cookie
+    Wsh Login    ${session}
+    Wsh Actlist    ${session}

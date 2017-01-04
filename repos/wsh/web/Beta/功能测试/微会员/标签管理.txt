@@ -1,0 +1,165 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Library           Selenium2Library
+Resource          ../../Resource/常用操作.robot
+Resource          ../../Resource/功能菜单.robot
+Resource          ../../Resource/配置参数.robot
+Library           Screenshot
+Resource          ../../Resource/API.robot
+
+*** Test Cases ***
+标签管理_页面数据校验
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    标签管理
+    Click Element    //*[@id="navList"]/li/a[@href="/members/tag"]/span[text()="标签管理"]
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"标签管理")]
+    Sleep    1
+    ####API查询
+    ${errmsg}    API.标签列表
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${page}    Get From Dictionary    ${errmsg}    page
+    ${每页数量}    Get From Dictionary    ${page}    per_page
+    ${总数}    Get From Dictionary    ${page}    total_count
+    ####页面数据
+    Run Keyword If    ${总数}>${每页数量}    分页工具条校验    ${总数}
+    ${数量}    Get Matching Xpath Count    //*[@id="main-container"]//div[@class="tabbable"]//table/tbody/tr[@ng-repeat="list in lists"]
+    : FOR    ${i}    IN RANGE    3
+    \    ${标签数据}    Get From List    ${data}    ${i}
+    \    ${标签名称_API}    Get From Dictionary    ${标签数据}    name
+    \    ${标签名称_页面}    Get Text    //*[@id="main-container"]//div[@class="tabbable"]//table/tbody/tr[${i+1}]/td[@ng-bind="list.name"]
+    \    Should Be Equal As Strings    ${标签名称_页面}    ${标签名称_API}
+    \    ${用户数_API}    Get From Dictionary    ${标签数据}    user_count
+    \    ${用户数_页面}    Get Text    //*[@id="main-container"]//div[@class="tabbable"]//table/tbody/tr[${i+1}]/td/a[@ng-bind="list.user_count"]
+    \    Should Be Equal As Strings    ${用户数_页面}    ${用户数_API}
+    \    ${会员数_API}    Get From Dictionary    ${标签数据}    member_count
+    \    ${会员数_页面}    Get Text    //*[@id="main-container"]//div[@class="tabbable"]//table/tbody/tr[${i+1}]/td/a[@ng-bind="list.member_count"]
+    \    Should Be Equal As Strings    ${会员数_页面}    ${会员数_API}
+    Log    Sucess!
+
+标签管理_新增标签
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    标签管理
+    Click Element    //*[@id="navList"]/li/a[@href="/members/tag"]/span[text()="标签管理"]
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"标签管理")]
+    Sleep    1
+    ####新增标签
+    Click Link    新增标签
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"添加会员标签")]
+    Sleep    1
+    ####生成参数
+    ${标签名}    随机字符    【测试标签】    10
+    ${排序}    Generate Random String    1    4
+    ${事件_rand}    Generate Random String    1    0
+    ${事件模块}    Generate Random String    1    012
+    ####输入参数
+    Input Text    //*[@id="main-container"]//input[@ng-model="addName"]    ${标签名}
+    Input Text    //*[@id="main-container"]//input[@name="sortName" and @placeholder="数字越小越靠前"]    ${排序}
+    Run Keyword If    ${事件_rand}==1    添加事件
+    Sleep    1
+    Click Element    id=btnConfirm
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"标签管理")]
+    Sleep    1
+    ####结果校验
+    ${flag}    Run Keyword And Return Status    Page Should Contain Element    //*[@id="main-container"]//div[@class="tabbable"]//table/tbody/tr[@ng-repeat="list in lists"]/td[@ng-bind="list.name" and text()="${标签名}"]
+    Pass Execution If    ${flag}==True    Success!
+    搜索标签    ${标签名}
+    Page Should Contain Element    //*[@id="main-container"]//div/table/tbody/tr[@ng-repeat="list in lists"]/td[@ng-bind="list.name" and text()="${标签名}"]
+    Sleep    3
+
+标签管理_编辑标签
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    标签管理
+    Click Element    //*[@id="navList"]/li/a[@href="/members/tag"]/span[text()="标签管理"]
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"标签管理")]
+    Sleep    1
+    ####编辑标签
+    ${els}    Get Matching Xpath Count    //*[@id="main-container"]//div[@class="tabbable"]//table/tbody/tr[@ng-repeat="list in lists"]/td[starts-with(text(),"【测试标签】")]
+    Click Element    //*[@id="main-container"]//div[@class="tabbable"]//table/tbody/tr[@ng-repeat="list in lists"]/td[starts-with(text(),"【测试标签】")]/parent::tr[1]//a[@title="编辑"]
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"编辑会员标签")]
+    Sleep    1
+    ####生成参数
+    ${标签名}    随机字符    【测试标签】改    10
+    ${排序}    Generate Random String    1    01234
+    ${事件_rand}    Generate Random String    1    0
+    ${事件模块}    Generate Random String    1    012
+    ####输入参数
+    Input Text    //*[@id="main-container"]//input[@ng-model="model.name"]    ${标签名}
+    Input Text    //*[@id="main-container"]//input[@name="sortName" and @placeholder="数字越小越靠前"]    ${排序}
+    Run Keyword If    ${事件_rand}==1    添加事件
+    Sleep    1
+    Click Element    id=btnConfirm
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"标签管理")]
+    Sleep    1
+    ####结果校验
+    Page Should Contain Element    //*[@id="main-container"]//div[@class="tabbable"]//table/tbody/tr[@ng-repeat="list in lists"]/td[@ng-bind="list.name" and text()="${标签名}"]
+    Sleep    3
+
+标签管理_删除标签
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    标签管理
+    Click Element    //*[@id="navList"]/li/a[@href="/members/tag"]/span[text()="标签管理"]
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"标签管理")]
+    Sleep    1
+    ####删除标签
+    ${标签名}    Get Text    //*[@id="main-container"]//div[@class="tabbable"]//table/tbody/tr[@ng-repeat="list in lists"]/td[starts-with(text(),"【测试标签】")]
+    Click Element    //*[@id="main-container"]//div[@class="tabbable"]//table/tbody/tr[@ng-repeat="list in lists"]/td[starts-with(text(),"【测试标签】")]/parent::tr[1]//a[@title="删除"]
+    Wait Until Element Is Visible    //div[@i="title" and text()="删除提示"]
+    Sleep    1
+    确认
+    ${msg}    弹出信息校验
+    ${flag}    Run Keyword And Return Status    Should Contain    ${msg}    成功
+    ${flag2}    Run Keyword And Return Status    Should Contain    ${msg}    不能删除
+    Run Keyword If    ${flag}!=True and ${flag2}!=True    Fail    保存失败:${msg}
+    Pass Execution If    ${flag2} == True    ${msg}
+    Sleep    3
+    ####结果校验
+    Page Should Not Contain Element    //*[@id="main-container"]//div[@class="tabbable"]//table/tbody/tr[@ng-repeat="list in lists"]/td[starts-with(text(),"${标签名}")]
+
+标签管理_搜索标签
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    标签管理
+    Click Element    //*[@id="navList"]/li/a[@href="/members/tag"]/span[text()="标签管理"]
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"标签管理")]
+    Sleep    1
+    ####搜索标签
+    ${关键字}    Create List    【测试标签】    不存在的标签
+    ${rand}    Generate Random String    1    01
+    Input Text    //input[@placeholder="搜索标签"]    ${关键字[${rand}]}
+    Sleep    1
+    Click Element    //span[@ng-click="search()"]
+    Sleep    2
+    ####结果校验
+    Run Keyword If    ${rand}==1    Element Should Contain    //*[@id="main-container"]//div[@class="tabbable"]//table/tbody/tr/td    暂时没有可展示的数据
+    Run Keyword If    ${rand}==1    Pass Execution    搜索结果无数据
+    ${数量1}    Get Matching Xpath Count    //*[@id="main-container"]//div[@class="tabbable"]//table/tbody/tr[@ng-repeat="list in lists"]
+    ${数量2}    Get Matching Xpath Count    //*[@id="main-container"]//div[@class="tabbable"]//table/tbody/tr[@ng-repeat="list in lists"]/td[contains(text(),"${关键字[${rand}]}")]
+    Should Be Equal As Strings    ${数量2}    ${数量1}
+    Log    Sucess!
+
+*** Keywords ***
+分页工具条校验
+    [Arguments]    ${总数}
+    Element Should Be Visible    //ul[@total-items="page.total_count"]
+    ${总数_页面}    Get Text    //span[@ng-bind="page.total_count"]
+    Should Be Equal As Strings    ${总数_页面}    ${总数}
+    Log    校验成功！
+
+添加事件
+
+搜索标签
+    [Arguments]    ${关键字}
+    Input Text    //input[@placeholder="搜索标签"]    ${关键字}
+    Sleep    1
+    Click Element    //span[@ng-click="search()"]
+    Sleep    2

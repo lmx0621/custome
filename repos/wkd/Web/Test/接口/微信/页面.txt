@@ -1,0 +1,32 @@
+*** Settings ***
+Suite Setup       获取token
+Resource          Res.txt
+Library           RequestsLibrary
+Library           Collections
+Library           json
+Library           OperatingSystem
+
+*** Test Cases ***
+查询菜单
+    ${resp}    Get Request    wechat    /menu/get?access_token=${token}
+    Log    Res:${resp.content}
+    ${resp2}    json.Loads    ${resp.content}
+    ${menu}    Get From Dictionary    ${resp2}    menu
+    ${button}    Get From Dictionary    ${menu}    button
+    ${menulen}    Get Length    ${button}
+    ${respdata}    json.Loads    ${resp.content}
+    : FOR    ${i}    IN RANGE    ${menulen}
+    \    ${btn}    Evaluate    ${button}[${i}]
+    \    ${name}    Get From Dictionary    ${btn}    name
+    \    Log    Name:${name}
+    ${time}    Get Time    epoch
+    Create File    D:\\Temp\\menu${time}.txt    '${menu}'
+    Create File    D:\\Temp\\name${time}.txt    '${button}'
+
+获取回复规则
+    ${resp}    Get Request    wechat    /get_current_autoreply_info?access_token=${token}
+    Log    Res:${resp.content}
+    ${time}    Get Time    epoch
+    Create File    D:\\Temp\\WexinAPI\\${time}.txt    '${resp.content}'
+    ${respdata}    json.Loads    ${resp.content}
+    ${add_friend_autoreply_info}    Get From Dictionary    ${respdata}    add_friend_autoreply_info

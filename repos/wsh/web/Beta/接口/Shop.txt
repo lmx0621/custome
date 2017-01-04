@@ -1,0 +1,61 @@
+*** Settings ***
+Suite Setup       API登录
+Library           RequestsLibrary
+Resource          Lib/通用操作.robot
+Resource          Lib/配置参数.robot
+Library           String
+Library           json
+Library           Collections
+
+*** Test Cases ***
+商家信息
+    [Tags]    ready
+    ${resp}    Post Request    wsh    /shop/get-ajax
+    Log    Response:${resp.content}
+    ${len}    Get Length    ${resp.content}
+    ${str}    Get Substring    ${resp.content}    3
+    Log    Res2:${str}
+    ${js}    loads    ${str}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode is:${errcode}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed
+
+获取店铺设置
+    [Tags]    ready
+    ${resp}    Post Request    wsh    /shop/get-shop-settings
+    Log    Response:${resp.content}
+    ${str}    Get Substring    ${resp.content}    3
+    ${js}    loads    ${str}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode is:${errcode}
+    Log    Resp:${resp.content}
+    #Log    scan_limit_amount:${scan_limit}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed
+
+店铺支付设置
+    [Tags]
+    ${resp}    Post Request    wsh    /shop/payment-setting-list-edit-ajax
+    Log    Response:${resp.content}
+    ${str}    Get Substring    ${resp.content}    3
+    ${js}    loads    ${str}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode is:${errcode}
+    Log    Resp:${resp.content}
+    Log    scan_limit_amount:${scan_limit}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed
+
+店铺支付查询
+    [Tags]
+    ${resp}    Post Request    wsh    /shop/payment/find-paytype-list
+    Log    Response:${resp.content}
+    ${str}    Get Substring    ${resp.content}    3
+    ${js}    loads    ${str}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode is:${errcode}
+    Log    Resp:${resp.content}
+    Log    scan_limit_amount:${scan_limit}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed

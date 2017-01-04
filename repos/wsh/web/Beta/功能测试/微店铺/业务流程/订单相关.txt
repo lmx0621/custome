@@ -1,0 +1,36 @@
+*** Settings ***
+Suite Teardown    关闭浏览器
+Library           Selenium2Library
+Resource          ../../../Resource/常用操作.robot
+Resource          ../../../Resource/功能菜单.robot
+Resource          ../../../Resource/配置参数.robot
+Resource          ../../../Resource/API.robot
+
+*** Test Cases ***
+普通订单流程
+    微信模拟页面登录    13723232
+    Wait Until Page Contains Element    //div[@class="footer_menu"]
+    Wait Until Element Contains    //div[@class="footer_menu"]    首页
+    Wait Until Element Contains    //div[@class="footer_menu"]    列表
+    Sleep    1
+    点击底部菜单    首页
+    Wait Until Element Is Visible    //div[@class="app-search-form"]/input[contains(@placeholder,"商品搜索")]
+    ${rand}    随机选择一件商品
+    ##进入商品页面
+    Click Element    xpath=(//*[@id="app-body"]/show-build//module-build/goods-module//div[@ng-repeat="goods in module.goodsList"])[${rand}]
+    Wait Until Element Contains    //li/a[@class="buy_own" and @ng-click="showModal()"]    立即购买
+    Sleep    1
+    ${价格}    Get Text    //div[@class="detail_title_box"//span[starts-with(@ng-bind,"model.product.show_price")]
+    立即购买
+    ##--页面校验
+    #存在关闭按钮
+    Wait Until Element Is Visible    //div[@class="close_btn"]/i[@ng-click="close()"]
+    Wait Until Element Is Visible    //div[@class="detail_select_rule"]
+    Element Should Contain    //div[@class="detail_select_rule"]//div[@class="price"]    库存
+    ${库存}    Get Text    //div[@class="detail_select_rule"]//div[@class="price"]//span[@ng-bind="modelObj.reserves"]
+    ${价格2}    Get Text    //div[@class="detail_select_rule"]//div[@class="title"]//span[starts-with(@ng-bind,"modelObj.retail_price*skunum")]
+    Should Be True    ${库存}>0
+    Element Should Contain    //a[@class="buy_own" and @ng-click="buy()"]    确认购买
+    Click Element    //a[@class="buy_own" and @ng-click="buy()"]    # 购买
+    Sleep    3
+    #

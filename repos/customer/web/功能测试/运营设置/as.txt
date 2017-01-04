@@ -1,0 +1,59 @@
+*** Settings ***
+Library           Selenium2Library
+Resource          ../../Resource/常用操作.robot
+Resource          ../../Resource/功能菜单.robot
+Resource          ../../Resource/配置参数.robot
+Library           RequestsLibrary
+Library           Collections
+
+*** Test Cases ***
+asd
+    登陆接口
+    ${resp}    Post Request    wsh    /reduction/list-ajax
+    ${js}    Evaluate    u'${resp.content}'
+    log    ${js}
+    ${response}    Get Substring    ${js}    3
+    log    ${response}
+    ${qqq}    To Json    ${response}
+    log    ${qqq}
+    ${qqq1}    Get From Dictionary    ${qqq}    errmsg
+    log    ${qqq1}
+
+阿斯达
+    : FOR    ${i}    IN RANGE    1    2
+    \    log    ${i}
+
+demo
+    ${图文标题}    随机字符    【测试】    15
+    ${摘要内容}    随机字符    【摘要内容】    50
+    ${活动图片}    Generate Random String    1    01
+    ##活动参数
+    ${开启条件}    Generate Random String    1    1
+    ${活动名称}    随机字符    【拼团】    15
+    ${活动说明}    随机字符    【活动说明】    60
+    ${运费策略}    Generate Random String    1    0
+    ##商品
+    ${团购价}    Generate Random String    1    12345
+    ${配额}    随机数字    2
+    ${参团人数}    Set Variable    ${配额}
+    ${每人限购}    随机数字    1
+    ${团长订单减额}    Generate Random String    1    01
+    ${是否开启凑团}    Generate Random String    1    12
+    ${显示更多拼团}    Generate Random String    1    01
+    ${参团时间限制}    Generate Random String    1    01
+    ${活动类型}    Generate Random String    1    01
+    ${分享标题}    随机字符    【爱拼才会赢】    15
+    ${分享描述}    随机字符    【大家一起来吧！】    15
+    ${分享图标}    Generate Random String    1    01
+    ${动态分享标题}    Generate Random String    1    12
+
+sa
+    ${a}    Set Variable    aaasafasdasdfewsadf
+    ${b}    Set Variable    fasdasdfew
+    Should Contain    ${a}    ${b}
+
+dfsdf
+    log    11
+    fail    sdfsd
+    ${els}    Get Web Elements    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/table/tbody/tr/td[1][contains(text(),"购物")]
+    ${len}    Get Length    ${els}

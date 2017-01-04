@@ -1,0 +1,10 @@
+*** Settings ***
+Library           Ytools
+Library           Screenshot
+
+*** Test Cases ***
+screenshot
+    Log    Test taking screenshot:YTools
+    Yt Screenshot
+    Log    Screenshot Library
+    Take Screenshot

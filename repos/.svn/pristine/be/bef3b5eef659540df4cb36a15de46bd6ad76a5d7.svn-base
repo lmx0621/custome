@@ -1,0 +1,29 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Library           Selenium2Library
+Resource          ../../Resource/常用操作.robot
+Resource          ../../Resource/功能菜单.robot
+Resource          ../../Resource/配置参数.robot
+
+*** Test Cases ***
+门店码推送策略
+    点击链接菜单    微分店
+    ${sub}    Set Variable    门店码推送策略
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"${sub}")]    20
+    ###门店码推送策略
+    Click Link    创建门店码推送策略
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"创建门店码推送策略")]
+    Sleep    1
+    ###
+    ${els}    Get Matching Xpath Count    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[1]/div/div/ul[contains(@class,"jstree-container-ul")]/li[@role="treeitem"]
+    ${el}    Evaluate    random.randint(49,49)    random
+    Sleep    1
+    #Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[1]/div/div/ul[contains(@class,"jstree-container-ul")]/li[@role="treeitem"][${el}]/a/i[contains(@class,"jstree-checkbox")]', document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();
+    Sleep    1.5
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[1]/div/div/ul[contains(@class,"jstree-container-ul")]/li[@role="treeitem"][${el}]/a/i[contains(@class,"jstree-checkbox")]
+    Sleep    4
+    Pass Execution    test
+    Click Element    //*[@id="j1_1_anchor"]/i[1]

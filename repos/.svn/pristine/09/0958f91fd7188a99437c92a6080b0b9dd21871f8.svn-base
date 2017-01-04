@@ -1,0 +1,839 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Library           Selenium2Library
+Library           AutoItLibrary
+Resource          ../../Resource/常用操作.robot
+Resource          ../../Resource/功能菜单.robot
+Resource          ../../Resource/配置参数.robot
+
+*** Test Cases ***
+终端店收款码搜索
+    [Tags]    ready
+    点击链接菜单    微分店
+    点击链接菜单    终端店收款码
+    ${随机类型门店}    Evaluate    random.randint(1,2)    random
+    Click Element    xpath=//*[@id="myTab"]/li[${随机类型门店}]
+    #根据终端店名称搜索
+    sleep    1
+    ${总数1}    ${统计搜索后数量1}    搜索后统计总数    直营店
+    sleep    1
+    Run Keyword If    '${统计搜索后数量1}'=='0'    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr/td    暂时没有可展示的数据
+    ...    ELSE IF    '${统计搜索后数量1}'=='${总数1}'    单页校验    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr[@class="ng-scope"]    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr/td[2][contains(text(),"直营店")]
+    ...    ELSE    多页校验    ${总数1}    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr[@class="ng-scope"]    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr/td[2][contains(text(),"直营店")]
+    log    根据终端店名称搜索OK
+    #根据地址搜索
+    sleep    1
+    ${总数2}    ${统计搜索后数量2}    搜索后统计总数    广东省
+    sleep    1
+    Run Keyword If    '${统计搜索后数量2}'=='0'    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr/td    暂时没有可展示的数据
+    ...    ELSE IF    '${统计搜索后数量2}'=='${总数2}'    单页校验    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr[@class="ng-scope"]    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr/td[4][contains(text(),"广东省")]
+    ...    ELSE    多页校验    ${总数2}    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr[@class="ng-scope"]    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr/td[4][contains(text(),"广东省")]
+    log    根据地址搜索OK
+    #根据手机号码搜索
+    ${总数3}    ${统计搜索后数量3}    搜索后统计总数    18664334600
+    sleep    1
+    Run Keyword If    '${统计搜索后数量3}'=='0'    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr/td    暂时没有可展示的数据
+    ...    ELSE IF    '${统计搜索后数量3}'=='${总数3}'    单页校验    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr[@class="ng-scope"]    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr/td[5][contains(text(),"18664334600")]
+    ...    ELSE    多页校验    ${总数3}    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr[@class="ng-scope"]    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr/td[5][contains(text(),"18664334600")]
+    log    根据手机号码搜索OK
+
+终端店付款码开启/关闭查看二维码
+    [Tags]    ready
+    点击链接菜单    微分店
+    点击链接菜单    终端店收款码
+    ${随机类型门店}    Evaluate    random.randint(1,2)    random
+    log    ${随机类型门店}
+    #添加终端店
+    Run Keyword If    ${随机类型门店}==1    添加直营店
+    ...    ELSE    添加加盟店
+    Select Window    title=代理商列表
+    点击链接菜单    终端店收款码
+    sleep    1
+    Click Element    xpath=//*[@id="myTab"]/li[${随机类型门店}]
+    sleep    1
+    Run Keyword If    '${随机类型门店}'=='1'    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr[1]/td[7]/label/input
+    ...    ELSE    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr[1]/td[8]/label/input
+    sleep    1
+    ${启用}    Confirm Action
+    log    ${启用}
+    Should Be Equal As Strings    ${启用}    启用成功
+    SLEEP    1
+    Run Keyword If    '${随机类型门店}'=='1'    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr[1]/td[7]/label/input
+    ...    ELSE    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr[1]/td[8]/label/input
+    sleep    1
+    ${禁用}    Confirm Action
+    log    ${禁用}
+    Should Be Equal As Strings    ${禁用}    禁用成功
+
+添加终端店收款码满减送
+    [Tags]    ready
+    点击链接菜单    微分店
+    点击链接菜单    终端店收款码满减送
+    点击链接菜单    添加活动
+    sleep    1
+    ${name}    随机字符    【门店满减送】
+    ${立享优惠}    Evaluate    random.randint(2,3)    random
+    ${卡券选择}    Evaluate    random.randint(1,5)    random
+    ${适用卡券}    Evaluate    random.randint(1,2)    random
+    ${随机适用}    Evaluate    random.randint(1,2)    random
+    ${num1}    随机金额（小数）    2
+    ${num2}    随机数字    2
+    Input Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[1]/div/input    ${name}
+    ${star_time}    ${end_time}    门店/员工策略码时间选择
+    sleep    1
+    Input Text    name=condition_min    ${num1}
+    ${随机优惠}    Run Keyword if    ${立享优惠}==2    固定金额
+    ...    ELSE    随机折扣
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[5]/div[1]/label/input    #勾选卡券
+    sleep    1
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[5]/div[2]/div[1]/label/span    #选择卡券
+    sleep    1
+    Click Element    //*[@id="cardModal"]/div/div/form/div[2]/div/div/table/tbody/tr[1]    #选择第一张卡券
+    ${卡券名字}    Get Text    xpath=//*[@id="cardModal"]/div/div/form/div[2]/div/div/table/tbody/tr[1]/td[2]
+    sleep    1
+    Click Element    //*[@id="cardModal"]/div/div/form/div[3]/a[2]
+    sleep    1
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[5]/div[2]/div[2]/label/select/option[${随机适用}]    #适用卡券选择
+    sleep    1
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[6]/div[1]/label/input    #勾选积分
+    sleep    1
+    Input Text    //*[@id="area"]/tbody/tr[2]/td[3]/div[6]/div[2]/div[1]/input    ${num2}
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[6]/div[2]/div[2]/label/input    #勾选上不封顶
+    sleep    1
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[4]/label/input    #活动限制设置
+    ${门店名字}    ${随机门店}    ${代理}    ${备注}    选择门店
+    Comment    sleep    1
+    Comment    ${保存校验}    Run Keyword If    '${备注}'=='${Empty}'    备注为空    ${门店名字}
+    ...    ELSE    备注不为空    ${门店名字}
+    sleep    1
+    : FOR    ${I}    IN RANGE    50
+    \    ${ACTION}    未开启付款码
+    \    Run Keyword If    '${ACTION}'!='存在未开启扫码支付的门店'    Exit For Loop
+    sleep    1
+    对比校验    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[1][@ng-bind="item.name"]    ${name}
+    对比校验    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[2]    ${star_time} 至 ${end_time}
+    对比校验    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[3]    满 ${num1} 元
+    ${优惠内容}    get text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[4]/div/span
+    Run Keyword If    ${立享优惠}==2    Should Contain    ${优惠内容}    满减
+    ...    ELSE    Should Contain    ${优惠内容}    打折
+    ${优惠关联}    get text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[5]/div/span
+    Run Keyword If    ${立享优惠}==2    Should Contain    ${优惠关联}    减${随机优惠} 元
+    ...    ELSE    Should Contain    ${优惠关联}    ${随机优惠} 折
+    Should Contain    ${优惠关联}    ${卡券名字}
+    Should Contain    ${优惠关联}    ${num2}
+    sleep    1
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[6]/label/input
+    sleep    1
+    ${启用}    Confirm Action
+    Should Be Equal As Strings    ${启用}    启用成功
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[6]/label/input
+    sleep    1
+    ${禁用}    Confirm Action
+    Should Be Equal As Strings    ${禁用}    禁用成功
+    sleep    1
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[7]/a[2]/i    #点击查看参与门店
+    Run Keyword If    '${代理}'=='${Empty}'    校验直营店    ${门店名字}
+    ...    ELSE    校验加盟店    ${门店名字}
+    #删除
+    Go Back
+    sleep    1
+    click element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[7]/a[3]    #点击删除
+    sleep    1
+    click element    xpath=/html/body/div[4]/div/table/tbody/tr[3]/td/div[2]/button[1]
+    sleep    3
+    Element Should Not Contain    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[1]    ${name}
+
+删除终端店收款码满减送
+    [Tags]    ready
+    ${满减活动名称}    ${用不到}    添加门店满减送
+    sleep    1
+    click element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[7]/a[3]    #点击删除
+    sleep    2
+    click element    xpath=/html/body/div[4]/div/table/tbody/tr[3]/td/div[2]/button[1]
+    sleep    3
+    Element Should Not Contain    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[1]    ${满减活动名称}
+
+修改终端店收款码满减送
+    [Tags]    ready
+    点击链接菜单    微分店
+    点击链接菜单    终端店收款码满减送
+    ${update_name}    随机字符    修改门店满减送
+    ${update随机金额}    随机金额（小数）    2
+    ${name}    ${立享优惠}    添加门店满减送
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[7]/a[1]/i    #点击编辑
+    sleep    1
+    Input Text    name=name    ${update_name}
+    #清空时间
+    Click Element    id=start_time
+    Select Frame    xpath=/html/body/div[6]/iframe[@hidefocus='true']
+    sleep    1
+    click element    xpath=//*[@id="dpClearInput"]
+    sleep    1
+    unselect frame
+    Click Element    id=end_time
+    Select Frame    xpath=/html/body/div[6]/iframe[@hidefocus='true']
+    sleep    1
+    click element    xpath=//*[@id="dpClearInput"]
+    sleep    1
+    unselect frame
+    修改门店/员工码时间
+    ${update_star_time}    Get Value    xpath=//*[@id="start_time"]
+    ${update_end_time}    Get Value    xpath=//*[@id="end_time"]
+    sleep    1
+    input text    name=condition_min    ${update随机金额}
+    sleep    1
+    run keyword if    ${立享优惠}==2    input text    name=amount    1
+    ...    ELSE    input text    name=zk    1
+    sleep    1
+    input text    xpath=//*[@id="area"]/tbody/tr[2]/td[3]/div[6]/div[2]/div[1]/input    10    #积分修改
+    sleep    2
+    Click Element    id=post
+    sleep    2
+    Confirm Action
+    对比校验    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[1][@ng-bind="item.name"]    ${update_name}
+    对比校验    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[2]    ${update_star_time} 至 ${update_end_time}
+    对比校验    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[3]    满 ${update随机金额} 元
+    ${优惠内容}    get text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[4]/div/span
+    Run Keyword If    ${立享优惠}==2    Should Contain    ${优惠内容}    满减
+    ...    ELSE    Should Contain    ${优惠内容}    打折
+    ${优惠关联}    get text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[5]/div/span
+    Run Keyword If    ${立享优惠}==2    Should Contain    ${优惠关联}    减1 元
+    ...    ELSE    Should Contain    ${优惠关联}    1 折
+    Should Contain    ${优惠关联}    10
+    sleep    1
+    #删除
+    click element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[7]/a[3]    #点击删除
+    sleep    1
+    click element    xpath=/html/body/div[4]/div/table/tbody/tr[3]/td/div[2]/button[1]
+    sleep    3
+    Element Should Not Contain    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[1]/td[1]    ${update_name}
+
+终端店导出所选收款二维码
+    点击链接菜单    微分店
+    点击链接菜单    终端店收款码
+    sleep    1
+    ${随机类型门店}    Evaluate    random.randint(1,2)    random
+    Click Element    xpath=//*[@id="myTab"]/li[${随机类型门店}]
+    sleep    1
+    ${当前页tr数量}    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr
+    ${当前页数量}    Evaluate    ${当前页tr数量}-1
+    Run Keyword If    5<${当前页数量}    点五次循环    ${当前页数量}
+    ...    ELSE    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/thead/tr/th[1]
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[1]/div/div[1]/div/ul/li/a    #点击批量导出二维码
+    sleep    1
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[1]/div/div[1]/div/ul/li/ul/li[1]/a[text()='导出所选收款二维码']
+    sleep    10
+    Pass Execution    22222
+
+终端店导出全部收款二维码
+    点击链接菜单    微分店
+    点击链接菜单    终端店收款码
+    sleep    1
+    ${随机类型门店}    Evaluate    random.randint(1,2)    random
+    Click Element    xpath=//*[@id="myTab"]/li[${随机类型门店}]
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[1]/div/div[1]/div/ul/li/a    #点击批量导出二维码
+    sleep    1
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[1]/div/div[1]/div/ul/li/ul/li[2]/a[text()='导出全部收款二维码']
+    SLEEP    20
+    Pass Execution    22222
+
+员工收款码搜索
+    点击链接菜单    微分店
+    点击链接菜单    员工收款码
+    sleep    1
+    ${分页class}    Set Variable    ng-paginate ng-isolate-scope
+    ${代理商总数}    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[1]/div/div[4]/select/option
+    ${随机代理商}    Evaluate    random.randint(2,${代理商总数})    random
+    ${代理商名称}    get text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[1]/div/div[4]/select/option[${随机代理商}]
+    #根据代理商下拉框搜索
+    log    *********根据代理商下拉框搜索 *********
+    sleep    1
+    #Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[1]/div/div[4]/select/option[14]
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[1]/div/div[4]/select/option[${随机代理商}]    #下拉框随机选择代理商
+    sleep    1
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[1]/div/div[2]/span/a
+    sleep    3
+    ${class值}    Get Element Attribute    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[4]@class
+    #${a}    Run Keyword And Return Status    Element Should Not Be Visible    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr/td[text(),'暂时没有可展示的数据']
+    ${统计搜索后数量}    run keyword if    '${分页class}'!='${class值}'    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[@class="ng-scope"]
+    ...    ELSE    GET TEXT    XPATH=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[4]/ul[2]/li[3]/span/span
+    run keyword if    '${统计搜索后数量}'=='0'    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr/td    暂时没有可展示的数据
+    ...    ELSE IF    '${统计搜索后数量}'<='20'    单页校验    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[@class="ng-scope"]    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr/td[4][contains(text(),"${代理商名称}")]
+    ...    ELSE    多页校验    ${统计搜索后数量}    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[@class="ng-scope"]    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr/td[4][contains(text(),"${代理商名称}")]
+    #根据代理商下的加盟店搜索
+    log    ********根据代理商下的加盟店搜索*********
+    sleep    1
+    点击链接菜单    员工收款码
+    sleep    1
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[1]/div/div[4]/select/option[${随机代理商}]
+    sleep    1
+    ${加盟店总数}    Get Matching Xpath Count    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[1]/div/div[3]/select/option
+    ${随机加盟店}    run keyword if    '${加盟店总数}'<='1'    Evaluate    0
+    ...    ELSE    Evaluate    random.randint(2,${加盟店总数})    random
+    Run Keyword If    '${随机加盟店}'=='0'    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[1]/div/div[2]/span/a
+    ...    ELSE    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[1]/div/div[3]/select/option[${随机加盟店}]
+    sleep    1
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[1]/div/div[2]/span/a
+    sleep    1
+    #${加盟店名称}    Get Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[1]/div/div[3]/select/option[$随机加盟店]
+    ${class值1}    Get Element Attribute    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[4]@class
+    sleep    1
+    ${统计搜索后数量1}    run keyword if    '${分页class}'!='${class值1}'    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[@class="ng-scope"]
+    ...    ELSE    GET TEXT    XPATH=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[4]/ul[2]/li[3]/span/span
+    ${加盟店名称1}    run keyword if    '${统计搜索后数量1}'!='0'    Get Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[1]/div/div[3]/select/option[${随机加盟店}]
+    ...    ELSE    Evaluate    001
+    Run Keyword If    '${统计搜索后数量1}'=='0'    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr/td    暂时没有可展示的数据
+    ...    ELSE IF    '${统计搜索后数量}'<='20'    单页校验    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[@class="ng-scope"]    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr/td[3][contains(text(),"${加盟店名称1}")]
+    ...    ELSE    多页校验    ${统计搜索后数量}    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[@class="ng-scope"]    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr/td[3][contains(text(),"${加盟店名称1}")]
+    #根据员工名称搜索
+    log    ************根据员工名称搜索************
+    sleep    1
+    Click Link    员工收款码
+    sleep    1
+    Input Text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[1]/div/div[2]/input    Gan
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[1]/div/div[2]/span/a
+    sleep    1
+    ${class值2}    Get Element Attribute    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[4]@class
+    sleep    1
+    ${统计搜索后数量2}    run keyword if    '${分页class}'!='${class值2}'    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[@class="ng-scope"]
+    ...    ELSE    GET TEXT    XPATH=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[4]/ul[2]/li[3]/span/span
+    Run Keyword If    '${统计搜索后数量2}'=='0'    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr/td    暂时没有可展示的数据
+    ...    ELSE IF    '${统计搜索后数量2}'<='20'    单页校验    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[@class="ng-scope"]    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr/td[2][contains(text(),"Gan")]
+    ...    ELSE    多页校验    ${统计搜索后数量2}    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[@class="ng-scope"]    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr/td[2][contains(text(),"Gan")]
+    #根据电话搜索
+    sleep    1
+    log    *************根据电话搜索*************
+    Click Link    员工收款码
+    Set Browser Implicit Wait    10
+    input text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[1]/div/div[2]/input    13800138000
+    sleep    1
+    click element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[1]/div/div[2]/span/a/i    #点击搜索
+    sleep    1
+    ${class值3}    Get Element Attribute    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[4]@class
+    ${统计搜索后数量3}    run keyword if    '${分页class}'!='${class值3}'    get matching xpath count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[@class="ng-scope"]
+    ...    ELSE    get text    XPATH=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[4]/ul[2]/li[3]/span/span
+    run keyword if    '${统计搜索后数量3}'=='0'    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr/td    暂时没有可展示的数据
+    ...    ELSE IF    ${统计搜索后数量3}<=20    单页校验    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[@class="ng-scope"]    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr/td[5][contains(text(),"13800138000")]
+    ...    ELSE    多页校验    ${统计搜索后数量3}    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr[@class="ng-scope"]    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div/div[3]/table/tbody/tr/td[5][contains(text(),"13800138000")]
+
+debug
+    点击链接菜单    微分店
+    点击链接菜单    员工收款码满减送
+    点击链接菜单    添加活动
+    ${name}    随机字符    【员工满减送】
+    ${立享优惠}    Evaluate    random.randint(2,3)    random
+    ${卡券选择}    Evaluate    random.randint(1,5)    random
+    ${适用卡券}    Evaluate    random.randint(1,2)    random
+    ${随机适用}    Evaluate    random.randint(1,2)    random
+    ${num1}    随机金额（小数）    2
+    ${num2}    随机数字    2
+    input text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[1]/div/input    ${name}
+    sleep    1
+    ${star_time}    ${end_time}    门店/员工策略码时间选择
+    sleep    1
+    input text    name=condition_min    ${num1}
+    run keyword if    ${立享优惠}==2    固定金额
+    ...    ELSE    随机折扣
+    sleep    1
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[5]/div[1]/label/input    #勾选卡券
+    sleep    1
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[5]/div[2]/div[1]/label/span
+    sleep    2
+    Click Element    //*[@id="cardModal"]/div/div/form/div[2]/div/div/table/tbody/tr[1]/td[1]/label/input    #勾选第一张卡券
+    sleep    1
+    ${卡券名字}    get text    //*[@id="cardModal"]/div/div/form/div[2]/div/div/table/tbody/tr[1]/td[2]
+    Click Element    //*[@id="cardModal"]/div/div/form/div[3]/a[2]
+    sleep    1
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[5]/div[2]/div[2]/label/select/option[${适用卡券}]    #适用卡券
+    sleep    1
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[6]/div[1]/label/input    #勾选积分
+    sleep    1
+    Input Text    //*[@id="area"]/tbody/tr[2]/td[3]/div[6]/div[2]/div[1]/input    ${num2}
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[6]/div[2]/div[2]/label/input    #上不封顶
+    sleep    1
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[4]/label/input    #活动限制设置
+    sleep    1
+    员工选择
+    sleep    1
+    : FOR    ${i}    IN RANGE    100
+    \    ${action}    未开启员工付款码
+    \    Run Keyword If    '${ACTION}'!='存在未开启扫码支付的门店'    Exit For Loop
+
+debug1
+
+*** Keywords ***
+单页校验
+    [Arguments]    ${路径1}    ${路径2}
+    ${单页行数}    Get Matching Xpath Count    ${路径1}
+    #获取带关键字行数
+    ${搜索校验}    Get Webelements    ${路径2}    #获取行数
+    log    ${搜索校验}
+    sleep    1
+    ${包含关键词的数量}    Get Length    ${搜索校验}    #获取包含关键词的数量
+    Should Be Equal As Numbers    ${包含关键词的数量}    ${单页行数}    #校验搜索的结果数量与包含关键词的数量是否一致
+    log    校验通过
+
+多页校验
+    [Arguments]    ${搜索的总数}    ${路径3}    ${路径4}
+    [Tags]    搜索的总数
+    ${页数}    Set Variable    ${搜索的总数}/float(20)
+    ${页数整数}    Evaluate    int(math.ceil(${页数}))    math
+    单页校验    ${路径3}    ${路径4}
+    : FOR    ${a}    IN RANGE    1    ${页数整数}
+    \    点击链接菜单    »
+    \    单页校验    ${路径3}    ${路径4}
+
+搜索后统计总数
+    [Arguments]    ${搜索条件}
+    Input Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[1]/div/div[2]/input    ${搜索条件}
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[1]/div/div[2]/span    #点击搜索
+    sleep    1
+    ${分页class}    Set Variable    ng-paginate ng-isolate-scope
+    ${class值}    Get Element Attribute    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[4]@class
+    ${统计搜索后数量}    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr[@class="ng-scope"]
+    ${总数}    Run Keyword If    '${class值}'=='${分页class}'    Get Text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[4]/ul[2]/li[3]/span/span
+    ...    ELSE    Evaluate    ${统计搜索后数量}
+    [Return]    ${总数}    ${统计搜索后数量}
+
+点五次循环
+    [Arguments]    ${数量}
+    : FOR    ${a}    IN RANGE    1    5
+    \    ${选择勾选门店}    Evaluate    random.randint(2,${数量})    random
+    \    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[2]/div[3]/table/tbody/tr[${选择勾选门店}]/td[1]/label/input
+
+添加直营店
+    点击链接菜单    微分店
+    点击链接菜单    添加门店满减送
+    click Element    xpath=//div/select[@ng-model="model.shop_type"]    #终端店分类下拉框
+    click Element    xpath=//div/select[@ng-model="model.shop_type"]/option[2]    #终端店分类选择直营店
+    #随机字符
+    ${终端店名称}    随机字符    直营店
+    ${帐号}    随机数字2    Gander
+    ${管理员姓名}    随机字符    G
+    Input Text    name=name    ${终端店名称}
+    Input Text    name=user_name    ${帐号}
+    Input Text    name=password    123456
+    Input Text    name=real_name    ${管理员姓名}
+    #微信店铺分类
+    sleep    1
+    随机选择微信分类/商圈    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[1]
+    ${微信一级分类}    get text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[1]/option[${随机分类}]
+    sleep    1
+    随机选择微信分类/商圈    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[2]
+    ${微信二级分类}    get text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[2]/option[${随机分类}]
+    sleep    1
+    微信/商圈分类非一级    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[3]
+    log    ${总数}
+    ${微信三级分类}    Run Keyword If    '${总数}'=='1'    Set Variable    ${EMPTY}
+    ...    ELSE    Get Text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[3]/option[${随机分类}]
+    #所属商圈
+    sleep    1
+    随机选择微信分类/商圈    //*[@id="provinceId"]
+    ${一级商圈}    Get Text    xpath=//*[@id="provinceId"]/option[${随机分类}]
+    sleep    1
+    微信/商圈分类非一级    //*[@id="cityId"]
+    ${二级商圈}    Get Text    xpath=//*[@id="cityId"]/option[${随机分类}]
+    sleep    1
+    微信/商圈分类非一级    //*[@id="districtId"]
+    ${三级商圈}    Get Text    xpath=//*[@id="districtId"]/option[${随机分类}]
+    sleep    1
+    微信/商圈分类非一级    //*[@id="circleId"]
+    ${四级商圈}    Run Keyword If    '${总数}'=='1'    Set Variable    其他商圈
+    ...    ELSE    Get Text    xpath=//*[@id="circleId"]/option[${随机分类}]
+    sleep    1
+    #电话
+    input text    name=phone    18664334600
+    sleep    1
+    #网址
+    input text    name=url    http://betanewwsh.snsshop.net
+    sleep    1
+    #店铺背景选择
+    Click Element    xpath=//div[1]/a/label/span[@data-title="点击上传图片..."]
+    Wait Until Page Contains Element    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li[8]/a/img
+    ${图片总数}    Get Matching Xpath Count    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li
+    log    ${图片总数}
+    ${随机图片}    Evaluate    random.randint(1,${图片总数})    random
+    sleep    1
+    Click Element    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li[${随机图片}]
+    sleep    1
+    Click Element    id=submitImage
+    sleep    1
+    input text    name=avgPrice    10
+    input text    name=shopInfoRecommend    暂无
+    input text    name=shopInfoSpecial    暂无
+    input text    name=shopInfoDescription    欢迎光临
+    input text    name=address    广东省深圳市南山区科技园
+    input text    id=suggestId    广东省深圳市南山区科技园
+    sleep    0.5
+    Click Element    id=positioning
+    sleep    1
+    Click Button    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[17]/div/button    #保存提交
+    sleep    5
+    Confirm Action
+
+添加加盟店
+    点击链接菜单    微分店
+    Click Element    //*[@id="navList"]/li[3]/a/span
+    点击链接菜单    添加代理商
+    sleep    1
+    ${代理商名称}    随机字符    代理商
+    ${加盟店名称}    随机字符    加盟店
+    ${负责人姓名}    随机字符    负责人
+    ${代理商帐号}    随机数字2    daili
+    #添加代理商
+    Input Text    name=agent_name    ${代理商名称}
+    sleep    1
+    Input Text    name=real_name    ${负责人姓名}
+    sleep    1
+    Input Text    name=mobile    18664664600
+    sleep    1
+    Input Text    name=area    广东
+    sleep    1
+    Input Text    name=user_name    ${代理商帐号}
+    sleep    1
+    Input Text    name=password    123456
+    sleep    1
+    Click Element    id=submit
+    sleep    2
+    Confirm Action
+    #添加加盟店
+    sleep    1
+    Click Element    //*[@id="home"]/form/table/tbody/tr[1]/td[8]/a/i
+    sleep    1
+    Select Window    title=代理商信息
+    点击链接菜单    终端店列表
+    sleep    1
+    点击链接菜单    添加门店满减送
+    click Element    xpath=//div/select[@ng-model="model.shop_type"]    #终端店分类下拉框
+    click Element    xpath=//div/select[@ng-model="model.shop_type"]/option[2]    #终端店分类选择直营店
+    #随机字符
+    ${终端店名称}    随机字符    加盟店
+    ${帐号}    随机数字2    jiameng
+    ${管理员姓名}    随机字符    jia
+    Input Text    name=name    ${终端店名称}
+    Input Text    name=user_name    ${帐号}
+    Input Text    name=password    123456
+    Input Text    name=real_name    ${管理员姓名}
+    #微信店铺分类
+    sleep    1
+    随机选择微信分类/商圈    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[1]
+    ${微信一级分类}    get text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[1]/option[${随机分类}]
+    sleep    1
+    随机选择微信分类/商圈    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[2]
+    ${微信二级分类}    get text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[2]/option[${随机分类}]
+    sleep    1
+    微信/商圈分类非一级    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[3]
+    log    ${总数}
+    ${微信三级分类}    Run Keyword If    '${总数}'=='1'    Set Variable    ${EMPTY}
+    ...    ELSE    Get Text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[3]/option[${随机分类}]
+    #所属商圈
+    sleep    1
+    随机选择微信分类/商圈    //*[@id="provinceId"]
+    ${一级商圈}    Get Text    xpath=//*[@id="provinceId"]/option[${随机分类}]
+    sleep    1
+    微信/商圈分类非一级    //*[@id="cityId"]
+    ${二级商圈}    Get Text    xpath=//*[@id="cityId"]/option[${随机分类}]
+    sleep    1
+    微信/商圈分类非一级    //*[@id="districtId"]
+    ${三级商圈}    Get Text    xpath=//*[@id="districtId"]/option[${随机分类}]
+    sleep    1
+    微信/商圈分类非一级    //*[@id="circleId"]
+    ${四级商圈}    Run Keyword If    '${总数}'=='1'    Set Variable    其他商圈
+    ...    ELSE    Get Text    xpath=//*[@id="circleId"]/option[${随机分类}]
+    sleep    1
+    #电话
+    input text    name=phone    18664334600
+    sleep    1
+    #网址
+    input text    name=url    http://betanewwsh.snsshop.net
+    sleep    1
+    #店铺背景选择
+    Click Element    xpath=//div[1]/a/label/span[@data-title="点击上传图片..."]
+    Wait Until Page Contains Element    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li[8]/a/img
+    ${图片总数}    Get Matching Xpath Count    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li
+    log    ${图片总数}
+    ${随机图片}    Evaluate    random.randint(1,${图片总数})    random
+    sleep    1
+    Click Element    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li[${随机图片}]
+    sleep    1
+    Click Element    id=submitImage
+    sleep    1
+    input text    name=avgPrice    10
+    input text    name=shopInfoRecommend    暂无
+    input text    name=shopInfoSpecial    暂无
+    input text    name=shopInfoDescription    欢迎光临
+    input text    name=address    广东省深圳市南山区科技园
+    input text    id=suggestId    广东省深圳市南山区科技园
+    sleep    0.5
+    Click Element    id=positioning
+    sleep    1
+    Click Button    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[17]/div/button    #保存提交
+    sleep    5
+    Confirm Action
+
+随机折扣
+    ${num1}    Generate Random String    1    123456789
+    ${num2}    Generate Random String    1    123456789
+    ${num3}    Set Variable    ${num1}.${num2}
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[3]/div[1]/label/input
+    sleep    1
+    Input Text    //*[@id="area"]/tbody/tr[2]/td[3]/div[3]/div[2]/div/input    ${num3}
+    sleep    1
+    [Return]    ${num3}
+
+固定金额
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[2]/div[1]/label/input
+    sleep    1
+    ${随机金额}    随机金额（小数）    2
+    sleep    1
+    Input Text    name=amount    ${随机金额}
+    sleep    1
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[2]/div[2]/div[2]/label/input    #上不封顶
+    sleep    1
+    [Return]    ${随机金额}
+
+选择商品
+    [Arguments]    ${confirm_xpath}=//*[@id="productModal"]/div/div/div[3]/a[text()="确定"]
+    Click Element    //a[contains(@data-target,"#productModal") and contains(text(),"选择商品")]
+    Wait Until Page Contains Element    //h4[text()="商品列表"]
+    Sleep    2
+    ####选择商品
+    ${tr}    Generate Random String    1    1234
+    ${flag}    Run Keyword And Return Status    Checkbox Should Not Be Selected    //*[@id="product"]/div[1]/table/tbody/tr[${tr}]/td[1]/label/input
+    Run Keyword If    ${flag}==True    Click Element    //*[@id="product"]/div[1]/table/tbody/tr[${tr}]
+    Wait Until Element Is Visible    ${confirm_xpath}
+    Sleep    1
+    Click Element    ${confirm_xpath}
+    Sleep    2
+
+选择门店
+    : FOR    ${I}    IN RANGE    50
+    \    sleep    1
+    \    门店左边选择
+    \    ${门店数量}    Evaluate    int(${门店数量})
+    \    sleep    1
+    \    Log    门店数量:${门店数量}
+    \    Exit For Loop If    ${门店数量}!=0
+    log    ${随机代理商门店}
+    ${门店名字}    ${随机门店}    ${代理}    ${备注}    门店右边选择
+    [Return]    ${门店名字}    ${随机门店}    ${代理}    ${备注}
+
+门店左边选择
+    #随机选择代理商/门店
+    ${代理商门店数量}    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[1]/div/div/ul/li    #统计列表中的总数
+    ${随机代理商门店}    Evaluate    random.randint(1,${代理商门店数量})    random    #取1到【左边列表总数】的随机数
+    log    ${随机代理商门店}
+    sleep    1
+    Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[1]/div/div/ul/li[${随机代理商门店}]/a/i', document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();    #隐藏问题解决
+    sleep    1
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[1]/div/div/ul/li[${随机代理商门店}]/a/i    #点击左边勾选
+    ${门店数量}    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr
+    log    ${门店数量}
+    Set Suite Variable    ${门店数量}
+    Set Suite Variable    ${随机代理商门店}
+    [Return]    ${随机代理商门店}    ${门店数量}
+
+门店右边选择
+    #门店选择
+    ${门店数量}    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr
+    ${随机门店}    Evaluate    random.randint(1,${门店数量})    random
+    Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机门店}]/td[1]/label/input', document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();
+    sleep    1
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机门店}]/td[1]/label/input
+    sleep    1
+    ${门店名字}    get text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机门店}]/td[2]
+    log    ${门店名字}
+    ${代理}    get text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机门店}]/td[3]
+    log    ${代理}
+    ${备注}    Get Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机门店}]/td[4]
+    log    ${备注}
+    Set Suite Variable    ${门店名字}
+    Set Suite Variable    ${随机门店}
+    Set Suite Variable    ${代理}
+    Set Suite Variable    ${备注}
+    [Return]    ${门店名字}    ${随机门店}    ${代理}    ${备注}
+
+备注为空
+    [Arguments]    ${门店名称}
+    Click element    id=post    #点击创建
+    SLEEP    1
+    ${保存校验}    Confirm Action
+    [Return]    ${保存校验}
+
+备注不为空
+    [Arguments]    ${门店名字}
+    sleep    1
+    Click element    id=post    #点击创建
+    sleep    2
+    click element    xpath=/html/body/div[7]/div/table/tbody/tr[3]/td/div[2]/button[1]
+    sleep    2
+    ${保存校验}    Confirm Action
+    [Return]    ${保存校验}
+
+获取收款码状态
+    [Arguments]    ${xpath}
+    ${flag}    Run Keyword And Return Status    Checkbox Should Be Selected    ${xpath}
+    [Return]    ${flag}
+
+关闭收款码添加活动校验
+    ${zz}    Confirm Action
+    log    ${zz}
+    Should Be Equal As Strings    ${zz}    状态已启用！
+
+开启收款码添加活动校验
+    ${zz}    Confirm Action
+    log    ${zz}
+    Should Be Equal As Strings    ${zz}    状态已启用！
+
+未开启付款码
+    Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机门店}]/td[1]/label/input', document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机门店}]/td[1]/label/input
+    Sleep    1
+    Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[1]/div/div/ul/li[${随机代理商门店}]/a/i', document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[1]/div/div/ul/li[${随机代理商门店}]/a/i
+    Sleep    1
+    : FOR    ${I}    IN RANGE    50
+    \    sleep    1
+    \    ${随机代理商门店}    门店左边选择
+    \    ${门店数量}    Evaluate    int(${门店数量})
+    \    sleep    1
+    \    Log    门店数量:${门店数量}
+    \    Exit For Loop If    ${门店数量}!=0
+    log    ${随机代理商门店}
+    ${门店名字}    门店右边选择
+    sleep    1
+    ${111}    Run Keyword If    '${备注}'=='${Empty}'    备注为空    ${门店名字}
+    ...    ELSE    备注不为空    ${门店名字}
+    [Return]    ${111}
+
+校验直营店
+    [Arguments]    ${门店名字}
+    对比校验    xpath=//*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[1]/span    ${门店名字}
+
+校验加盟店
+    [Arguments]    ${门店名字}
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[2]/ul/li[2]/a    #点击加盟店tab
+    SLEEP    1
+    对比校验    xpath=//*[@id="tab2"]/div/div[1]/table/tbody/tr[1]/td[1]/span    ${门店名字}
+
+添加门店满减送
+    点击链接菜单    微分店
+    点击链接菜单    终端店收款码满减送
+    点击链接菜单    添加活动
+    sleep    1
+    ${name}    随机字符    【门店满减送】
+    ${立享优惠}    Evaluate    random.randint(2,3)    random
+    ${卡券选择}    Evaluate    random.randint(1,5)    random
+    ${适用卡券}    Evaluate    random.randint(1,2)    random
+    ${随机适用}    Evaluate    random.randint(1,2)    random
+    ${num1}    随机金额（小数）    2
+    ${num2}    随机数字    2
+    Input Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[1]/div/input    ${name}
+    sleep    1
+    #开始时间选择
+    Click Element    id=start_time
+    sleep    1
+    select frame    xpath=/html/body/div[6]/iframe[@hidefocus='true']    #定位
+    sleep    1
+    click element    //*[@id="dpTitle"]/div[6]/a    #点击下一月
+    input text    xpath=//*[@id="dpTime"]/table/tbody/tr[1]/td[1]/input[3]    59    #输入时间的分为59分
+    sleep    1
+    input text    xpath=//*[@id="dpTime"]/table/tbody/tr[1]/td[1]/input[5]    59    #输入时间的秒为59分
+    #sleep    1
+    click element    id=dpOkInput    #点击确定
+    Unselect Frame
+    ${star_time}    Get Value    //*[@id="start_time"]
+    sleep    1
+    #结束时间
+    click element    id=end_time
+    sleep    1
+    select frame    xpath=/html/body/div[6]/iframe[@hidefocus='true']
+    sleep    1
+    click element    //*[@id="dpTitle"]/div[6]/a    #点击下一月
+    sleep    1
+    click element    //*[@id="dpTitle"]/div[6]/a    #点击下一月
+    sleep    1
+    click element    id=dpOkInput    #点击确定
+    Unselect Frame
+    ${end_time}    Get Value    //*[@id="end_time"]
+    sleep    1
+    Input Text    name=condition_min    ${num1}
+    ${随机优惠}    Run Keyword if    ${立享优惠}==2    固定金额
+    ...    ELSE    随机折扣
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[5]/div[1]/label/input    #勾选卡券
+    sleep    1
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[5]/div[2]/div[1]/label/span    #选择卡券
+    sleep    1
+    Click Element    //*[@id="cardModal"]/div/div/form/div[2]/div/div/table/tbody/tr[1]    #选择第一张卡券
+    ${卡券名字}    Get Text    xpath=//*[@id="cardModal"]/div/div/form/div[2]/div/div/table/tbody/tr[1]/td[2]
+    sleep    1
+    Click Element    //*[@id="cardModal"]/div/div/form/div[3]/a[2]
+    sleep    1
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[5]/div[2]/div[2]/label/select/option[${随机适用}]
+    sleep    1
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[6]/div[1]/label/input    #勾选积分
+    sleep    1
+    Input Text    //*[@id="area"]/tbody/tr[2]/td[3]/div[6]/div[2]/div[1]/input    ${num2}
+    Click Element    //*[@id="area"]/tbody/tr[2]/td[3]/div[6]/div[2]/div[2]/label/input    #勾选上不封顶
+    sleep    1
+    Click Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[4]/label/input    #活动现在设置
+    ${门店名字}    ${随机门店}    ${代理}    ${备注}    选择门店
+    Comment    sleep    1
+    Comment    ${保存校验}    Run Keyword If    '${备注}'=='${Empty}'    备注为空    ${门店名字}
+    ...    ELSE    备注不为空    ${门店名字}
+    sleep    1
+    : FOR    ${I}    IN RANGE    50
+    \    ${ACTION}    未开启付款码
+    \    Run Keyword If    '${ACTION}'!='存在未开启扫码支付的门店'    Exit For Loop
+    [Return]    ${name}    ${立享优惠}
+
+员工左边选择
+    ${门店/代理商数量}    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[1]/div/div/ul/li
+    ${随机门店/代理商}    Evaluate    random.randint(1,${门店/代理商数量})    random
+    Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[1]/div/div/ul/li[${随机门店/代理商}]/a/i',document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();    #隐藏问题解决
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[1]/div/div/ul/li[${随机门店/代理商}]/a/i
+    sleep    1
+    ${员工数量}    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[2]/div/table/tbody/*
+    log    ${员工数量}
+    [Return]    ${员工数量}
+
+员工选择
+    : FOR    ${I}    IN RANGE    50
+    \    sleep    1
+    \    ${员工数量}    员工左边选择
+    \    sleep    1
+    \    Log    员工数量:${员工数量}
+    \    Exit For Loop If    ${员工数量}!=0
+    员工右边选择
+
+员工右边选择
+    ${员工数量}    Get Matching Xpath Count    //*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[2]/div/table/tbody/*
+    ${随机员工}    Evaluate    random.randint(1,${员工数量})    random
+    SLEEP    1
+    Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机员工}]/td[1]/label/input', document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();    #隐藏问题解决
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机员工}]/td[1]/label/input
+    sleep    1
+    ${员工名字}    get text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机员工}]/td[2]
+    log    ${员工名字}
+    Set Suite Variable    ${员工名字}
+    Set Suite Variable    ${随机员工}
+
+未开启员工付款码
+    sleep    1
+    Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机员工}]/td[1]/label/input', document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();    #隐藏问题解决
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机员工}]/td[1]/label/input
+    sleep    1
+    Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[1]/div/div/ul/li[${随机门店}]/a/i ',document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();    #隐藏问题解决
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[2]/div/form/div[6]/div[2]/table/tbody/tr/td[1]/div/div/ul/li[${随机门店}]/a/i
+    : FOR    ${I}    IN RANGE    100
+    \    sleep    1
+    \    ${员工数量}    员工左边选择
+    \    sleep    1
+    \    Log    员工数量:${员工数量}
+    \    Exit For Loop If    ${员工数量}!=0
+    ${员工名字}    员工右边选择
+    sleep    1
+    ${222}    Run Keyword If    '${备注}'=='${Empty}'    备注为空    ${员工名字}
+    ...    ELSE    备注不为空    ${员工名字}
+    [Return]    ${222}

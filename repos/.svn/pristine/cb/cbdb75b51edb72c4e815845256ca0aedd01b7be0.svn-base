@@ -1,0 +1,11 @@
+*** Settings ***
+Documentation     首页顶部功能测试
+Suite Setup       启动App
+Suite Teardown    关闭App
+Library           AppiumLibrary
+Resource          ../../../Lib/常用操作.robot
+Resource          ../../../Lib/菜单库.robot
+Resource          ../../../Lib/系统按键.robot
+Resource          ../../../Lib/配置参数.robot
+
+*** Test Cases ***

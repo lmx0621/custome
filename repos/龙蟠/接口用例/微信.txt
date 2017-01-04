@@ -1,0 +1,33 @@
+*** Settings ***
+Suite Setup       API登录
+Library           RequestsLibrary
+Resource          ../Resource/配置参数.robot
+Library           String
+Library           json
+Library           Collections
+Resource          ../Resource/API/Common.txt
+
+*** Test Cases ***
+获取二维码列表
+    [Tags]    paused
+    ${headers}    Get_Headers
+    &{data}=    Create Dictionary    _page=1    _page_size=20
+    ${resp}    Post Request    wsh    /activity/qrcode-ajax    data=${data}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    ###
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+
+获取二维码信息
+    [Tags]    paused
+    ${headers}    Get_Headers
+    &{data}=    Create Dictionary    model=member_card    model_id=1    shop_sub_id=0
+    ${resp}    Post Request    wsh    /weixin/qrcode-detail-ajax    data=${data}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    ###
+    ${errmsg}    Get From Dictionary    ${js}    errmsg

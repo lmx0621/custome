@@ -1,0 +1,80 @@
+*** Settings ***
+Library           Selenium2Library
+Resource          ../配置参数.robot
+Resource          ../功能菜单.robot
+Library           String
+Library           Collections
+Library           RequestsLibrary
+Resource          Common.txt
+Library           json
+
+*** Keywords ***
+分店商品激活
+    [Arguments]    ${product_id}    ${shop_sub_id}    ${status}=1    ${shipping_status}=1
+    &{headers}=    Get Headers
+    ${data}    Convert To String    {"product_id":"${product_id}","shop_sub_id":${shop_sub_id},"shipping_status":${shipping_status},"self_pickup_status":1,"status":${status}}
+    ${resp}    Post Request    sub    /terminal/sub-product-update-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+
+开启分店模式
+    &{headers}=    Get Headers
+    ${data}    Convert To String    {"id":${GLOBAL_CONFIG.shop_id}}
+    ${resp}    Post Request    sub    /shop/main-sub-open-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+关闭分店模式
+    &{headers}=    Get Headers
+    ${data}    Convert To String    {"id":${GLOBAL_CONFIG.shop_id}}
+    ${resp}    Post Request    sub    /shop/main-sub-close-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+分店列表
+    ${resp}    Post Request    sub    /terminal/list-ajax
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+关闭独立库存
+    &{headers}=    Get Headers
+    ${data}    Convert To String    {"id":${GLOBAL_CONFIG.shop_id}}
+    ${resp}    Post Request    sub    /shop/single-setting-close-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}
+
+开启独立库存
+    &{headers}=    Get Headers
+    ${data}    Convert To String    {"id":${GLOBAL_CONFIG.shop_id}}
+    ${resp}    Post Request    sub    /shop/single-setting-open-ajax    data=${data}    headers=${headers}
+    Should Be Equal As Integers    ${resp.status_code}    200
+    Log    Response:${resp.content}
+    ${content}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${content}    errcode
+    ${errmsg}    Get From Dictionary    ${content}    errmsg
+    Should Be Equal As Strings    ${errcode}    0    接口返回异常！返回信息：${errmsg}
+    [Return]    ${errmsg}

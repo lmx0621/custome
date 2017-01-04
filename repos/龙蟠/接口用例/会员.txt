@@ -1,0 +1,213 @@
+*** Settings ***
+Suite Setup       API登录    1    1
+Library           RequestsLibrary
+Resource          ../Resource/API/会员.txt
+Resource          ../Resource/配置参数.robot
+Library           String
+Library           json
+Library           Collections
+Resource          ../Resource/API/Common.txt
+Resource          ../Resource/常用操作.robot
+Resource          ../Resource/API/API操作.txt
+
+*** Test Cases ***
+客户列表
+    [Documentation]    用例描述：获取客户列表
+    [Tags]    ready
+    ${errmsg}    会员.客户列表
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${len}    Get Length    ${data}
+    ${rand}    Evaluate    random.randint(0,${len-1})    random
+    ${随机客户}    Set Variable    ${data[${rand}]}
+    ${随机客户ID}    Get From Dictionary    ${随机客户}    id
+    Set Suite Variable    ${随机客户ID}
+
+客户详情
+    [Tags]    ready
+    ${errmsg}    会员.客户详情    ${随机客户ID}
+
+客户分组列表
+    [Tags]    ready
+    ${resp}    Post Request    wsh    /member/group-list-ajax
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    ###
+    ${data}    Get From Dictionary    ${js}    errmsg
+    ${num}    Get Length    ${data}
+    ###生成List
+    ${groups}    Create List
+    : FOR    ${i}    IN RANGE    ${num}
+    \    ${groupdata}    Get From List    ${data}    ${i}
+    \    ${id}    Get From Dictionary    ${groupdata}    id
+    \    Append To List    ${groups}    ${id}
+    ${len}    Get Length    ${groups}
+    Log    Groups:'${groups}'
+    Set Suite Variable    ${groups}
+
+客户统计
+    [Tags]    ready
+    ${resp}    Post Request    wsh    /member/count-wx-member
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Log    errcode is:${errcode}
+    Log    Resp:${resp.content}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+
+获取标签列表
+    [Tags]    ready
+    &{headers}    Create Dictionary    Accept=application/json    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":20,"name":""}
+    ${resp}    Post Request    wsh    /members/find-tag-ajax    data=${jsonstr}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ###
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${标签1}    Get From List    ${data}    0
+    ${num}    Get Length    ${data}
+    ${page}    Get From Dictionary    ${errmsg}    page
+    ${总数}    Get From Dictionary    ${page}    total_count
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+
+-----1-----
+
+会员统计
+    [Tags]    ready
+    ${errmsg}    会员统计
+
+会员列表
+    [Tags]    ready
+    ${errmsg}    会员列表
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${len}    Get Length    ${data}
+    ${rand}    Evaluate    random.randint(0,${len-1})    random
+    ${随机会员}    Set Variable    ${data[${rand}]}
+    ${随机会员ID}    Get From Dictionary    ${随机会员}    id
+    Set Suite Variable    ${随机会员ID}
+
+会员详情
+    [Tags]    ready
+    ${errmsg}    会员详情    ${随机会员ID}
+
+会员成长明细
+    [Tags]    ready
+    &{headers}    Create Dictionary    Accept=application/json, text/plain, */*    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":20,"member_id":258}
+    ${resp}    Post Request    wsh    /member/member-growth-detail    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    ###
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+
+客户积分统计
+    [Tags]    ready
+    &{headers}    Create Dictionary    Accept=application/json, text/plain, */*    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"user_id":"13764485"}
+    ${resp}    Post Request    wsh    /data/user-point-count-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    ###
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+
+客户积分列表
+    [Tags]    ready
+    &{headers}    Create Dictionary    Accept=application/json, text/plain, */*    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":20,"type_id":1,"id":"13764485"}
+    ${resp}    Post Request    wsh    /member/point-list-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    ###
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+
+客户消费记录
+    [Tags]    ready
+    &{headers}    Create Dictionary    Accept=application/json, text/plain, */*    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":20,"uid":"13723238"}
+    ${resp}    Post Request    wsh    /members/find-member-order-list-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    ###
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+
+全部客户消费记录
+    [Tags]    ready
+    &{headers}    Create Dictionary    Accept=application/json, text/plain, */*    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":20,"real_name":"","bind_mobile":"","order_no":"","createStart":"","createEnd":"","total_price_min":"","total_price_max":"","shop_sub_id":[],"order_type":[]}
+    ${resp}    Post Request    wsh    /members/find-member-order-list-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    ###
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+
+会员分组列表
+    [Tags]    ready
+    &{headers}    Create Dictionary    Accept=application/json, text/plain, */*    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":20,"name":""}
+    ${resp}    Post Request    wsh    /members/find-group-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    ###
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    ${page}    Get From Dictionary    ${errmsg}    page
+    ${total}    Get From Dictionary    ${page}    total_count
+
+会员等级列表
+    [Tags]    ready
+    &{headers}    Create Dictionary    Accept=application/json, text/plain, */*    Content-Type=application/json
+    ${jsonstr}    Convert To String    {"_page":1,"_page_size":10,"name":""}
+    ${resp}    Post Request    wsh    /members/find-grade-ajax    data=${jsonstr}    headers=${headers}
+    Log    Response:${resp.content}
+    ${js}    loads    ${resp.content}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    Run Keyword If    ${errcode}!=0    Fail    接口返回异常！
+    ###
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    ${page}    Get From Dictionary    ${errmsg}    page
+    ${total}    Get From Dictionary    ${page}    total_count
+
+折扣优惠共享设置
+    [Tags]    ready
+    ${errmsg}    会员.折扣优惠共享设置    1    1    1
+
+会员折扣商品设置
+    [Tags]    ready
+    ${errmsg}    会员.折扣商品设置
+
+收货地址管理
+    [Tags]    ready
+    ${name}    随机字符    姓名    8
+    ${phone}    随机手机号
+    ${address}    随机字符    详细地址
+    ${errmsg}    WX_添加收货地址    ${name}    ${phone}    ${address}
+    ${id}    Get From Dictionary    ${errmsg}    id
+    Log    添加收货地址成功...
+    Sleep    5
+    WX_删除收货地址    ${id}
+    Log    删除收货地址成功...
+
+获取客户优惠信息
+    ${优惠信息}    客户优惠信息    ${GLOBAL_CONFIG.user_id}
+    ${红包}    Get From Dictionary    ${优惠信息}    红包
+    ${卡券}    Get From Dictionary    ${优惠信息}    卡券
+    ${积分}    Get From Dictionary    ${优惠信息}    积分
+
+获取红包列表
+    ${errmsg}    WX_获取红包列表

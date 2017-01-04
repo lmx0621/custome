@@ -1,0 +1,1338 @@
+*** Settings ***
+Suite Setup       Run Keywords    创建并开启包邮秒杀活动
+...               AND    添加抵扣活动
+Suite Teardown    Run Keywords    删除抵扣活动
+...               AND    关闭秒杀活动    ${activityID}
+...               AND    删除秒杀活动    ${activityID}
+Library           Selenium2Library
+Resource          ../../Resource/API/Common.txt
+Resource          ../../Resource/API/店铺.txt
+Resource          ../../Resource/API/营销.txt
+Resource          ../../Resource/API/商品.txt
+Resource          ../../Resource/API/会员.txt
+Resource          ../../Resource/API/订单.txt
+Resource          ../../Resource/常用操作.robot
+
+*** Test Cases ***
+秒杀活动页
+    [Tags]    ready
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    wait until page contains    首页
+    sleep    2
+    #进入惊喜页
+    click element    link=惊喜
+    wait until page contains    秒杀活动
+    #进入秒杀活动列表页
+    Click Element    partial link=秒杀活动
+    wait until page contains    ${secondKillName}    15
+    #秒杀活动页
+    1秒杀活动页
+    #秒杀商品详情页
+    2秒杀商品详情页
+    #秒杀弹窗
+    2-1立即秒杀弹窗
+    [Teardown]    Close All Browsers
+
+免运费递配送
+    [Tags]    ready
+    ${userAddress}    删除所有收货地址
+    #获取用户积分信息
+    ${userInfor}    WX_获取用户信息
+    ${userPoint}    Get From Dictionary    ${userInfor}    point
+    Set Test Variable    ${userPoint}    #用户积分
+    #积分抵扣换算
+    ${maxAmount}    Get From Dictionary    ${redeemInfor}    max_amount
+    ${unitAmount}    Get From Dictionary    ${redeemInfor}    unit_amount
+    ${uniPoint}    Get From Dictionary    ${redeemInfor}    unit_points
+    ${unitNum}    Evaluate    ${maxAmount} / ${unitAmount}
+    ${maxUsePoint}    Evaluate    ${uniPoint} * ${unitNum}    #最多使用积分
+    ${numberMaxAmount}    Convert To Number    ${maxAmount}
+    ${maxPointMoney}    Evaluate    ${numberMaxAmount} / 100    #最多抵扣金额
+    Set Test Variable    ${maxUsePoint}    #最多使用积分
+    Set Test Variable    ${maxPointMoney}    #最多抵扣金额
+    #生成秒杀订单
+    Set Test Variable    ${sendType}    快递配送
+    Set Test Variable    ${buyNum}    1
+    生成秒杀订单
+    ######订单结算页#######
+    #从URL中获取订单ID
+    ${currentURL}    Get Location
+    ${URLList}    Split String    ${currentURL}    =
+    ${orderID}    Get From List    ${URLList}    1
+    Set Test Variable    ${orderID}
+    #输入收货地址并校验收货信息
+    ${consignee}    ${tel}    ${province}    ${city}    ${county}    ${detail}    输入收货地址信息
+    选择并检验收货地址    ${consignee}    ${tel}    ${province}    ${city}    ${county}    ${detail}
+    Set Test Variable    ${consignee}
+    Set Test Variable    ${tel}
+    Set Test Variable    ${province}
+    Set Test Variable    ${city}
+    Set Test Variable    ${county}
+    Set Test Variable    ${detail}
+    #输入用户备注
+    Input Text    id=customer_mark    自动化测试备注
+    Set Test Variable    ${inputCustomerMark}    自动化测试备注
+    #积分抵扣10积分
+    Click Element    xpath=//h4[contains(text(),'积分抵扣')]
+    Wait Until Element Is Visible    id=point
+    Input Text    id=point    10
+    Set Test Variable    ${inputPoint}    10
+    #积分抵扣金额
+    ${numberUnitAmount}    Convert To Number    ${unitAmount}
+    ${unitPointMoney}    Evaluate    ${numberUnitAmount} / 100    #转换为元单位
+    ${discountNumber}    Evaluate    ${inputPoint} / ${uniPoint}
+    ${pointDiscountMoney}    Evaluate    ${unitPointMoney} * ${discountNumber}
+    Set Test Variable    ${pointDiscountMoney}    #积分抵扣金额
+    #计算金额
+    ${totalPrice}    Evaluate    ${secondKillPrice} * ${buyNum}
+    ${paidMoney}    Evaluate    ${totalPrice} - ${pointDiscountMoney}
+    Set Test Variable    ${totalPrice}
+    Set Test Variable    ${deliveryFee}    ${0.00}
+    Set Test Variable    ${paidMoney}
+    #订单结算页面校验
+    3订单结算页
+    #选择其他支付
+    Click Element    //button[@ng-click="clickOther()"]/span[text()="其他支付"]
+    Wait Until Element Is Not Visible    //button[@ng-click="clickOther()"]/span[text()="其他支付"]    #其他支付
+    Wait Until Element Is Visible    //button[@ng-click="pay(3)"]/span[text()="货到付款"]    #货到付款
+    #点击货到付款
+    Click Element    //button[@ng-click="pay(3)"]/span[text()="货到付款"]    #货到付款
+    #进入订单详情页
+    Wait Until Page Contains    订单状态    15
+    #获取当前订单详情页URL
+    ${orderInforPageURL}    Get Location
+    #从接口获取订单信息
+    ${orderInfor}    订单详情    ${orderID}
+    ${orderNo}    Get From Dictionary    ${orderInfor}    order_no    #订单编号
+    ${created}    Get From Dictionary    ${orderInfor}    created    #下单时间
+    ${createdTime}    Convert Date    ${created}    result_format=timestamp    exclude_millis=True
+    Set Test Variable    ${orderNo}
+    Set Test Variable    ${createdTime}
+    #恢复原始收货地址
+    #恢复收货地址    ${userAddress}
+    #待发货订单列表及订单详情信息校验
+    4订单列表页    待发货
+    Click Link    partial link=${orderNo}    #打开订单详情
+    wait until page contains    ${orderNo}    15
+    ${theCurrentPageURL}    5订单详情页    待发货
+    Should Be Equal As Strings    ${theCurrentPageURL}    ${orderInforPageURL}
+    #待收货订单列表及订单详情信息校验
+    ${expressType}    ${expressNo}    订单发货    ${orderID}
+    Set Test Variable    ${expressType}
+    Set Test Variable    ${expressNo}
+    4订单列表页    待收货
+    Click Link    partial link=${orderNo}    #打开订单详情
+    wait until page contains    ${orderNo}    15
+    5订单详情页    待收货
+    #确认收货
+    Click Element    xpath=//a[@class="okgoods order_btn2" and text()="确认收货"]
+    #跳转至评论页面
+    Wait Until Page Contains Element    xpath=//span[text()="立即评论"]    15
+    sleep    2
+    ${commontPageURL1}    Get Location
+    #已完成订单列表及订单详情信息校验    已完成
+    4订单列表页    已完成
+    Click Link    partial link=${orderNo}    #打开订单详情
+    wait until page contains    ${orderNo}    15
+    5订单详情页    已完成
+    #评论
+    Click Element    xpath=//a[@href="../order/comment?id=${orderID}"]/span[text()="立即评论"]    #点击立即评论
+    Wait Until Page Contains Element    xpath=//span[text()="立即评论"]    15
+    ${commontPageURL2}    Get Location
+    Should Be Equal As Strings    ${commontPageURL1}    ${commontPageURL2}
+    7商品评论页
+    #点击立即评论
+    Click Element    xpath=//a[@class="okgoods" and @ng-click="details(list)"]
+    wait until page contains    全部订单    15
+    [Teardown]    Run Keywords    恢复收货地址    ${userAddress}
+    ...    AND    Close All Browsers
+
+免运费到店自提
+    [Tags]    ready
+    #获取用户积分信息
+    ${userInfor}    WX_获取用户信息
+    ${userPoint}    Get From Dictionary    ${userInfor}    point
+    Set Test Variable    ${userPoint}    #用户积分
+    #积分抵扣换算
+    ${maxAmount}    Get From Dictionary    ${redeemInfor}    max_amount
+    ${unitAmount}    Get From Dictionary    ${redeemInfor}    unit_amount
+    ${uniPoint}    Get From Dictionary    ${redeemInfor}    unit_points
+    ${unitNum}    Evaluate    ${maxAmount} / ${unitAmount}
+    ${maxUsePoint}    Evaluate    ${uniPoint} * ${unitNum}    #最多使用积分
+    ${numberMaxAmount}    Convert To Number    ${maxAmount}
+    ${maxPointMoney}    Evaluate    ${numberMaxAmount} / 100    #最多抵扣金额
+    Set Test Variable    ${maxUsePoint}    #最多使用积分
+    Set Test Variable    ${maxPointMoney}    #最多抵扣金额
+    #生成秒杀订单
+    Set Test Variable    ${sendType}    到店自提
+    Set Test Variable    ${buyNum}    1
+    生成秒杀订单
+    ######订单结算页#######
+    #提货信息
+    输入提货信息并选择自提门店
+    #输入用户备注
+    Input Text    id=customer_mark    自动化测试备注
+    Set Test Variable    ${inputCustomerMark}    自动化测试备注
+    #积分抵扣10积分
+    Click Element    xpath=//h4[contains(text(),'积分抵扣')]
+    Wait Until Element Is Visible    id=point
+    Input Text    id=point    10
+    Set Test Variable    ${inputPoint}    10
+    #积分抵扣金额
+    ${numberUnitAmount}    Convert To Number    ${unitAmount}
+    ${unitPointMoney}    Evaluate    ${numberUnitAmount} / 100    #转换为元单位
+    ${discountNumber}    Evaluate    ${inputPoint} / ${uniPoint}
+    ${pointDiscountMoney}    Evaluate    ${unitPointMoney} * ${discountNumber}
+    Set Test Variable    ${pointDiscountMoney}    #积分抵扣金额
+    #计算金额
+    ${totalPrice}    Evaluate    ${secondKillPrice} * ${buyNum}
+    ${paidMoney}    Evaluate    ${totalPrice} - ${pointDiscountMoney}
+    Set Test Variable    ${totalPrice}
+    Set Test Variable    ${deliveryFee}    ${0.00}
+    Set Test Variable    ${paidMoney}
+    #订单结算页面校验
+    3订单结算页
+    #从URL中获取订单ID
+    ${currentURL}    Get Location
+    ${URLList}    Split String    ${currentURL}    =
+    ${orderID}    Get From List    ${URLList}    1
+    #点击微信支付
+    点击微信支付提交订单
+    #从接口获取订单信息
+    ${orderInfor}    订单详情    ${orderID}
+    ${orderNo}    Get From Dictionary    ${orderInfor}    order_no    #订单编号
+    ${created}    Get From Dictionary    ${orderInfor}    created    #下单时间
+    ${createdTime}    Convert Date    ${created}    result_format=timestamp    exclude_millis=True
+    Set Test Variable    ${orderID}
+    Set Test Variable    ${orderNo}
+    Set Test Variable    ${createdTime}
+    #校验订单列表信息
+    4订单列表页    待付款
+    #打开订单详情
+    Click Link    partial link=${orderNo}
+    wait until page contains    ${orderNo}
+    5订单详情页    待付款
+    [Teardown]    Run Keywords    Close All Browsers
+    ...    AND    WX_取消订单    ${orderID}
+
+满件包邮快递配送
+    [Tags]    ready
+    [Setup]    修改秒杀活动为满件包邮
+    #获取用户积分信息
+    ${userInfor}    WX_获取用户信息
+    ${userPoint}    Get From Dictionary    ${userInfor}    point
+    Set Test Variable    ${userPoint}    #用户积分
+    #积分抵扣换算
+    ${maxAmount}    Get From Dictionary    ${redeemInfor}    max_amount
+    ${unitAmount}    Get From Dictionary    ${redeemInfor}    unit_amount
+    ${uniPoint}    Get From Dictionary    ${redeemInfor}    unit_points
+    ${unitNum}    Evaluate    ${maxAmount} / ${unitAmount}
+    ${maxUsePoint}    Evaluate    ${uniPoint} * ${unitNum}    #最多使用积分
+    ${numberMaxAmount}    Convert To Number    ${maxAmount}
+    ${maxPointMoney}    Evaluate    ${numberMaxAmount} / 100    #最多抵扣金额
+    Set Test Variable    ${maxUsePoint}    #最多使用积分
+    Set Test Variable    ${maxPointMoney}    #最多抵扣金额
+    #生成秒杀订单
+    Set Test Variable    ${sendType}    快递配送
+    ${buyNum}    Evaluate    random.randint(1,${postageNum})    modules=random
+    Set Test Variable    ${buyNum}
+    生成秒杀订单
+    ######订单结算页#######
+    #获取收货地址信息
+    ${consignee}    Get Text    //span[@ng-bind="model.orderDelivery.consignee"]
+    ${tel}    Get Text    //span[@ng-bind="model.orderDelivery.tel"]
+    ${province}    Get Text    //span[@ng-bind="model.orderDelivery.province"]
+    ${city}    Get Text    //span[@ng-bind="model.orderDelivery.city"]
+    ${county}    Get Text    //span[@ng-bind="model.orderDelivery.county"]
+    ${detail}    Get Text    //span[@ng-bind="model.orderDelivery.detail"]
+    Set Test Variable    ${consignee}
+    Set Test Variable    ${tel}
+    Set Test Variable    ${province}
+    Set Test Variable    ${city}
+    Set Test Variable    ${county}
+    Set Test Variable    ${detail}
+    #输入用户备注
+    Input Text    id=customer_mark    自动化测试备注
+    Set Test Variable    ${inputCustomerMark}    自动化测试备注
+    #积分抵扣10积分
+    Click Element    xpath=//h4[contains(text(),'积分抵扣')]
+    Wait Until Element Is Visible    id=point
+    Input Text    id=point    10
+    Set Test Variable    ${inputPoint}    10
+    #积分抵扣金额
+    ${numberUnitAmount}    Convert To Number    ${unitAmount}
+    ${unitPointMoney}    Evaluate    ${numberUnitAmount} / 100    #转换为元单位
+    ${discountNumber}    Evaluate    ${inputPoint} / ${uniPoint}
+    ${pointDiscountMoney}    Evaluate    ${unitPointMoney} * ${discountNumber}
+    Set Test Variable    ${pointDiscountMoney}    #积分抵扣金额
+    #计算邮费
+    ${deliveryFee}    Run Keyword If    ${buyNum} >= ${postageNum}    Set Variable    ${0.00}
+    ...    ELSE    计算邮费    ${postageFeeTypeID}    ${productWeight}    ${buyNum}    ${province}
+    ...    ${city}
+    #计算金额
+    ${totalPrice}    Evaluate    ${secondKillPrice} * ${buyNum}
+    ${paidMoney}    Evaluate    ${totalPrice} - ${pointDiscountMoney} + ${deliveryFee}
+    Set Test Variable    ${totalPrice}
+    Set Test Variable    ${deliveryFee}
+    Set Test Variable    ${paidMoney}
+    #订单结算页面校验
+    3订单结算页
+    #从URL中获取订单ID
+    ${currentURL}    Get Location
+    ${URLList}    Split String    ${currentURL}    =
+    ${orderID}    Get From List    ${URLList}    1
+    #选择其他支付
+    Click Element    //button[@ng-click="clickOther()"]/span[text()="其他支付"]
+    Wait Until Element Is Not Visible    //button[@ng-click="clickOther()"]/span[text()="其他支付"]    #其他支付
+    Wait Until Element Is Visible    //button[@ng-click="pay(3)"]/span[text()="货到付款"]    #货到付款
+    #点击货到付款
+    Click Element    //button[@ng-click="pay(3)"]/span[text()="货到付款"]    #货到付款
+    #进入订单详情页
+    Wait Until Page Contains    订单状态    15
+    #从接口获取订单信息
+    ${orderInfor}    订单详情    ${orderID}
+    ${orderNo}    Get From Dictionary    ${orderInfor}    order_no    #订单编号
+    ${created}    Get From Dictionary    ${orderInfor}    created    #下单时间
+    ${createdTime}    Convert Date    ${created}    result_format=timestamp    exclude_millis=True
+    Set Test Variable    ${orderID}
+    Set Test Variable    ${orderNo}
+    Set Test Variable    ${createdTime}
+    #校验订单列表信息
+    4订单列表页    待发货
+    #打开订单详情
+    Click Link    partial link=${orderNo}
+    wait until page contains    ${orderNo}
+    5订单详情页    待发货
+    [Teardown]    Close All Browsers
+
+满件包邮到店自提
+    [Tags]    ready
+    Should Be Equal As Integers    ${postageType}    2
+    #获取用户积分信息
+    ${userInfor}    WX_获取用户信息
+    ${userPoint}    Get From Dictionary    ${userInfor}    point
+    Set Test Variable    ${userPoint}    #用户积分
+    #积分抵扣换算
+    ${maxAmount}    Get From Dictionary    ${redeemInfor}    max_amount
+    ${unitAmount}    Get From Dictionary    ${redeemInfor}    unit_amount
+    ${uniPoint}    Get From Dictionary    ${redeemInfor}    unit_points
+    ${unitNum}    Evaluate    ${maxAmount} / ${unitAmount}
+    ${maxUsePoint}    Evaluate    ${uniPoint} * ${unitNum}    #最多使用积分
+    ${numberMaxAmount}    Convert To Number    ${maxAmount}
+    ${maxPointMoney}    Evaluate    ${numberMaxAmount} / 100    #最多抵扣金额
+    Set Test Variable    ${maxUsePoint}    #最多使用积分
+    Set Test Variable    ${maxPointMoney}    #最多抵扣金额
+    #生成秒杀订单
+    Set Test Variable    ${sendType}    到店自提
+    ${buyNum}    Evaluate    ${postageNum}-1
+    Set Test Variable    ${buyNum}
+    生成秒杀订单
+    ######订单结算页#######
+    #提货信息
+    输入提货信息并选择自提门店
+    #输入用户备注
+    Input Text    id=customer_mark    自动化测试备注
+    Set Test Variable    ${inputCustomerMark}    自动化测试备注
+    #积分抵扣10积分
+    Click Element    xpath=//h4[contains(text(),'积分抵扣')]
+    Wait Until Element Is Visible    id=point
+    Input Text    id=point    10
+    Set Test Variable    ${inputPoint}    10
+    #积分抵扣金额
+    ${numberUnitAmount}    Convert To Number    ${unitAmount}
+    ${unitPointMoney}    Evaluate    ${numberUnitAmount} / 100    #转换为元单位
+    ${discountNumber}    Evaluate    ${inputPoint} / ${uniPoint}
+    ${pointDiscountMoney}    Evaluate    ${unitPointMoney} * ${discountNumber}
+    Set Test Variable    ${pointDiscountMoney}    #积分抵扣金额
+    #计算金额
+    ${totalPrice}    Evaluate    ${secondKillPrice} * ${buyNum}
+    ${paidMoney}    Evaluate    ${totalPrice} - ${pointDiscountMoney}
+    Set Test Variable    ${totalPrice}
+    Set Test Variable    ${deliveryFee}    ${0.00}
+    Set Test Variable    ${paidMoney}
+    #订单结算页面校验
+    3订单结算页
+    #从URL中获取订单ID
+    ${currentURL}    Get Location
+    ${URLList}    Split String    ${currentURL}    =
+    ${orderID}    Get From List    ${URLList}    1
+    #点击微信支付
+    点击微信支付提交订单
+    #从接口获取订单信息
+    ${orderInfor}    订单详情    ${orderID}
+    ${orderNo}    Get From Dictionary    ${orderInfor}    order_no    #订单编号
+    ${created}    Get From Dictionary    ${orderInfor}    created    #下单时间
+    ${createdTime}    Convert Date    ${created}    result_format=timestamp    exclude_millis=True
+    Set Test Variable    ${orderID}
+    Set Test Variable    ${orderNo}
+    Set Test Variable    ${createdTime}
+    #校验订单列表信息
+    4订单列表页    待付款
+    #打开订单详情
+    Click Link    partial link=${orderNo}
+    wait until page contains    ${orderNo}
+    5订单详情页    待付款
+    [Teardown]    Run Keywords    Close All Browsers
+    ...    AND    WX_取消订单    ${orderID}
+
+满元包邮快递配送
+    [Tags]    ready
+    [Setup]    修改秒杀活动为满元包邮
+    #获取用户积分信息
+    ${userInfor}    WX_获取用户信息
+    ${userPoint}    Get From Dictionary    ${userInfor}    point
+    Set Test Variable    ${userPoint}    #用户积分
+    #积分抵扣换算
+    ${maxAmount}    Get From Dictionary    ${redeemInfor}    max_amount
+    ${unitAmount}    Get From Dictionary    ${redeemInfor}    unit_amount
+    ${uniPoint}    Get From Dictionary    ${redeemInfor}    unit_points
+    ${unitNum}    Evaluate    ${maxAmount} / ${unitAmount}
+    ${maxUsePoint}    Evaluate    ${uniPoint} * ${unitNum}    #最多使用积分
+    ${numberMaxAmount}    Convert To Number    ${maxAmount}
+    ${maxPointMoney}    Evaluate    ${numberMaxAmount} / 100    #最多抵扣金额
+    Set Test Variable    ${maxUsePoint}    #最多使用积分
+    Set Test Variable    ${maxPointMoney}    #最多抵扣金额
+    #生成秒杀订单
+    Set Test Variable    ${sendType}    快递配送
+    ${buyNum}    Evaluate    random.randint(1,5)    modules=random
+    Set Test Variable    ${buyNum}
+    生成秒杀订单
+    ######订单结算页#######
+    #获取收货地址信息
+    ${consignee}    Get Text    //span[@ng-bind="model.orderDelivery.consignee"]
+    ${tel}    Get Text    //span[@ng-bind="model.orderDelivery.tel"]
+    ${province}    Get Text    //span[@ng-bind="model.orderDelivery.province"]
+    ${city}    Get Text    //span[@ng-bind="model.orderDelivery.city"]
+    ${county}    Get Text    //span[@ng-bind="model.orderDelivery.county"]
+    ${detail}    Get Text    //span[@ng-bind="model.orderDelivery.detail"]
+    Set Test Variable    ${consignee}
+    Set Test Variable    ${tel}
+    Set Test Variable    ${province}
+    Set Test Variable    ${city}
+    Set Test Variable    ${county}
+    Set Test Variable    ${detail}
+    #输入用户备注
+    Input Text    id=customer_mark    自动化测试备注
+    Set Test Variable    ${inputCustomerMark}    自动化测试备注
+    #积分抵扣10积分
+    Click Element    xpath=//h4[contains(text(),'积分抵扣')]
+    Wait Until Element Is Visible    id=point
+    Input Text    id=point    10
+    Set Test Variable    ${inputPoint}    10
+    #积分抵扣金额
+    ${numberUnitAmount}    Convert To Number    ${unitAmount}
+    ${unitPointMoney}    Evaluate    ${numberUnitAmount} / 100    #转换为元单位
+    ${discountNumber}    Evaluate    ${inputPoint} / ${uniPoint}
+    ${pointDiscountMoney}    Evaluate    ${unitPointMoney} * ${discountNumber}
+    Set Test Variable    ${pointDiscountMoney}    #积分抵扣金额
+    #计算邮费
+    ${totalProductPrice}    Evaluate    ${buyNum} * ${secondKillPrice}
+    ${deliveryFee}    Run Keyword If    ${totalProductPrice} >= ${postageAmount}    Set Variable    ${0.00}
+    ...    ELSE    计算邮费    ${postageFeeTypeID}    ${productWeight}    ${buyNum}    ${province}
+    ...    ${city}
+    #计算金额
+    ${totalPrice}    Evaluate    ${secondKillPrice} * ${buyNum}
+    ${paidMoney}    Evaluate    ${totalPrice} - ${pointDiscountMoney} + ${deliveryFee}
+    Set Test Variable    ${totalPrice}
+    Set Test Variable    ${deliveryFee}
+    Set Test Variable    ${paidMoney}
+    #订单结算页面校验
+    3订单结算页
+    #从URL中获取订单ID
+    ${currentURL}    Get Location
+    ${URLList}    Split String    ${currentURL}    =
+    ${orderID}    Get From List    ${URLList}    1
+    #选择其他支付
+    Click Element    //button[@ng-click="clickOther()"]/span[text()="其他支付"]
+    Wait Until Element Is Not Visible    //button[@ng-click="clickOther()"]/span[text()="其他支付"]    #其他支付
+    Wait Until Element Is Visible    //button[@ng-click="pay(3)"]/span[text()="货到付款"]    #货到付款
+    #点击货到付款
+    Click Element    //button[@ng-click="pay(3)"]/span[text()="货到付款"]    #货到付款
+    #进入订单详情页
+    Wait Until Page Contains    订单状态    15
+    #从接口获取订单信息
+    ${orderInfor}    订单详情    ${orderID}
+    ${orderNo}    Get From Dictionary    ${orderInfor}    order_no    #订单编号
+    ${created}    Get From Dictionary    ${orderInfor}    created    #下单时间
+    ${createdTime}    Convert Date    ${created}    result_format=timestamp    exclude_millis=True
+    Set Test Variable    ${orderID}
+    Set Test Variable    ${orderNo}
+    Set Test Variable    ${createdTime}
+    #校验订单列表信息
+    4订单列表页    待发货
+    #打开订单详情
+    Click Link    partial link=${orderNo}
+    wait until page contains    ${orderNo}
+    5订单详情页    待发货
+    [Teardown]    Close All Browsers
+
+满元包邮到店自提
+    [Tags]    ready
+    Should Be Equal As Integers    ${postageType}    1
+    #获取用户积分信息
+    ${userInfor}    WX_获取用户信息
+    ${userPoint}    Get From Dictionary    ${userInfor}    point
+    Set Test Variable    ${userPoint}    #用户积分
+    #积分抵扣换算
+    ${maxAmount}    Get From Dictionary    ${redeemInfor}    max_amount
+    ${unitAmount}    Get From Dictionary    ${redeemInfor}    unit_amount
+    ${uniPoint}    Get From Dictionary    ${redeemInfor}    unit_points
+    ${unitNum}    Evaluate    ${maxAmount} / ${unitAmount}
+    ${maxUsePoint}    Evaluate    ${uniPoint} * ${unitNum}    #最多使用积分
+    ${numberMaxAmount}    Convert To Number    ${maxAmount}
+    ${maxPointMoney}    Evaluate    ${numberMaxAmount} / 100    #最多抵扣金额
+    Set Test Variable    ${maxUsePoint}    #最多使用积分
+    Set Test Variable    ${maxPointMoney}    #最多抵扣金额
+    #生成秒杀订单
+    Set Test Variable    ${sendType}    到店自提
+    Set Test Variable    ${buyNum}    1
+    生成秒杀订单
+    ######订单结算页#######
+    #提货信息
+    输入提货信息并选择自提门店
+    #输入用户备注
+    Input Text    id=customer_mark    自动化测试备注
+    Set Test Variable    ${inputCustomerMark}    自动化测试备注
+    #积分抵扣10积分
+    Click Element    xpath=//h4[contains(text(),'积分抵扣')]
+    Wait Until Element Is Visible    id=point
+    Input Text    id=point    10
+    Set Test Variable    ${inputPoint}    10
+    #积分抵扣金额
+    ${numberUnitAmount}    Convert To Number    ${unitAmount}
+    ${unitPointMoney}    Evaluate    ${numberUnitAmount} / 100    #转换为元单位
+    ${discountNumber}    Evaluate    ${inputPoint} / ${uniPoint}
+    ${pointDiscountMoney}    Evaluate    ${unitPointMoney} * ${discountNumber}
+    Set Test Variable    ${pointDiscountMoney}    #积分抵扣金额
+    #计算金额
+    ${totalPrice}    Evaluate    ${secondKillPrice} * ${buyNum}
+    ${paidMoney}    Evaluate    ${totalPrice} - ${pointDiscountMoney}
+    Set Test Variable    ${totalPrice}
+    Set Test Variable    ${deliveryFee}    ${0.00}
+    Set Test Variable    ${paidMoney}
+    #订单结算页面校验
+    3订单结算页
+    #从URL中获取订单ID
+    ${currentURL}    Get Location
+    ${URLList}    Split String    ${currentURL}    =
+    ${orderID}    Get From List    ${URLList}    1
+    #点击微信支付
+    点击微信支付提交订单
+    #从接口获取订单信息
+    ${orderInfor}    订单详情    ${orderID}
+    ${orderNo}    Get From Dictionary    ${orderInfor}    order_no    #订单编号
+    ${created}    Get From Dictionary    ${orderInfor}    created    #下单时间
+    ${createdTime}    Convert Date    ${created}    result_format=timestamp    exclude_millis=True
+    Set Test Variable    ${orderID}
+    Set Test Variable    ${orderNo}
+    Set Test Variable    ${createdTime}
+    #校验订单列表信息
+    4订单列表页    待付款
+    #打开订单详情
+    Click Link    partial link=${orderNo}
+    wait until page contains    ${orderNo}
+    5订单详情页    待付款
+    [Teardown]    Run Keywords    Close All Browsers
+    ...    AND    WX_取消订单    ${orderID}
+
+无运费优惠快递配送
+    [Tags]    ready
+    [Setup]    修改秒杀活动为无运费优惠
+    #获取用户积分信息
+    ${userInfor}    WX_获取用户信息
+    ${userPoint}    Get From Dictionary    ${userInfor}    point
+    Set Test Variable    ${userPoint}    #用户积分
+    #积分抵扣换算
+    ${maxAmount}    Get From Dictionary    ${redeemInfor}    max_amount
+    ${unitAmount}    Get From Dictionary    ${redeemInfor}    unit_amount
+    ${uniPoint}    Get From Dictionary    ${redeemInfor}    unit_points
+    ${unitNum}    Evaluate    ${maxAmount} / ${unitAmount}
+    ${maxUsePoint}    Evaluate    ${uniPoint} * ${unitNum}    #最多使用积分
+    ${numberMaxAmount}    Convert To Number    ${maxAmount}
+    ${maxPointMoney}    Evaluate    ${numberMaxAmount} / 100    #最多抵扣金额
+    Set Test Variable    ${maxUsePoint}    #最多使用积分
+    Set Test Variable    ${maxPointMoney}    #最多抵扣金额
+    #生成秒杀订单
+    Set Test Variable    ${sendType}    快递配送
+    ${buyNum}    Evaluate    random.randint(1,5)    modules=random
+    Set Test Variable    ${buyNum}
+    生成秒杀订单
+    ######订单结算页#######
+    #获取收货地址信息
+    ${consignee}    Get Text    //span[@ng-bind="model.orderDelivery.consignee"]
+    ${tel}    Get Text    //span[@ng-bind="model.orderDelivery.tel"]
+    ${province}    Get Text    //span[@ng-bind="model.orderDelivery.province"]
+    ${city}    Get Text    //span[@ng-bind="model.orderDelivery.city"]
+    ${county}    Get Text    //span[@ng-bind="model.orderDelivery.county"]
+    ${detail}    Get Text    //span[@ng-bind="model.orderDelivery.detail"]
+    Set Test Variable    ${consignee}
+    Set Test Variable    ${tel}
+    Set Test Variable    ${province}
+    Set Test Variable    ${city}
+    Set Test Variable    ${county}
+    Set Test Variable    ${detail}
+    #输入用户备注
+    Input Text    id=customer_mark    自动化测试备注
+    Set Test Variable    ${inputCustomerMark}    自动化测试备注
+    #积分抵扣10积分
+    Click Element    xpath=//h4[contains(text(),'积分抵扣')]
+    Wait Until Element Is Visible    id=point
+    Input Text    id=point    10
+    Set Test Variable    ${inputPoint}    10
+    #积分抵扣金额
+    ${numberUnitAmount}    Convert To Number    ${unitAmount}
+    ${unitPointMoney}    Evaluate    ${numberUnitAmount} / 100    #转换为元单位
+    ${discountNumber}    Evaluate    ${inputPoint} / ${uniPoint}
+    ${pointDiscountMoney}    Evaluate    ${unitPointMoney} * ${discountNumber}
+    Set Test Variable    ${pointDiscountMoney}    #积分抵扣金额
+    #计算邮费
+    ${totalProductPrice}    Evaluate    ${buyNum} * ${secondKillPrice}
+    ${deliveryFee}    计算邮费    ${postageFeeTypeID}    ${productWeight}    ${buyNum}    ${province}    ${city}
+    #计算金额
+    ${totalPrice}    Evaluate    ${secondKillPrice} * ${buyNum}
+    ${paidMoney}    Evaluate    ${totalPrice} - ${pointDiscountMoney} + ${deliveryFee}
+    Set Test Variable    ${totalPrice}
+    Set Test Variable    ${deliveryFee}
+    Set Test Variable    ${paidMoney}
+    #订单结算页面校验
+    3订单结算页
+    #从URL中获取订单ID
+    ${currentURL}    Get Location
+    ${URLList}    Split String    ${currentURL}    =
+    ${orderID}    Get From List    ${URLList}    1
+    #选择其他支付
+    Click Element    //button[@ng-click="clickOther()"]/span[text()="其他支付"]
+    Wait Until Element Is Not Visible    //button[@ng-click="clickOther()"]/span[text()="其他支付"]    #其他支付
+    Wait Until Element Is Visible    //button[@ng-click="pay(3)"]/span[text()="货到付款"]    #货到付款
+    #点击货到付款
+    Click Element    //button[@ng-click="pay(3)"]/span[text()="货到付款"]    #货到付款
+    #进入订单详情页
+    Wait Until Page Contains    订单状态    15
+    #从接口获取订单信息
+    ${orderInfor}    订单详情    ${orderID}
+    ${orderNo}    Get From Dictionary    ${orderInfor}    order_no    #订单编号
+    ${created}    Get From Dictionary    ${orderInfor}    created    #下单时间
+    ${createdTime}    Convert Date    ${created}    result_format=timestamp    exclude_millis=True
+    Set Test Variable    ${orderID}
+    Set Test Variable    ${orderNo}
+    Set Test Variable    ${createdTime}
+    #校验订单列表信息
+    4订单列表页    待发货
+    #打开订单详情
+    Click Link    partial link=${orderNo}
+    wait until page contains    ${orderNo}
+    5订单详情页    待发货
+    [Teardown]    Close All Browsers
+
+无运费优惠到店自提
+    [Tags]    ready
+    Should Be Equal As Integers    ${postageType}    0
+    #获取用户积分信息
+    ${userInfor}    WX_获取用户信息
+    ${userPoint}    Get From Dictionary    ${userInfor}    point
+    Set Test Variable    ${userPoint}    #用户积分
+    #积分抵扣换算
+    ${maxAmount}    Get From Dictionary    ${redeemInfor}    max_amount
+    ${unitAmount}    Get From Dictionary    ${redeemInfor}    unit_amount
+    ${uniPoint}    Get From Dictionary    ${redeemInfor}    unit_points
+    ${unitNum}    Evaluate    ${maxAmount} / ${unitAmount}
+    ${maxUsePoint}    Evaluate    ${uniPoint} * ${unitNum}    #最多使用积分
+    ${numberMaxAmount}    Convert To Number    ${maxAmount}
+    ${maxPointMoney}    Evaluate    ${numberMaxAmount} / 100    #最多抵扣金额
+    Set Test Variable    ${maxUsePoint}    #最多使用积分
+    Set Test Variable    ${maxPointMoney}    #最多抵扣金额
+    #生成秒杀订单
+    Set Test Variable    ${sendType}    到店自提
+    Set Test Variable    ${buyNum}    1
+    生成秒杀订单
+    ######订单结算页#######
+    #提货信息
+    输入提货信息并选择自提门店
+    #输入用户备注
+    Input Text    id=customer_mark    自动化测试备注
+    Set Test Variable    ${inputCustomerMark}    自动化测试备注
+    #积分抵扣10积分
+    Click Element    xpath=//h4[contains(text(),'积分抵扣')]
+    Wait Until Element Is Visible    id=point
+    Input Text    id=point    10
+    Set Test Variable    ${inputPoint}    10
+    #积分抵扣金额
+    ${numberUnitAmount}    Convert To Number    ${unitAmount}
+    ${unitPointMoney}    Evaluate    ${numberUnitAmount} / 100    #转换为元单位
+    ${discountNumber}    Evaluate    ${inputPoint} / ${uniPoint}
+    ${pointDiscountMoney}    Evaluate    ${unitPointMoney} * ${discountNumber}
+    Set Test Variable    ${pointDiscountMoney}    #积分抵扣金额
+    #计算金额
+    ${totalPrice}    Evaluate    ${secondKillPrice} * ${buyNum}
+    ${paidMoney}    Evaluate    ${totalPrice} - ${pointDiscountMoney}
+    Set Test Variable    ${totalPrice}
+    Set Test Variable    ${deliveryFee}    ${0.00}
+    Set Test Variable    ${paidMoney}
+    #订单结算页面校验
+    3订单结算页
+    #从URL中获取订单ID
+    ${currentURL}    Get Location
+    ${URLList}    Split String    ${currentURL}    =
+    ${orderID}    Get From List    ${URLList}    1
+    #点击微信支付
+    点击微信支付提交订单
+    #从接口获取订单信息
+    ${orderInfor}    订单详情    ${orderID}
+    ${orderNo}    Get From Dictionary    ${orderInfor}    order_no    #订单编号
+    ${created}    Get From Dictionary    ${orderInfor}    created    #下单时间
+    ${createdTime}    Convert Date    ${created}    result_format=timestamp    exclude_millis=True
+    Set Test Variable    ${orderID}
+    Set Test Variable    ${orderNo}
+    Set Test Variable    ${createdTime}
+    #校验订单列表信息
+    4订单列表页    待付款
+    #打开订单详情
+    Click Link    partial link=${orderNo}
+    wait until page contains    ${orderNo}
+    5订单详情页    待付款
+    [Teardown]    Run Keywords    Close All Browsers
+    ...    AND    WX_取消订单    ${orderID}
+
+*** Keywords ***
+-----API操作----
+
+创建并开启包邮秒杀活动
+    API登录    后端=1    前端=1
+    ${secondKillInformation}    添加秒杀活动
+    #获取秒杀ID与activit ID
+    ${secondKill}    Get From Dictionary    ${secondKillInformation}    secondKill
+    ${secondKillID}    Get From Dictionary    ${secondKill}    id
+    ${activityID}    Get From Dictionary    ${secondKill}    activity_id
+    #获取秒杀商品id,sku id,库存,商品原价
+    ${productID}    ${productSkusID}    ${productSkusReserves}    ${productSkusPrice}    ${productCoversURL}    ${postageFeeTypeID}    ${productWeight}
+    ...    获取秒杀商品
+    ${saletReserves}    Evaluate    random.randint(10,${productSkusReserves})    modules=random
+    ${salePrice}    Evaluate    random.randint(5,${productSkusPrice})    modules=random
+    ${secondKillLimitNum}    Evaluate    random.randint(20,30)    modules=random
+    ${secondKillProduct}    添加秒杀活动商品    ${secondKillID}    ${productID}    ${productSkusID}    ${salePrice}    ${saletReserves}
+    ...    ${secondKillLimitNum}
+    ${dateString}    Get Current Date    result_format=%m%d%H%M
+    Set Suite Variable    ${secondKillName}    ${dateString}自动化秒杀活动
+    ${editInformation}    编辑秒杀活动    ${secondKillID}    ${activityID}    ${secondKillName}
+    开启秒杀活动    ${activityID}
+    #从添加秒杀活动接口返回消息获取商品名,商品活动中的id,#获取规格与规格值
+    ${productName}    Get From Dictionary    ${secondKillProduct}    product_name
+    ${secondKillProductID}    Get From Dictionary    ${secondKillProduct}    id
+    ${productSku}    Get From Dictionary    ${secondKillProduct}    productSku
+    ${kindsList}    Get From Dictionary    ${productSku}    kinds
+    ${kinds}    Get From List    ${kindsList}    0
+    ${kindsName}    Get From Dictionary    ${kinds}    name
+    ${kindsID}    Get From Dictionary    ${kinds}    id
+    ${kindsValuesList}    Get From Dictionary    ${productSku}    kindValues
+    ${kindsValues}    Get From List    ${kindsValuesList}    0
+    ${kindsValuesName}    Get From Dictionary    ${kindsValues}    name
+    ${kindsValueID}    Get From Dictionary    ${kindsValues}    id
+    #从编辑活动接口返回消息话信息
+    ${activityInformation}    Get From Dictionary    ${editInformation}    activity
+    ${secondKillName}    Get From Dictionary    ${activityInformation}    name
+    ${secondKillStarttime}    Get From Dictionary    ${activityInformation}    start_time
+    ${secondKillEndtime}    Get From Dictionary    ${activityInformation}    end_time
+    ${secondKillRule}    Get From Dictionary    ${activityInformation}    desc
+    #金额转换
+    ${salePriceN}    Convert To Number    ${salePrice}
+    ${productSkusPriceN}    Convert To Number    ${productSkusPrice}
+    ${secondKillPrice}    Evaluate    ${salePriceN}/100
+    ${productPrice}    Evaluate    ${productSkusPriceN}/100
+    #设置全局变量
+    Set Suite Variable    ${secondKillID}    #秒杀ID
+    Set Suite Variable    ${activityID}    #活动ID
+    Set Suite Variable    ${secondKillName}    #秒杀活动名
+    Set Suite Variable    ${secondKillStarttime}    #秒杀活动开始时间
+    Set Suite Variable    ${secondKillEndtime}    #秒杀结束时间
+    Set Suite Variable    ${productName}    #商品名称
+    Set Suite Variable    ${productID}    #秒杀商品ID
+    Set Suite Variable    ${postageFeeTypeID}    #秒杀商品邮费模板ID
+    Set Suite Variable    ${productWeight}    #秒杀商品重量
+    Set Suite Variable    ${secondKillProductID}    #商品在秒杀活动中的ID
+    Set Suite Variable    ${productPrice}    #商品原价
+    Set Suite Variable    ${secondKillPrice}    #秒杀价
+    Set Suite Variable    ${saletReserves}    #秒杀配额
+    Set Suite Variable    ${secondKillLimitNum}    #秒杀限购数
+    Set Suite Variable    ${kindsName}    #商品规格
+    Set Suite Variable    ${kindsID}    #商品规格ID
+    Set Suite Variable    ${kindsValuesName}    #商品规格值
+    Set Suite Variable    ${kindsValueID}    #商品规格值ID
+    Set Suite Variable    ${productCoversURL}    #商品封面图片
+    Set Suite Variable    ${secondKillRule}    #秒杀规则
+
+获取秒杀商品
+    ${productInfor}    查询商品    秒杀
+    ${productName}    Get From Dictionary    ${productInfor}    name
+    Should Contain    ${productName}    秒杀
+    ${productID}    Get From Dictionary    ${productInfor}    id
+    ${postageFeeTypeID}    Get From Dictionary    ${productInfor}    postage_fee_type
+    ${productWeight}    Get From Dictionary    ${productInfor}    prod_weight
+    ${productCovers}    Get From Dictionary    ${productInfor}    covers
+    ${productCoverURL}    Get From Dictionary    ${productCovers}    file_cdn_path
+    ${productSkusList}    Get From Dictionary    ${productInfor}    productSkus
+    ${skuNumbers}    Get Length    ${productSkusList}
+    ${radomInt}    Evaluate    random.randint(0,${skuNumbers}-1)    modules=random
+    ${productSkus}    Get From List    ${productSkusList}    ${radomInt}
+    ${productSkusID}    Get From Dictionary    ${productSkus}    id
+    ${productSkusReserves}    Get From Dictionary    ${productSkus}    reserves
+    ${productSkusPrice}    Get From Dictionary    ${productSkus}    retail_price
+    [Return]    ${productID}    ${productSkusID}    ${productSkusReserves}    ${productSkusPrice}    ${productCoverURL}    ${postageFeeTypeID}
+    ...    ${productWeight}
+
+修改秒杀活动为满件包邮
+    关闭秒杀活动    ${activityID}
+    Set Suite Variable    ${postageType}    ${2}
+    Set Suite Variable    ${postageNum}    ${3}
+    编辑秒杀活动    ${secondKillID}    ${activityID}    ${secondKillName}    ${secondKillStarttime}    ${secondKillEndtime}    ${postageType}
+    ...    ${postageNum}
+    开启秒杀活动    ${activityID}
+
+修改秒杀活动为满元包邮
+    关闭秒杀活动    ${activityID}
+    ${postageAmountNumber}    Evaluate    ${secondKillPrice} * 400
+    Set Suite Variable    ${postageType}    ${1}
+    编辑秒杀活动    ${secondKillID}    ${activityID}    ${secondKillName}    ${secondKillStarttime}    ${secondKillEndtime}    ${postageType}
+    ...    postageAmount=${postageAmountNumber}
+    开启秒杀活动    ${activityID}
+    ${postageAmount}    Evaluate    ${postageAmountNumber} / 100
+    Set Suite Variable    ${postageAmount}
+
+修改秒杀活动为无运费优惠
+    关闭秒杀活动    ${activityID}
+    Set Suite Variable    ${postageType}    ${0}
+    编辑秒杀活动    ${secondKillID}    ${activityID}    ${secondKillName}    ${secondKillStarttime}    ${secondKillEndtime}    ${postageType}
+    开启秒杀活动    ${activityID}
+
+添加抵扣活动
+    ${redeemInfor}    添加积分抵扣活动    minConsumption=${2}    Type=${1}    unitPoints=10    unitAmount=${1}    maxAmount=${10}
+    ...    togetherBuyFlag=${1}
+    启用积分抵扣活动    ${redeemInfor}
+    Set Suite Variable    ${redeemInfor}
+
+删除抵扣活动
+    关闭积分抵扣活动    ${redeemInfor}
+    删除积分抵扣活动    ${redeemInfor}
+
+删除所有收货地址
+    ${errmsg}    客户详情    ${GLOBAL_CONFIG.user_id}    #${BETA_WX_USER}
+    ${model}    Get From Dictionary    ${errmsg}    model
+    ${userDelivery}    Get From Dictionary    ${model}    userDelivery
+    : FOR    ${tempAddress}    IN    @{userDelivery}
+    \    ${addressId}    Get From Dictionary    ${tempAddress}    id
+    \    WX_删除收货地址    ${addressId}
+    [Return]    ${userDelivery}
+
+恢复收货地址
+    [Arguments]    ${userDelivery}
+    删除所有收货地址
+    : FOR    ${tempAddress}    IN    @{userDelivery}
+    \    ${consigneel}    Get From Dictionary    ${tempAddress}    consignee
+    \    ${tell}    Get From Dictionary    ${tempAddress}    tel
+    \    ${province}    Get From Dictionary    ${tempAddress}    province
+    \    ${city}    Get From Dictionary    ${tempAddress}    city
+    \    ${county}    Get From Dictionary    ${tempAddress}    county
+    \    ${detail}    Get From Dictionary    ${tempAddress}    detail
+    \    ${zip}    Get From Dictionary    ${tempAddress}    zip
+    \    ${provinceId}    Get From Dictionary    ${tempAddress}    province_id
+    \    ${cityId}    Get From Dictionary    ${tempAddress}    city_id
+    \    ${countyId}    Get From Dictionary    ${tempAddress}    county_id
+    \    ${isDefault}    Get From Dictionary    ${tempAddress}    is_default
+    \    ${address}    Set Variable    ${province}${city}${county}
+    \    ${addAddressInfo}    WX_添加收货地址    ${consigneel}    ${tell}    ${detail}    ${province}
+    \    ...    ${city}    ${county}    ${address}    ${zip}    ${provinceId}
+    \    ...    ${cityId}    ${countyId}
+    \    ${addressId}    Get From Dictionary    ${addAddressInfo}    id
+    \    Run Keyword If    ${isDefault} == 1    WX_设置默认收货地址    ${addressId}
+
+----PAGE---
+
+1秒杀活动页
+    Click Element    partial link=${secondKillName}
+    Wait Until Page Contains Element    xpath=//h3[starts-with(@ng-bind,"list.product.name") and text()="${productName}"]
+    #活动规则
+    Click Element    xpath=//div[@class="seckill_rule2"]    #点击活动规则
+    Wait Until Element Is Visible    xpath=//div[@class="seckill_layer_text"]
+    Page Should Contain Image    xpath=//div[@class="seckill_layer_title"]/img    #活动规则弹窗标题图片
+    Element Text Should Be    xpath=//div[@class="seckill_layer_text"]//pre    ${secondKillRule}    #活动规则文字
+    Click Element    xpath=//div[@class="seckill_layer_title"]/img
+    Wait Until Element Is Not Visible    xpath=//div[@class="seckill_layer_title"]/img
+    #商品图片
+    Page Should Contain Image    xpath=//img[@class="good-img" and @src="${productCoversURL}"]
+    #商品名称
+    Page Should Contain Element    xpath=//h3[starts-with(@ng-bind,"list.product.name") and text()="${productName}"]
+    #秒杀价
+    ${textSecondKillPrice}    Get Text    xpath=//div[@class="goodprice clearfix"]/span[@class="price"]/em
+    ${secondKillActivityPrice}    Strip String    ${textSecondKillPrice}    characters='¥'    #去掉￥符号
+    Should Be Equal As Numbers    ${secondKillActivityPrice}    ${secondKillPrice}
+    #商品原价
+    ${textProductPrice}    Get Text    xpath=//div[@class="goodprice clearfix"]/del[@class="y_price ng-binding"]
+    ${activityProductPrice}    Strip String    ${textProductPrice}    characters=¥${SPACE}    #去掉￥符号与空格
+    Should Be Equal As Numbers    ${activityProductPrice}    ${productPrice}
+
+2秒杀商品详情页
+    Click Element    //h3[starts-with(@ng-bind,"list.product.name") and text()="${productName}"]    #点击商品名称
+    Wait Until Page Contains Element    xpath=//a[@class="buy_own" and contains(@ng-click," secondskill()")]    #立即秒杀按钮
+    #获取商品轮播图
+    ${wxProductInforamtion}    WX_商品详情    ${productID}
+    ${productModel}    Get From Dictionary    ${wxProductInforamtion}    model
+    ${productDocumentList}    Get From Dictionary    ${productModel}    document
+    #校验商品轮播图
+    : FOR    ${document}    IN    @{productDocumentList}
+    \    ${productPicturesURL}    Get From Dictionary    ${document}    file_cdn_path
+    \    Page Should Contain Element    xpath=//div[@class="swipe detail_swipe"]//img[@src="${productPicturesURL}"]
+    #校验商品信息
+    Page Should Contain Element    xpath=//div[@ng-bind="modelObj.name" and text()="${productName}"]    #商品名称
+    ${pageTextSaletPriece}    Get Text    xpath=//span[@ng-bind="modelObj.buy_price | price"]    #秒杀价
+    Should Be Equal As Numbers    ${pageTextSaletPriece}    ${secondKillPrice}
+    ${pageTextProductPrice}    Get Text    xpath=//span[@ng-bind="modelObj.retail_price | price"]    #商品原价
+    Should Be Equal As Numbers    ${pageTextProductPrice}    ${productPrice}
+    Page Should Contain Element    xpath=//span[text()="产品规格"]
+    Page Should Contain Element    xpath=//span[text()="商品详情"]
+    Page Should Contain Element    xpath=//span[text()="累计评价"]
+
+2-1立即秒杀弹窗
+    #点击立即秒杀，打开选择窗口
+    Click Element    xpath=//a[@class="buy_own" and contains(@ng-click," secondskill()")]
+    Wait Until Element Is Visible    //span[text()="确认购买"]    5
+    ####校验购买弹窗信息####
+    Page Should Contain Element    xpath=//div[contains(@class,"goods_p_img")]/img[@src="${productCoversURL}"]    #商品图片
+    ${popTextBuyPrice}    Get Text    xpath=//span[@ng-bind="modelObj.buy_price*skunum | price"]
+    Should Be Equal As Numbers    ${popTextBuyPrice}    ${secondKillPrice}    #秒杀价
+    ${popTextReserve}    Get Text    xpath=//span[@ng-bind="modelObj.leftQuota"]    #活动剩余库存
+    ${popUserBuy}    Get Text    xpath=//span[@ng-bind="modelObj.countUserBuy"]    #已购买数量
+    ${popSumNumber}    Evaluate    ${popTextReserve}+${popUserBuy}
+    Should Be Equal As Integers    ${popSumNumber}    ${saletReserves}
+    ${popTextLimitBuy}    Get Text    xpath=//span[@ng-bind="modelObj.limit_buy"]    #秒杀限购
+    Should Be Equal As Integers    ${popTextLimitBuy}    ${secondKillLimitNum}
+    Element Should Contain    xpath=//h2[@ng-bind="list.name"]    ${kindsName}    #商品规格
+    Element Should Contain    xpath=//label[@index="${kindsValueID}"]    ${kindsValuesName}    #商品规格值
+    Page Should Contain Element    xpath=//button[@class="decrease"]    #购买数量-
+    Page Should Contain Element    xpath=//input[@name="quantity"]    #购买数量输入框
+    Page Should Contain Element    xpath=//button[@class="increase"]    #购买数量+
+    #+-按钮功能
+    Textfield Value Should Be    name=quantity    1
+    Click Element    xpath=//button[@class="increase"]
+    sleep    1
+    Textfield Value Should Be    name=quantity    2    #商品数量
+    ${textBuyPrice2}    Get Text    xpath=//span[@ng-bind="modelObj.buy_price*skunum | price"]    #商品总价
+    ${calBuyPrice2}    Evaluate    ${secondKillPrice} * 2
+    Should Be Equal As Numbers    ${textBuyPrice2}    ${calBuyPrice2}
+    Click Element    xpath=//button[@class="increase"]
+    sleep    1
+    Textfield Value Should Be    name=quantity    3
+    ${textBuyPrice3}    Get Text    xpath=//span[@ng-bind="modelObj.buy_price*skunum | price"]
+    ${calBuyPrice3}    Evaluate    ${secondKillPrice} * 3
+    Should Be Equal As Numbers    ${textBuyPrice3}    ${calBuyPrice3}
+    Click Element    xpath=//button[@class="decrease"]
+    sleep    1
+    Textfield Value Should Be    name=quantity    2
+    ${textBuyPrice4}    Get Text    xpath=//span[@ng-bind="modelObj.buy_price*skunum | price"]
+    ${calBuyPrice4}    Evaluate    ${secondKillPrice} * 2
+    Should Be Equal As Numbers    ${textBuyPrice4}    ${calBuyPrice4}
+    Click Element    xpath=//button[@class="decrease"]
+    sleep    1
+    Textfield Value Should Be    name=quantity    1
+    ${textBuyPrice5}    Get Text    xpath=//span[@ng-bind="modelObj.buy_price*skunum | price"]
+    Should Be Equal As Numbers    ${textBuyPrice5}    ${secondKillPrice}
+    #按钮校验
+    Page Should Contain Element    xpath=//label[@ng-class="{'btn_postage':sendType == 1}"]/input[@value="快递配送"]    #快递配送
+    Page Should Contain Element    xpath=//label[@ng-class="{'btn_postage':sendType == 2}"]/input[@value="到店自提"]    #到店自提
+    Page Should Contain Element    xpath=//a[@class="buy_own" and @ng-click="buy()"]/span[text()="确认购买"]    #确认购买
+    Page Should Contain Element    xpath=//i[@class="icon icon_close"]    #弹窗*关闭按钮
+    #关闭弹窗
+    Click Element    xpath=//i[@class="icon icon_close"]
+    Wait Until Element Is Not Visible    //span[text()="确认购买"]    5
+
+3订单结算页
+    #校验商品信息
+    Element Text Should Be    xpath=//span[@ng-bind="list.product_sku_name"]    ${productName}    #商品名称
+    ${textPriceValue}    Get Text    xpath=//span[@ng-bind="list.price"]
+    Should Be Equal As Numbers    ${textPriceValue}    ${secondKillPrice}    #秒杀价
+    Element Text Should Be    xpath=//span[@ng-bind="kindKey"]    ${kindsName}    #商品属性
+    Element Text Should Be    xpath=//span[@ng-bind="kindValue"]    ${kindsValuesName}    #商品属性值
+    ${textBuyNum}    Get Text    xpath=//span[@ng-bind="list.num"]    #购买数量
+    Should Be Equal As Integers    ${textBuyNum}    ${buyNum}
+    #积分抵扣
+    Page Should Contain Element    id=order_items
+    ${textUserPoint}    Get Text    //em[@ng-bind="shopPoint.userPoint"]    #用户积分
+    Should Be Equal As Integers    ${textUserPoint}    ${userPoint}
+    ${maxPoint}    Get Text    //em[@ng-bind="shopPoint.maxPoint"]    #最多使用积分
+    Should Be Equal As Integers    ${maxPoint}    ${maxUsePoint}
+    ${textMaxPointMoneyTmp}    Get Text    //section[@id="bg_point"]//em[3]    #抵扣最大金额
+    ${textMaxPointMoney}    Remove String    ${textMaxPointMoneyTmp}    ￥
+    Should Be Equal As Numbers    ${textMaxPointMoney}    ${maxPointMoney}
+    ${textPointDiscountTmp}    Get Text    xpath=//span[contains(text(),"积分，抵扣")]/em    #用积分抵扣金额
+    ${textPointDiscount}    Remove String    ${textPointDiscountTmp}    ￥
+    Should Be Equal As Numbers    ${pointDiscountMoney}    ${textPointDiscount}
+    #用户备注
+    Page Should Contain Element    //textarea[@id="customer_mark" and contains(@placeholder,"请输入您的留言")]
+    #校验输入的备注
+    Textarea Should Contain    id=customer_mark    ${inputCustomerMark}
+    #获取金额
+    ${pageTotalPrice}    Get Text    xpath=//span[starts-with(@ng-bind,"model.total_price")]    #商品金额(商品价格*数量)
+    ${pageReductionDiscoun}    Get Text    xpath=//span[starts-with(@ng-bind,"model.reduction_discount")]    #活动优惠
+    ${pageCardCoupon}    Get Text    xpath=//span[starts-with(@ng-bind,"cardCoupon[checkIndex.cardCoupon]")]    #卡券
+    ${pageRedPack}    Get Text    xpath=//span[starts-with(@ng-bind,"redPack[checkIndex.redpack].amount")]    #商城红包
+    ${pagePointDiscount}    Get Text    xpath=//span[starts-with(@ng-bind,"pointDiscount")]    #积分抵扣
+    ${pageSellerCut}    Get Text    xpath=//span[starts-with(@ng-bind,"model.seller_cut")]    #促销优惠
+    ${pageDeliveryFee}    Get Text    xpath=//span[starts-with(@ng-bind,"model.delivery_fee")]    #运费
+    ${pagePaidMoney}    Get Text    xpath=//span[starts-with(@ng-bind,"allTotal")]    #实付金额
+    #如果金额中有，符号，去掉
+    ${pageTotalPrice}    Remove String    ${pageTotalPrice}    ,
+    ${pagePaidMoney}    Remove String    ${pagePaidMoney}    ,
+    #购买数量
+    ${totalProductNum}    Get Text    //span[@ng-bind="totalProduct"]
+    Should Be Equal As Integers    ${buyNum}    ${totalProductNum}
+    #金额校验
+    Should Be Equal As Numbers    ${pageTotalPrice}    ${totalPrice}
+    Should Be Equal As Numbers    ${pageReductionDiscoun}    ${0.00}
+    Should Be Equal As Numbers    ${pageCardCoupon}    ${0.00}
+    Should Be Equal As Numbers    ${pageRedPack}    ${0.00}
+    Should Be Equal As Numbers    ${pagePointDiscount}    ${pointDiscountMoney}
+    Should Be Equal As Numbers    ${pageSellerCut}    ${0.00}
+    Should Be Equal As Numbers    ${pageDeliveryFee}    ${deliveryFee}
+    Should Be Equal As Numbers    ${pagePaidMoney}    ${paidMoney}
+    #微信支付与其他支付按钮
+    Page Should Contain Element    xpath=//button[@ng-show="paymentList.newwxpay"]    #微信支付
+    Run Keyword If    '${sendType}' == '快递配送'    Element Should Be Visible    //button[@ng-click="clickOther()"]/span[text()="其他支付"]    #其他支付
+    Run Keyword If    '${sendType}' == '到店自提'    Element Should Not Be Visible    //button[@ng-click="clickOther()"]/span[text()="其他支付"]
+    Element Should Not Be Visible    //button[@ng-click="pay(3)"]/span[text()="货到付款"]    #货到付款
+
+4订单列表页
+    [Arguments]    ${orderStatus}
+    Capture Page Screenshot
+    ${theCurrentPageURL}    Get Location
+    log    ${theCurrentPageURL}
+    #进入个人中心
+    Go To    ${GLOBAL_CONFIG.wx_url}/user/home
+    wait until page contains    全部订单    20
+    Click Link    partial link=${orderStatus}
+    Wait Until Page Contains    ${orderNo}
+    #订单列表订单信息校验
+    Page Should Contain Element    //div[@class="order_number "]//em[@ng-bind="list.order_no" and text()="${orderNo}"]    #订单号
+    Page Should Contain Element    //a[@href="../order/detail?id=${orderID}"]/span[@class="fr"]/strong[text()="${orderStatus}"]    #待付款状态
+    Page Should Contain Element    //em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//div[@ng-bind="product.product_sku_name" and text()="${productName}"]    #订单商品名称
+    Element Text Should Be    //em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//span[@ng-bind="kindKey"]    ${kindsName}    #规格
+    Element Text Should Be    //em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//span[@ng-bind="kindValue"]    ${kindsValuesName}    #规格值
+    ${textBuyPrice}    Get Text    xpath=//em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//span[@ng-bind="product.price"]    #购买价格
+    Should Be Equal As Numbers    ${textBuyPrice}    ${secondKillPrice}
+    ${textBuyNum}    Get Text    xpath=//em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//span[@ng-bind="product.num"]    #购买数量
+    Should Be Equal As Integers    ${buyNum}    ${textBuyNum}
+    Run Keyword If    '${sendType}' == '快递配送'    Page Should Contain Element    xpath=//em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//div[@class="order_payinfo"]//em[text()="快递配送"]    #快递配送配送方式
+    Run Keyword If    '${sendType}' == '到店自提'    Page Should Contain Element    xpath=//em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//div[@class="order_payinfo"]//em[text()="到店自提"]    #到店自提配送方式
+    ${textPayPrice}    Get Text    xpath=//em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//div[@class="fr order_payoff"]//em
+    ${payPrice}    Strip String    ${textPayPrice}    characters='￥'    #去掉￥符号
+    Should Be Equal As Numbers    ${payPrice}    ${paidMoney}
+    Run Keyword If    '${orderStatus}' == '待付款'    Page Should Contain Element    xpath=//em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//a[@class="order_btn1" and text()="取消订单"]    #取消订单
+    Run Keyword If    '${orderStatus}' == '待付款'    Page Should Contain Element    xpath=//a[@href="../order/detail?id=${orderID}" and text()="立即支付"]    #立即支付
+    Run Keyword If    '${orderStatus}' == '待收货'    Page Should Contain Element    xpath=//em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//a[@class="order_btn1" and text()="查看物流"]
+    Run Keyword If    '${orderStatus}' == '待收货'    Page Should Contain Element    xpath=//em[@ng-bind="list.order_no" and text()="${orderNo}"]/ancestor::li//a[@class="order_btn2" and text()="确认收货"]
+    Run Keyword If    '${orderStatus}' == '已完成'    Page Should Contain Element    xpath=//a[@href="../order/comment?id=${orderID}" and text()="立即评价"]
+
+5订单详情页
+    [Arguments]    ${orderStatus}
+    #订单状态信息
+    Page Should Contain    订单状态
+    #获取当前订单详情页URL
+    ${orderInforPageURL}    Get Location
+    Page Should Contain Element    xpath=//span[@ng-bind="model.orderStatusText" and text()="${orderStatus}"]    #订单状态
+    Page Should Contain Element    xpath=//span[@ng-bind="model.order_no" and text()="${orderNo}"]    #订单编号
+    ${orderTime}    Get Text    xpath=//span[starts-with(@ng-bind,"model.created")]    #下单时间
+    Should Be Equal As Strings    ${orderTime}    ${createdTime}
+    #收货信息
+    Run Keyword If    '${sendType}' == '快递配送'    5-1快递配送订单详情收货信息
+    Run Keyword If    '${sendType}' == '到店自提'    5-2到店自提订单详情收货信息
+    #支付方式
+    Run Keyword If    '${orderStatus}' == '待发货' or '${orderStatus}' == '待收货'    Page Should Contain    支付方式
+    Run Keyword If    '${orderStatus}' == '待发货' or '${orderStatus}' == '待收货'    Element Should Contain    xpath=//span[@ng-bind="model.orderPayText"]    货到付款
+    #待收货物流信息校验
+    Run Keyword If    '${orderStatus}' == '待收货'    6待收货物流信息页
+    #商品信息
+    Page Should Contain Element    xpath=//span[@ng-bind="list.product_sku_name" and text()="${productName}"]    #商品名称
+    Element Text Should Be    xpath=//span[@ng-bind="kindKey"]    ${kindsName}    #规格
+    Element Text Should Be    xpath=//span[@ng-bind="kindValue"]    ${kindsValuesName}    #规格值
+    ${textProductPrice1}    Get Text    xpath=//span[starts-with(@ng-bind,"list.price")]    #商品秒杀价格
+    ${textProductPrice}    Remove String    ${textProductPrice1}    ,
+    Should Be Equal As Numbers    ${textProductPrice}    ${secondKillPrice}
+    Page Should Contain Element    xpath=//span[@ng-bind="list.num" and text()="${buyNum}"]    #商品数量
+    #获取金额
+    ${orderTotalPrice}    Get Text    xpath=//span[starts-with(@ng-bind,"model.total_price")]    #商品金额(商品价格*数量)
+    ${orderReductionDiscoun}    Get Text    xpath=//span[starts-with(@ng-bind,"model.reduction_discount")]    #活动优惠
+    ${orderPointDiscount}    Get Text    xpath=//span[starts-with(@ng-bind,"model.point_discount")]    #积分抵扣
+    ${orderSellerCut}    Get Text    xpath=//span[starts-with(@ng-bind,"model.seller_cut")]    #促销优惠
+    ${orderDeliveryFee}    Get Text    xpath=//span[starts-with(@ng-bind,"model.delivery_fee")]    #运费
+    ${textPriceAll}    Run Keyword If    '${orderStatus}' == '待付款'    Get Text    xpath=//span[@class="payoff money fr ng-binding"]
+    ...    ELSE    Get Text    xpath=//span[starts-with(@ng-bind,"model.should_pay")]    #实付金额
+    ${orderPriceAll}    Run Keyword If    '${orderStatus}' == '待付款'    Strip String    ${textPriceAll}    characters='实付：￥'
+    ...    ELSE    Set Variable    ${textPriceAll}    #去掉￥符号
+    #如果金额中有，符号，去掉
+    ${orderTotalPrice}    Remove String    ${orderTotalPrice}    ,
+    ${orderPriceAll}    Remove String    ${orderPriceAll}    ,
+    #校验金额
+    Should Be Equal As Numbers    ${orderTotalPrice}    ${totalPrice}
+    Should Be Equal As Numbers    ${orderReductionDiscoun}    ${0.00}
+    Should Be Equal As Numbers    ${orderPointDiscount}    ${pointDiscountMoney}
+    Should Be Equal As Numbers    ${orderSellerCut}    ${0.00}
+    Should Be Equal As Numbers    ${orderDeliveryFee}    ${deliveryFee}
+    Should Be Equal As Numbers    ${orderPriceAll}    ${paidMoney}
+    #校验支付按钮
+    Run Keyword If    '${orderStatus}' == '待付款'    Element Should Be Visible    xpath=//button/span[text()="微信安全支付"]
+    Run Keyword If    '${sendType}' == '快递配送' and '${orderStatus}' == '待付款'    Element Should Be Visible    xpath=//button/span[text()="其他支付"]
+    ...    ELSE IF    '${sendType}' == '到店自提' and '${orderStatus}' == '待付款'    Element Should Not Be Visible    xpath=//button/span[text()="其他支付"]
+    Run Keyword If    '${orderStatus}' == '待付款'    Element Should Not Be Visible    xpath=//button/span[text()="货到付款"]
+    #确认收货按钮
+    Run Keyword If    '${orderStatus}' == '待收货'    Page Should Contain Element    xpath=//a[@class="okgoods order_btn2" and text()="确认收货"]
+    #立即评论
+    Run Keyword If    '${orderStatus}' == '已完成'    Page Should Contain Element    xpath=//a[@href="../order/comment?id=${orderID}"]/span[text()="立即评论"]
+    [Return]    ${orderInforPageURL}
+
+5-1快递配送订单详情收货信息
+    Page Should Contain Element    xpath=//span[@ng-bind="model.orderDelivery.consignee" and text()="${consignee}"]    #收货人    ${consigneel}
+    Page Should Contain Element    xpath=//span[@ng-bind="model.orderDelivery.tel" and text()="${tel}"]    #电话号码    ${tell}
+    Page Should Contain Element    xpath=//span[@ng-bind="model.orderDelivery.province" and text()="${province}"]    #省    ${province}
+    Page Should Contain Element    xpath=//span[@ng-bind="model.orderDelivery.city" and text()="${city}"]    #市    ${city}
+    Page Should Contain Element    xpath=//span[@ng-bind="model.orderDelivery.county" and text()="${county}"]    #区    ${county}
+    Page Should Contain Element    xpath=//span[@ng-bind="model.orderDelivery.detail" and text()="${detail}"]    #详细地址    ${detail}
+
+5-2到店自提订单详情收货信息
+    Page Should Contain Element    xpath=//span[@ng-bind="model.pickup_name" and text()="${consignee}"]    #提货人
+    Page Should Contain Element    xpath=//span[@ng-bind="model.pickup_phone" and text()="${phoneNo}"]    #手机号码
+    Page Should Contain Element    xpath=//span[@ng-bind="model.pickupShopSub.shopInfo.address" and text()="${oneshopAddress}"]    #提货地址
+    Page Should Contain Element    xpath=//span[starts-with(@ng-bind,"model.pickup_date * 1000") and text()="${pickTime1}"]    #提货时间1
+    Page Should Contain Element    xpath=//span[starts-with(@ng-bind,"(model.pickup_date+30*60) * 1000") and text()="${pickTime2}"]    #提货时间2
+
+6待收货物流信息页
+    #校验物流信息栏
+    Page Should Contain Element    xpath=//div[@class="ship_xpress_left fl"]
+    Page Should Contain Element    xpath=//div[@class="ship_xpress_right wuliu fr"]
+    #点击按钮，进入物流详情页面
+    Click Element    xpath=//div[@class="ship_xpress_right wuliu fr"]
+    sleep    1
+    #物流详情页面信息校验
+    Wait Until Page Contains Element    xpath=//button[@ng-click="view()" and text()="查看订单"]
+    Page Should Contain    支付方式
+    Page Should Contain Element    xpath=//span[@ng-bind="orderList.orderPayInfos[0].pay_type | orderkey" and text()="货到付款"]
+    Page Should Contain    物流公司
+    Page Should Contain    快递单号
+    Page Should Contain Element    xpath=//span[@ng-bind="express_no" and text()="${expressNo}"]
+    #点击查看订单
+    Click Element    xpath=//button[@ng-click="view()" and text()="查看订单"]
+    wait until page contains    ${orderNo}
+
+7商品评论页
+    #商品信息
+    Page Should Contain Element    xpath=//span[@ng-bind="list.product_sku_name" and text()="${productName}"]    #商品名称
+    Element Text Should Be    xpath=//span[@ng-bind="kindKey"]    ${kindsName}    #规格
+    Element Text Should Be    xpath=//span[@ng-bind="kindValue"]    ${kindsValuesName}    #规格值
+    ${textProductPrice}    Get Text    //span[@ng-bind="list.price"]    #商品秒杀价格
+    #相符描述
+    Page Should Contain    相符描述
+    Page Should Contain Element    xpath=//i[@class="icon icon-star-gray" and @ng-click="star(1, list)"]
+    Page Should Contain Element    xpath=//i[@class="icon icon-star-gray" and @ng-click="star(2, list)"]
+    Page Should Contain Element    xpath=//i[@class="icon icon-star-gray" and @ng-click="star(3, list)"]
+    Page Should Contain Element    xpath=//i[@class="icon icon-star-gray" and @ng-click="star(4, list)"]
+    Page Should Contain Element    xpath=//i[@class="icon icon-star-gray" and @ng-click="star(5, list)"]
+    #点击星进行评论
+    ${starRand}    Evaluate    random.randint(1,5)    random
+    Click Element    //i[@ng-click="star(${starRand}, list)"]
+    Run Keyword If    ${starRand} > 1    Page Should Contain Element    xpath=//i[@class="icon icon-star" and @ng-click="star(1, list)"]
+    Run Keyword If    ${starRand} > 2    Page Should Contain Element    xpath=//i[@class="icon icon-star" and @ng-click="star(2, list)"]
+    Run Keyword If    ${starRand} > 3    Page Should Contain Element    xpath=//i[@class="icon icon-star" and @ng-click="star(3, list)"]
+    Run Keyword If    ${starRand} > 4    Page Should Contain Element    xpath=//i[@class="icon icon-star" and @ng-click="star(4, list)"]
+    Run Keyword If    ${starRand} > 5    Page Should Contain Element    xpath=//i[@class="icon icon-star" and @ng-click="star(5, list)"]
+    #评论
+    Page Should Contain Element    xpath=//textarea[@ng-model="list.content"]
+    Input Text    //textarea[@ng-model="list.content"]    东东不错！这是订单${orderID}的商品评论。
+    #立即评论按钮
+    Page Should Contain Element    xpath=//a[@class="okgoods" and @ng-click="details(list)"]
+    Element Should Contain    xpath=//a[@ng-click="details(list)"]    立即评论
+
+----ACTION----
+
+生成秒杀订单
+    微信模拟页面登录    ${GLOBAL_CONFIG.user_id}
+    wait until page contains    首页
+    sleep    2
+    #进入惊喜页
+    click element    link=惊喜
+    wait until page contains    秒杀活动
+    #进入秒杀活动列表页
+    Click Element    partial link=秒杀活动
+    wait until page contains    ${secondKillName}    15
+    #进入秒杀活动页
+    Click Element    partial link=${secondKillName}
+    Wait Until Page Contains Element    xpath=//h3[starts-with(@ng-bind,"list.product.name") and text()="${productName}"]
+    #进入秒杀商品详情页
+    Click Element    //h3[starts-with(@ng-bind,"list.product.name") and text()="${productName}"]    #点击商品名称
+    Wait Until Page Contains Element    xpath=//a[@class="buy_own" and contains(@ng-click," secondskill()")]    #立即秒杀按钮
+    Click Element    xpath=//a[@class="buy_own" and contains(@ng-click," secondskill()")]
+    Wait Until Element Is Visible    xpath=//label[@ng-class="{'btn_postage':sendType == 1}"]    5
+    Wait Until Element Is Visible    xpath=//label[@ng-class="{'btn_postage':sendType == 2}"]
+    #选择购买数量
+    : FOR    ${tmpNum}    IN RANGE    1    ${buyNum}
+    \    Click Element    xpath=//button[@class="increase"]
+    \    ${tmpTextNumber}    Evaluate    ${tmpNum} + 1
+    \    ${tmpTextString}    Convert To String    ${tmpTextNumber}
+    \    Textfield Value Should Be    name=quantity    ${tmpTextString}
+    Run Keyword If    '${sendType}' == '快递配送'    Click Element    xpath=//label[@ng-class="{'btn_postage':sendType == 1}"]    #快递配送
+    Run Keyword If    '${sendType}' == '到店自提'    Click Element    xpath=//label[@ng-class="{'btn_postage':sendType == 2}"]    #到店自提
+    Click Element    //a[@class="buy_own" and @ng-click="buy()"]    #确认购买
+    #wait until page contains    微信安全支付    15
+    Wait Until Page Contains Element    xpath=//button[@class="weixin"]    15
+
+输入收货地址信息
+    Element Should Be Visible    //div[@ng-show=" ! model.orderDelivery.province"]
+    Click Element    //div[@ng-show=" ! model.orderDelivery.province"]
+    Wait Until Element Is Visible    //a[@href="../order/choose-address?id=${orderID}"]/button[contains(text(),"收货地址列表")]    #收货地址列表
+    Sleep    1
+    Click Element    //a[@href="../order/choose-address?id=${orderID}"]/button[contains(text(),"收货地址列表")]
+    Wait Until Element Is Visible    //a[@href="../user/address-add?_backurls=${GLOBAL_CONFIG.wx_url}/order/choose-address?id=${orderID}"]
+    Element Should Contain    //a[@href="../user/address-add?_backurls=${GLOBAL_CONFIG.wx_url}/order/choose-address?id=${orderID}"]    新增收货地址
+    Sleep    1
+    #点击新增收货地址
+    Click Element    //a[@href="../user/address-add?_backurls=${GLOBAL_CONFIG.wx_url}/order/choose-address?id=${orderID}"]
+    ##输入收货地址信息
+    Wait Until Element Is Visible    //div[@class="newaddress_box"]/form
+    Element Should Contain    //div[@class="newaddress_box"]/form    收货人
+    Element Should Contain    //div[@class="newaddress_box"]/form    手机号码
+    Element Should Contain    //div[@class="newaddress_box"]/form    邮编号码
+    Element Should Contain    //div[@class="newaddress_box"]/form    地区信息
+    Element Should Contain    //div[@class="newaddress_box"]/form    详细地址
+    ${收货人}    随机字符    名称    8
+    ${手机号}    随机手机号
+    ${邮编号码}    Generate Random String    6    123456789
+    ${详细地址}    随机字符    XX小区XX号    20
+    Input Text    //input[@ng-model="model.consignee" and @placeholder="姓名"]    ${收货人}
+    Input Text    //input[@ng-model="model.tel" and @placeholder="11位手机号码"]    ${手机号}
+    Input Text    //input[@ng-model="model.zip" and @placeholder="邮编信息"]    ${邮编号码}
+    Input Text    //input[@ng-model="model.detail" and @placeholder="街道门牌信息"]    ${详细地址}
+    Sleep    1
+    Click Element    //input[@ng-model="model.address" and @placeholder="省/市/县"]
+    #选择省
+    Wait Until Element Is Visible    id=mask    #省份选择列表
+    Sleep    1
+    ${省份数量}    Get Matching Xpath Count    //ul[@id="first_list"]/li[@ng-bind="list.name"]
+    ${省份}    Evaluate    random.randint(1,${省份数量})    random
+    ${省名}    Get Text    xpath=(//ul[@id="first_list"]/li[@ng-bind="list.name"])[${省份}]
+    Click Element    xpath=(//ul[@id="first_list"]/li[@ng-bind="list.name"])[${省份}]
+    #选择市
+    Wait Until Element Is Visible    id=second_list
+    Sleep    1
+    ${城市数量}    Get Matching Xpath Count    //div[@id="second_list"]//div[@ng-bind="list.name"]
+    ${城市}    Evaluate    random.randint(1,${城市数量})    random
+    ${城名}    Get Text    xpath=(//div[@id="second_list"]//div[@ng-bind="list.name"])[${城市}]
+    Click Element    xpath=(//div[@id="second_list"]//div[@ng-bind="list.name"])[${城市}]
+    #选择区
+    Wait Until Element Is Visible    id=three_list
+    Sleep    1
+    ${区数量}    Get Matching Xpath Count    //div[@id="three_list"]//a[@ng-bind="list.name"]
+    ${区}    Evaluate    random.randint(1,${区数量})    random
+    ${区名}    Get Text    xpath=(//div[@id="three_list"]//a[@ng-bind="list.name"])[${区}]
+    Click Element    xpath=(//div[@id="three_list"]//a[@ng-bind="list.name"])[${区}]
+    Sleep    1
+    Element Should Be Visible    //a[@ng-click="save()"]/span[text()="保存"]
+    Click Element    //a[@ng-click="save()"]
+    Sleep    1
+    Wait Until Page Contains Element    //a[@href="../user/address-add?_backurls=${GLOBAL_CONFIG.wx_url}/order/choose-address?id=${orderID}"]
+    [Return]    ${收货人}    ${手机号}    ${省名}    ${城名}    ${区名}    ${详细地址}
+
+选择并检验收货地址
+    [Arguments]    ${consignee}    ${tel}    ${province}    ${city}    ${county}    ${detail}
+    Wait Until Page Contains Element    //a[@href="../user/address-add?_backurls=${GLOBAL_CONFIG.wx_url}/order/choose-address?id=${orderID}"]
+    ${addrs}    Get Matching Xpath Count    //a[@ng-click="delete(list.id)"]
+    Should Be Equal As Integers    ${addrs}    1
+    ${姓名}    Get Text    //li[@ng-repeat="list in model.data"]//span[@ng-bind="list.consignee"]
+    ${手机号}    Get Text    //li[@ng-repeat="list in model.data"]//span[@ng-bind="list.tel"]
+    ${省}    Get Text    //li[@ng-repeat="list in model.data"]//span[@ng-bind="list.province"]
+    ${市}    Get Text    //li[@ng-repeat="list in model.data"]//span[@ng-bind="list.city"]
+    ${区}    Get Text    //li[@ng-repeat="list in model.data"]//span[@ng-bind="list.county"]
+    ${详细地址}    Get Text    //li[@ng-repeat="list in model.data"]//span[@ng-bind="list.detail"]
+    ${完整地址}    Set Variable    ${省}${市}${区}${详细地址}
+    Should Be Equal As Strings    ${姓名}    ${consignee}
+    Should Be Equal As Strings    ${手机号}    ${tel}
+    Should Be Equal As Strings    ${省}    ${province}
+    Should Be Equal As Strings    ${市}    ${city}
+    Should Be Equal As Strings    ${区}    ${county}
+    Should Be Equal As Strings    ${详细地址}    ${detail}
+    Click Element    //li[@ng-repeat="list in model.data"]//div[@ng-click="save(list.id)"]
+    Wait Until Element Is Visible    //span[@ng-bind="model.orderDelivery.consignee"]
+    Wait Until Element Is Visible    //span[@ng-bind="model.orderDelivery.tel"]
+    ${省_page}    Get Text    //span[@ng-bind="model.orderDelivery.province"]
+    ${市_page}    Get Text    //span[@ng-bind="model.orderDelivery.city"]
+    ${区_page}    Get Text    //span[@ng-bind="model.orderDelivery.county"]
+    ${详细地址_page}    Get Text    //span[@ng-bind="model.orderDelivery.detail"]
+    Element Should Contain    //span[@ng-bind="model.orderDelivery.consignee"]    ${姓名}
+    Element Should Contain    //span[@ng-bind="model.orderDelivery.tel"]    ${手机号}
+    Should Be Equal As Strings    ${省_page}    ${省}
+    Should Be Equal As Strings    ${市_page}    ${市}
+    Should Be Equal As Strings    ${区_page}    ${区}
+    Should Be Equal As Strings    ${详细地址_page}    ${详细地址}
+
+输入提货信息并选择自提门店
+    ${shopList}    WX_获取自提店铺列表
+    ${shopNumber}    Get Length    ${shopList}
+    ${randomInt}    Evaluate    random.randint(0,${shopNumber}-1)    modules=random
+    ${oneShopAddressInfor}    Get From List    ${shopList}    ${randomInt}
+    ${oneshopName}    Get From Dictionary    ${oneShopAddressInfor}    name
+    ${oneshopAddress}    Get From Dictionary    ${oneShopAddressInfor}    address
+    #提货输入元素校验
+    Page Should Contain Element    xpath=//input[@name="consignee" and @placeholder="请填写提货人姓名"]
+    Page Should Contain Element    xpath=//input[@name="phoneNo" and @placeholder="请填写提货人手机号码"]
+    Page Should Contain Element    xpath=//input[@name="address" and @placeholder="请选择商户提货地址"]
+    Page Should Contain Element    xpath=//input[@name="timeName" and @placeholder="请选择提货时间"]
+    #点击支付按钮，弹出提示
+    Click Element    xpath=//button[@class="weixin"]    #微信支付支付
+    Wait Until Element Is Visible    //div/h3[text()="出错信息"]
+    Element Should Be Visible    //p[@ng-show="myForm.consignee.$error.required" and contains(text(),"提货人")]
+    Element Should Be Visible    //p[@ng-show="myForm.phoneNo.$error.required" and contains(text(),"手机号码")]
+    Element Should Be Visible    //p[@ng-show="myForm.address.$error.required" and contains(text(),"提货门店")]
+    Element Should Be Visible    //span[@class="ok" and text()="确定"]
+    Click Element    //span[@class="ok" and text()="确定"]
+    Element Should Not Be Visible    //p[@ng-show="myForm.consignee.$error.required" and contains(text(),"提货人")]
+    Element Should Not Be Visible    //p[@ng-show="myForm.phoneNo.$error.required" and contains(text(),"手机号码")]
+    Element Should Not Be Visible    //p[@ng-show="myForm.address.$error.required" and contains(text(),"提货门店")]
+    Element Should Not Be Visible    //span[@class="ok" and text()="确定"]
+    #输入提货信息
+    page should contain    您选择的是到店自提，商户不负责商品配送。请仔细填写提货相关信息，订单免运费。
+    Input Text    name=consignee    自动化测试
+    Input Text    name=phoneNo    18812345678
+    Click Element    name=address
+    wait until page contains    ${oneshopName}    15
+    #检验自提门店信息
+    : FOR    ${shop}    IN    @{shopList}
+    \    ${name}    Get From Dictionary    ${shop}    name
+    \    ${address}    Get From Dictionary    ${shop}    address
+    \    page should contain    ${name}
+    \    page should contain    ${address}
+    Click Element    xpath=//h3[@ng-bind="i.shopInfo.name" and text()="${oneshopName}"]
+    Wait Until Page Contains Element    xpath=//button[@class="weixin"]    15
+    #校验提货信息
+    Textfield Should Contain    name=consignee    自动化测试
+    Textfield Should Contain    name=phoneNo    18812345678
+    Page Should Contain Element    //span[@ng-bind="nameaddress" and text()="${oneshopName}"]
+    Textfield Should Contain    name=address    ${oneshopAddress}
+    #获取提货时间
+    ${pickUpTime}    Get Value    id=test_default
+    #自提时间拆分
+    ${pickUpList}    Split String    ${pickUpTime}    -    #自提时间进行拆分
+    ${tmpPickTime1}    Get From List    ${pickUpList}    0
+    ${pickTimeValue2}    Get From List    ${pickUpList}    1
+    ${tmpPickTimeValue1}    Replace String    ${tmpPickTime1}    /    -    #将/替换为-
+    ${pickTime1}    Strip String    ${tmpPickTimeValue1}    #去掉空格
+    ${pickTime2}    Strip String    ${pickTimeValue2}    #去掉空格
+    Set Test Variable    ${consignee}    自动化测试
+    Set Test Variable    ${phoneNo}    18812345678
+    Set Test Variable    ${oneshopName}
+    Set Test Variable    ${oneshopAddress}
+    Set Test Variable    ${pickTime1}
+    Set Test Variable    ${pickTime2}
+
+满件包邮到店自提
+
+点击微信支付提交订单
+    :FOR    ${i}    IN RANGE    5
+    \    Click Element    xpath=//button[@class="weixin"]    #微信支付支付
+    \    Sleep    1
+    \    ${passed}    Run Keyword And Return Status    Wait Until Page Does Not Contain Element    id=customer_mark    5
+    \    Exit For Loop If    ${passed}
+    \    Run Keyword If    ${i} == 4    Fail    点击微信支付按钮失败

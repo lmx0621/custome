@@ -1,0 +1,484 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Library           Selenium2Library
+Resource          ../../Resource/常用操作.robot
+Resource          ../../Resource/功能菜单.robot
+Library           AutoItLibrary
+Resource          ../../Resource/配置参数.robot
+
+*** Test Cases ***
+添加门店策略码
+    [Tags]    ready
+    点击链接菜单    微分店
+    点击链接菜单    门店码推送策略
+    点击链接菜单    创建门店码推送策略
+    #随机名称
+    ${strname}    随机字符    【策略名称】
+    sleep    1
+    input text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[2]/div[2]/form/div[1]/div/input    ${strname}    #输入门店码策略名称
+    sleep    1
+    门店/员工策略码时间选择
+    sleep    1
+    ${推送动作}    推送动作选择
+    Run Keyword If    '${推送动作}'=='扫码回复素材'    扫码随机选择素材
+    ...    ELSE    扫码随机选择模块
+    sleep    1
+    click element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[2]/div[2]/form/div[6]/div/label/input    #不开启
+    sleep    1
+    门店策略码门店选择
+    sleep    1
+    Run Keyword If    '${备注}'=='${Empty}'    备注为空
+    ...    ELSE    备注不为空
+    sleep    1
+    对比校验    xpath=//*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[1]/span    ${strname}
+    sleep    2
+    click element    xpath=//*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[4]/label/input    #点击状态
+    sleep    1
+    ${zz}    Confirm Action
+    log    ${zz}
+    Should Be Equal As Strings    ${zz}    状态已启用！
+    sleep    1
+    click element    xpath=//*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[4]/label/input    #点击状态
+    sleep    1
+    Confirm Action
+    click element    xpath=//*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[5]/div/a[2]
+    sleep    1
+    click element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[2]/ul/li[1]/a
+    Run Keyword If    '${代理}'=='${Empty}'    校验直营店
+    ...    ELSE    校验加盟店
+    sleep    2
+    #Pass Execution    OK
+    Go Back
+    Click Element    //*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[5]/div/a[1]    #点击编辑
+    sleep    1
+    Run Keyword If    '${推送动作}'=='扫码回复素材'    校验扫码回复素材
+    ...    ELSE    校验扫码回复模块
+    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[4]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[1]/td[2]    ${门店名字}
+    #删除
+    Go Back
+    sleep    1
+    click element    xpath=//*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[5]/div/a[3]    #点击删除按钮
+    sleep    1
+    click element    xpath=/html/body/div[4]/div/table/tbody/tr[3]/td/div[2]/button[text()='确定']    #确定删除
+    sleep    1
+    Confirm Action
+    sleep    1
+    Page Should Not Contain    ${strname}
+
+删除门店策略码
+    [Tags]    ready
+    ${strname}    添加门店策略码
+    sleep    1
+    click element    xpath=//*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[5]/div/a[3]    #点击删除按钮
+    sleep    1
+    click element    xpath=/html/body/div[4]/div/table/tbody/tr[3]/td/div[2]/button[text()='确定']    #确定删除
+    sleep    1
+    Confirm Action
+    sleep    1
+    Page Should Not Contain    ${strname}
+
+修改门店策略码
+    [Tags]    ready
+    添加门店策略码
+    sleep    1
+    Click Element    //*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[5]/div/a[1]    #编辑
+    ${updatename}    随机字符    编辑修改
+    sleep    1
+    input text    //*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[2]/div[2]/form/div[1]/div/input    ${updatename}    #修改之后的策略名称
+    sleep    1
+    #清空时间
+    click element    id=start_time
+    select frame    xpath=/html/body/div[6]/iframe[@hidefocus='true']
+    sleep    1
+    click element    id=dpClearInput
+    sleep    1
+    Unselect Frame
+    sleep    1
+    click element    id=end_time
+    select frame    xpath=/html/body/div[6]/iframe[@hidefocus='true']
+    sleep    1
+    click element    id=dpClearInput
+    sleep    1
+    Unselect Frame
+    sleep    1
+    #修改时间
+    修改门店/员工码时间
+    ${update_star_time}    Get Value    xpath=//*[@id="start_time"]
+    ${update_end_time}    Get Value    xpath=//*[@id="end_time"]
+    sleep    1
+    #修改推送内容
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[2]/div[2]/form/div[3]/div[1]/div/select/option[text()='请选择一个动作']    #将推送动作清空
+    ${推送动作}    推送动作选择
+    Run Keyword If    '${推送动作}'=='扫码回复素材'    扫码随机选择素材
+    ...    ELSE    扫码随机选择模块
+    sleep    1
+    Comment    #修改门店
+    Comment    Clear Element Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[4]/div/div[2]/div[2]/table/thead/tr/th[1]/input
+    Comment    #Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[1]/div/div/ul/li[${随机代理商门店}]/a/i', document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();    #解决隐藏问题
+    Comment    Input Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[4]/div/div[2]/div[2]/table/thead/tr/th[1]/input    ${门店名字}
+    Comment    sleep    3
+    Comment    Click Element    xpath=//ul/li/a[text()='${门店名字}']    #取消左边勾选
+    Comment    sleep    1
+    Comment    #Input Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[4]/div/div[2]/div[2]/table/thead/tr/th[1]/input    ${Empty}
+    Comment    Clear Element Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[4]/div/div[2]/div[2]/table/thead/tr/th[1]/input
+    Comment    sleep    5
+    Comment    门店策略码门店选择
+    Comment    sleep    1
+    Comment    Run Keyword If    '${备注}'=='${Empty}'    备注为空
+    ...    ELSE    备注不为空
+    Comment    sleep    1
+    Click element    id=btnConfirm    #点击保存
+    sleep    1
+    Confirm Action    #确认
+    sleep    1
+    对比校验    xpath=//*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[1]/span    ${updatename}
+    对比校验    xpath=//*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[3]    ${update_star_time}至${update_end_time}
+    Click Element    //*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[5]/div/a[1]/i    #点击编辑按钮
+    sleep    1
+    Run Keyword If    '${推送动作}'=='扫码回复素材'    校验扫码回复素材
+    ...    ELSE    校验扫码回复模块
+    sleep    1
+    Go Back
+    #删除
+    sleep    1
+    click element    xpath=//*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[5]/div/a[3]    #点击删除按钮
+    sleep    1
+    click element    xpath=/html/body/div[4]/div/table/tbody/tr[3]/td/div[2]/button[text()='确定']    #确定删除
+    sleep    1
+    Confirm Action
+    sleep    1
+    Page Should Not Contain    ${updatename}
+
+添加员工策略码
+    [Tags]    ready
+    点击链接菜单    微分店
+    点击链接菜单    员工码推送策略
+    点击链接菜单    创建员工码推送策略
+    ${strname}    随机字符    【策略名称】
+    log    ${strname}
+    input text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[2]/div[2]/form/div[1]/div/input    ${strname}
+    sleep    1
+    门店/员工策略码时间选择
+    sleep    1
+    ${推送动作}    推送动作选择
+    sleep    1
+    Run Keyword If    '${推送动作}'=='扫码回复素材'    扫码随机选择素材
+    ...    ELSE    扫码随机选择模块
+    sleep    1
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[2]/div[2]/form/div[6]/div/label    #不开启
+    sleep    1
+    员工策略码员工选择    #选择员工
+    log    ${员工名字}
+    sleep    1
+    ${备注}    Get Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机员工}]/td[5]
+    Run Keyword If    '${备注}'=='${Empty}'    备注为空
+    ...    ELSE    备注不为空
+    sleep    1
+    对比校验    xpath=//*[@id="tab1"]/div[1]/div/table/tbody/tr[1]/td[1]/span    ${strname}
+    click element    xpath=//*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[4]/label/input    #点击状态
+    sleep    1
+    ${zz}    Confirm Action
+    log    ${zz}
+    Should Be Equal As Strings    ${zz}    状态已启用！
+    sleep    1
+    click element    xpath=//*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[4]/label/input    #点击状态
+    sleep    1
+    Confirm Action
+    click element    xpath=//*[@id="tab1"]/div[1]/div/table/tbody/tr[1]/td[5]/div/a[2]
+    sleep    1
+    对比校验    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/div/table/tbody/tr[1]/td[1]/span    ${员工名字}
+    Go Back
+    Click Element    //*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[5]/div/a[1]    #点击编辑
+    sleep    1
+    Run Keyword If    '${推送动作}'=='扫码回复素材'    校验扫码回复素材
+    ...    ELSE    校验扫码回复模块
+    #删除
+    Go Back
+    sleep    1
+    Click Element    xpath=//*[@id="tab1"]/div[1]/div/table/tbody/tr[1]/td[5]/div/a[3]/i    #点击删除
+    sleep    1
+    Click Element    xpath=/html/body/div[5]/div/table/tbody/tr[3]/td/div[2]/button[text()='确定']
+    sleep    1
+    Confirm Action
+    sleep    1
+    Page Should Not Contain    ${strname}
+
+删除员工策略码
+    [Tags]    ready
+    ${strname}    添加员工策略码
+    sleep    1
+    Click Element    xpath=//*[@id="tab1"]/div[1]/div/table/tbody/tr[1]/td[5]/div/a[3]/i
+    sleep    1
+    Click Element    xpath=/html/body/div[5]/div/table/tbody/tr[3]/td/div[2]/button[text()='确定']
+    sleep    1
+    Confirm Action
+    sleep    1
+    Page Should Not Contain    ${strname}
+
+修改员工策略码
+    [Tags]    ready
+    添加员工策略码
+    Click Element    xpath=//*[@id="tab1"]/div[1]/div/table/tbody/tr[1]/td[5]/div/a[1]    #点击编辑
+    sleep    1
+    ${update_name}    随机字符    编辑修改
+    log    ${update_name}
+    Input Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[2]/div[2]/form/div[1]/div/input    ${update_name}
+    #清空时间
+    click element    id=start_time
+    select frame    xpath=/html/body/div[6]/iframe[@hidefocus='true']    #定位
+    sleep    1
+    click element    id=dpClearInput
+    sleep    1
+    Unselect Frame    #退出定位
+    sleep    1
+    click element    id=end_time
+    select frame    xpath=/html/body/div[6]/iframe[@hidefocus='true']    #定位
+    sleep    1
+    click element    id=dpClearInput
+    sleep    1
+    Unselect Frame    #退出定位
+    sleep    1
+    #修改时间
+    修改门店/员工码时间
+    ${update_star_time}    Get Value    xpath=//*[@id="start_time"]
+    ${update_end_time}    Get Value    xpath=//*[@id="end_time"]
+    sleep    1
+    #修改推送消息
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[2]/div[2]/form/div[3]/div[1]/div/select/option[text()='请选择一个动作']    #将推送动作清空
+    ${推送动作}    推送动作选择
+    Run Keyword If    '${推送动作}'=='扫码回复素材'    扫码随机选择素材
+    ...    ELSE    扫码随机选择模块
+    sleep    1
+    Click element    id=btnConfirm    #点击保存
+    sleep    1
+    Confirm Action    #确认
+    sleep    1
+    对比校验    xpath=//*[@id="tab1"]/div[1]/div/table/tbody/tr[1]/td[1]/span    ${update_name}
+    对比校验    xpath=//*[@id="tab1"]/div[1]/div/table/tbody/tr[1]/td[3]    ${update_star_time}至${update_end_time}
+    Click Element    //*[@id="tab1"]/div[1]/div/table/tbody/tr[1]/td[5]/div/a[1]    #点击编辑按钮
+    sleep    1
+    Run Keyword If    '${推送动作}'=='扫码回复素材'    校验扫码回复素材
+    ...    ELSE    校验扫码回复模块
+    sleep    1
+    Go Back
+    #删除
+    sleep    1
+    click element    xpath=//*[@id="tab1"]/div/div[1]/table/tbody/tr[1]/td[5]/div/a[3]    #点击删除按钮
+    sleep    1
+    click element    xpath=/html/body/div[5]/div/table/tbody/tr[3]/td/div[2]/button[text()='确定']    #确定删除
+    sleep    1
+    Confirm Action
+    sleep    1
+    Page Should Not Contain    ${update_name}
+
+*** Keywords ***
+备注不为空
+    sleep    1
+    Click element    id=btnConfirm    #点击创建
+    sleep    1
+    click element    xpath=/html/body/div[7]/div/table/tbody/tr[3]/td/div[2]/button[1]
+    sleep    1
+    Confirm Action    #确认
+
+备注为空
+    sleep    1
+    Click element    id=btnConfirm    #点击创建
+    sleep    1
+    Confirm Action    #确认
+
+校验加盟店
+    #click element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[2]/ul/li[1]/a
+    #${test}    Get Text    ${qq}
+    #log    ${test}
+    #${test1}    Strip String    ${test}
+    #log    ${test}
+    #Run Keyword If    '${test}' == '${XX}'    log    校验通过
+    # ELSE    log    校验失败
+    click element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[2]/ul/li[2]/a
+    sleep    1
+    对比校验    xpath=//*[@id="tab2"]/div/div/table/tbody/tr/td[1]/span    ${门店名字}
+
+校验直营店
+    #click element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[2]/ul/li[1]/a
+    #${test}    Get Text    ${qq}
+    #log    ${test}
+    #${test1}    Strip String    ${test}
+    #log    ${test}
+    #Run Keyword If    '${test}' == '${XX}'    log    校验通过
+    # ELSE    log    校验失败
+    #${门店}
+    对比校验    xpath=//*[@id="tab1"]/div/div[1]/table/tbody/tr/td[1]/span    ${门店名字}
+
+添加门店策略码
+    点击链接菜单    微分店
+    点击链接菜单    门店码推送策略
+    点击链接菜单    创建门店码推送策略
+    #随机名称
+    ${strname}    随机字符    【策略名称】
+    sleep    1
+    input text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[2]/div[2]/form/div[1]/div/input    ${strname}    #输入门店码策略名称
+    sleep    1
+    门店/员工策略码时间选择
+    sleep    1
+    ${推送动作}    推送动作选择
+    Run Keyword If    '${推送动作}'=='扫码回复素材'    扫码随机选择素材
+    ...    ELSE    扫码随机选择模块
+    sleep    1
+    click element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[2]/div[2]/form/div[6]/div/label/input    #不开启
+    sleep    1
+    门店策略码门店选择
+    sleep    1
+    Run Keyword If    '${备注}'=='${Empty}'    备注为空
+    ...    ELSE    备注不为空
+
+策略码门店选择左边
+    #随机选择代理商/门店
+    ${代理商门店数量}    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[1]/div/div/ul/li    #统计列表中的总数
+    ${随机代理商门店}    Evaluate    random.randint(1,${代理商门店数量})    random    #取1到【左边列表总数】的随机数
+    log    ${随机代理商门店}
+    sleep    1
+    Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[1]/div/div/ul/li[${随机代理商门店}]/a/i', document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();    #隐藏问题解决
+    sleep    1
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[1]/div/div/ul/li[${随机代理商门店}]/a/i    #点击左边勾选
+    ${门店数量}    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr
+    log    ${门店数量}
+    Set Suite Variable    ${门店数量}
+    Set Suite Variable    ${随机代理商门店}
+
+策略码门店选择右边
+    #门店选择
+    ${门店数量}    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr
+    ${随机门店}    Evaluate    random.randint(1,${门店数量})    random
+    Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机门店}]/td[1]/label/input', document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();
+    sleep    1
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机门店}]/td[1]/label/input
+    sleep    1
+    ${门店名字}    get text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机门店}]/td[2]
+    log    ${门店名字}
+    ${代理}    get text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机门店}]/td[3]
+    log    ${代理}
+    ${备注}    Get Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机门店}]/td[4]
+    log    ${备注}
+    Set Suite Variable    ${门店名字}
+    Set Suite Variable    ${随机门店}
+    Set Suite Variable    ${代理}
+    Set Suite Variable    ${备注}
+
+门店策略码门店选择
+    : FOR    ${I}    IN RANGE    50
+    \    sleep    1
+    \    策略码门店选择左边
+    \    ${门店数量}    Evaluate    int(${门店数量})
+    \    sleep    1
+    \    Log    门店数量:${门店数量}
+    \    Exit For Loop If    ${门店数量}!=0
+    log    ${随机代理商门店}
+    策略码门店选择右边
+
+添加员工策略码
+    点击链接菜单    微分店
+    点击链接菜单    员工码推送策略
+    点击链接菜单    创建员工码推送策略
+    ${strname}    随机字符    【策略名称】
+    log    ${strname}
+    input text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[2]/div[2]/form/div[1]/div/input    ${strname}
+    sleep    1
+    门店/员工策略码时间选择
+    sleep    1
+    ${推送动作}    推送动作选择
+    sleep    1
+    Run Keyword If    '${推送动作}'=='扫码回复素材'    扫码随机选择素材
+    ...    ELSE    扫码随机选择模块
+    sleep    1
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[2]/div[2]/form/div[6]/div/label    #不开启
+    sleep    1
+    员工策略码员工选择    #选择员工
+    log    ${员工名字}
+    sleep    1
+    ${备注}    Get Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机员工}]/td[5]
+    Run Keyword If    '${备注}'=='${Empty}'    备注为空
+    ...    ELSE    备注不为空
+
+策略码员工选择左边
+    #随机选择代理商/门店
+    ${门店数量}    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[4]/div/div[2]/div[2]/table/tbody/tr/td[1]/div/div/ul/li
+    ${随机门店}    Evaluate    random.randint(1,${门店数量})    random
+    Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[4]/div/div[2]/div[2]/table/tbody/tr/td[1]/div/div/ul/li[${随机门店}]/a/i ',document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();    #隐藏问题解决
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[4]/div/div[2]/div[2]/table/tbody/tr/td[1]/div/div/ul/li[${随机门店}]/a/i
+    sleep    1
+    ${员工数量}    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[4]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/table/tbody/*
+    log    ${员工数量}
+    [Return]    ${员工数量}
+
+员工策略码员工选择
+    : FOR    ${I}    IN RANGE    50
+    \    sleep    1
+    \    ${员工数量}    策略码员工选择左边
+    \    sleep    1
+    \    Log    员工数量:${员工数量}
+    \    Exit For Loop If    ${员工数量}!=0
+    策略码员工选择右边
+
+策略码员工选择右边
+    ${员工数量}    Get Matching Xpath Count    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[4]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr
+    ${随机员工}    Evaluate    random.randint(1,${员工数量})    random
+    Execute Javascript    var evaluator = new XPathEvaluator();var result = evaluator.evaluate('//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机员工}]/td[1]/label/input ', document.documentElement, null,XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); var node = result.iterateNext();node.scrollIntoView();    #隐藏问题解决
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[4]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机员工}]/td[1]/label/input
+    sleep    1
+    ${员工名字}    get text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[4]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/table/tbody/tr[${随机员工}]/td[2]
+    log    ${员工名字}
+    Set Suite Variable    ${员工名字}
+    Set Suite Variable    ${随机员工}
+
+扫码随机选择素材
+    ${随机tab}    Evaluate    random.randint(1,3)    random
+    Click Element    xpath=//*[@id="myWxmaterialTab"]/li[${随机tab}]/a
+    sleep    1
+    ${tab名称}    Get Text    xpath=//*[@id="myWxmaterialTab"]/li[${随机tab}]/a
+    log    ${tab名称}
+    Set Suite Variable    ${tab名称}
+    ${素材总数}    Get Matching Xpath Count    xpath=//*[@id="mytabPane"]/div[${随机tab} ]/ul/li
+    ${随机素材}    Evaluate    random.randint(1,${素材总数})    random
+    Click Element    xpath=//*[@id="mytabPane"]/div[${随机tab}]/ul/li[${随机素材}]/div
+    ${素材名称}    Get Text    xpath=//*[@id="mytabPane"]/div[${随机tab}]/ul/li[${随机素材}]/h3
+    log    ${素材名称}
+    sleep    1
+    Set Global Variable    ${素材名称}
+    click element    xpath=//*[@id="insertMaterial"]/div/div/div[3]/a[2]    #确定
+
+扫码随机选择模块
+    ${模块tab}    Evaluate    random.randint(2,9)    random
+    Click Element    xpath=//*[@id="activityModal"]/div/div/div[2]/div[1]/div/div/div/div/div[3]/ul/li[${模块tab}]
+    sleep    1
+    ${活动数量}    Get Matching Xpath Count    xpath=//*[@id="tabPane"]/div/div[${模块tab}]/ul/li
+    log    ${活动数量}
+    sleep    1
+    ${随机活动}    Evaluate    random.randint(1,${活动数量})    random
+    sleep    1
+    Click Element    xpath=//*[@id="tabPane"]/div/div[${模块tab}]/ul/li[${随机活动}]
+    sleep    1
+    ${活动名称}    Get Text    xpath=//*[@id="tabPane"]/div/div[${模块tab}]/ul/li[${随机活动}]/h3
+    log    ${活动名称}
+    sleep    1
+    Set Global Variable    ${活动名称}
+    Click Element    xpath=//*[@id="activityModal"]/div/div/div[2]/div[2]/a[2]    #确定
+
+推送动作选择
+    ${随机动作}    Evaluate    random.randint(2,3)    random
+    click element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[2]/div[2]/form/div[3]/div[1]/div/select/option[${随机动作}]    #推动作选择
+    sleep    1
+    ${推送动作}    get text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div[2]/div[2]/form/div[3]/div[1]/div/select/option[${随机动作}]
+    log    ${推送动作}
+    sleep    1
+    [Return]    ${推送动作}
+
+校验扫码回复素材
+    sleep    1
+    log    ${素材名称}
+    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[2]/div[2]/form/div[3]/div[2]/div/div/h3/strong    ${素材名称}
+
+校验扫码回复模块
+    sleep    1
+    log    ${活动名称}
+    对比校验    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div[1]/div[2]/div[2]/form/div[3]/div[3]/div/div/h3/strong    ${活动名称}

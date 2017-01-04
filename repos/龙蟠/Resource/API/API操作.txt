@@ -1,0 +1,327 @@
+*** Settings ***
+Library           Selenium2Library
+Resource          ../配置参数.robot
+Resource          ../功能菜单.robot
+Library           Selenium2Library
+Library           String
+Library           Collections
+Library           RequestsLibrary
+Library           json
+Library           Collections
+Resource          Common.txt
+Resource          营销.txt
+Resource          商品.txt
+Resource          会员.txt
+Library           OperatingSystem
+Resource          订单.txt
+Resource          分店.txt
+
+*** Keywords ***
+获取一个随机商品
+    ${errmsg}    商品.商品列表
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${list}    Get Length    ${data}
+    ${rand}    Evaluate    random.randint(1,${list})    random
+    ${rand_product}    Set Variable    ${data[${rand}]}
+    [Return]    ${rand_product}
+
+获取一个特定条件商品
+    [Arguments]    ${reserves}=${1}    ${status}=1    ${quota}=0
+    [Documentation]    注：默认获取库存大于0的商品，并已上架的商品
+    ...    ${status}为商品状态：1为开启状态，2为关闭状态
+    ...    ${reserves}为库存数量
+    ...    ${quota}为商品每人限制购买数量,0为不限制数量
+    ${errmsg}    商品.商品列表
+    ${data}    Get From Dictionary    ${errmsg}    data
+    : FOR    ${product}    IN    @{data}
+    \    ${id}    Get From Dictionary    ${product}    id
+    \    ${reserves_api}    Get From Dictionary    ${product}    reserves
+    \    ${status_api}    Get From Dictionary    ${product}    status
+    \    ${quota_api}    Get From Dictionary    ${product}    quota
+    \    Run Keyword If    ${quota}==0    Exit For Loop If    ${reserves_api}>=${reserves} and ${status_api}==${status} and ${quota_api}==${quota}
+    \    ...    ELSE    Exit For Loop If    ${reserves_api}>=${reserves} and ${status_api}==${status} and ${quota_api}>=${quota}
+    ##查找结果判断
+    ${flag}    Run Keyword If    ${quota}==0    Evaluate    ${reserves_api}>=${reserves} and ${status_api}==${status} and ${quota_api}==${quota}
+    ...    ELSE    Evaluate    ${reserves_api}>=${reserves} and ${status_api}==${status} and ${quota_api}>=${quota}
+    Run Keyword If    ${flag}==False    Fail    分页第1页未找到符合条件的商品！
+    Log    找到符合条件的商品！
+    [Return]    ${product}
+
+添加一个商品
+    [Arguments]    ${上架}=False    ${产品名称}=随机    ${价格}=随机    ${限额}=3
+    ${产品名称}    Run Keyword If    '${产品名称}'=='随机'    随机字符    【测试商品】    12
+    ...    ELSE    Set Variable    ${产品名称}
+    ${价格}    Run Keyword If    '${价格}'=='随机'    随机价格
+    ...    ELSE    Set Variable    ${价格}
+    ${销量}    Evaluate    random.randint(10,10000)    random
+    ${库存}    Evaluate    random.randint(100,5000)    random
+    ${条形码1}    随机数字    8
+    ${条形码2}    随机数字    8
+    ###
+    ${args}=    Set Variable If    '${GLOBAL_ENV}'=='beta'    {"productInfo":{"detail_pic":"504883,504865,","detail":"<p>Beta-YT的测试商品介绍。。。</p>"},"product":{"product_type":1,"name":"${产品名称}","sales":"${销量}","covers_id":504883,"quota":"${限额}","sort":"0","sale_scope":"1","product_category_id":33694,"product_category_path":"/33691/33694/","status":2,"postage_fee_type":0,"product_kind_ids":"205477;","show_sale_num":2,"prod_weight":"200"},"shareMessage":{"desc":"优惠多多,欢迎选购","title":"${产品名称}","file_cdn_path":"http://imgcache.vikduo.com/static/2a32cbf5f166995eb5dbfca47e4de0ca.png","pic_id":504883},"kindBody":[{"firstName":"50g","firstRowSpan":1,"firstShow":true,"id":"50g","status":false},{"firstName":"150g","firstRowSpan":1,"firstShow":true,"id":"150g","status":false}],"skus":[{"status":1,"reserves":${库存},"market_price":"18","retail_price":"${价格}","sku_no":"T000101","barcode":"${条形码1}","sales":0,"name":"${产品名称}","kind_value_ids":[846106],"kind_ids":[205477]},{"status":1,"reserves":300,"market_price":"26","retail_price":"${价格}","sku_no":"T000102","barcode":"${条形码2}","sales":0,"name":"${产品名称}","kind_value_ids":[846108],"kind_ids":[205477]}]}    '${GLOBAL_ENV}'=='ci'    {"productInfo":{"detail_pic":"733566,1054457,","detail":"<p>测试商品CI的详情。。。</p>"},"product":{"product_type":1,"name":"${产品名称}","sales":"${销量}","covers_id":733566,"quota":"5","sort":"0","sale_scope":"1","product_category_id":65,"product_category_path":"/86/7/","status":2,"postage_fee_type":"5500","product_kind_ids":"208520;","show_sale_num":2,"prod_weight":"280"},"shareMessage":{"desc":"优惠多多,欢迎选购","title":"${产品名称}","file_cdn_path":"http://imgcache.vikduo.com/static/bc9eebfe94619d95b3b9a226f0c24506.jpg","pic_id":1054457},"kindBody":[{"firstName":"500ml","firstRowSpan":1,"firstShow":true,"id":"500ml","status":false},{"firstName":"180ml","firstRowSpan":1,"firstShow":true,"id":"180ml","status":false}],"skus":[{"status":1,"reserves":${库存},"market_price":"128","retail_price":"${价格}","sku_no":"T0010001","barcode":"${条形码1}","sales":0,"name":"${产品名称}","kind_value_ids":[971511],"kind_ids":[208520]},{"status":1,"reserves":200,"market_price":"88","retail_price":"${价格}","sku_no":"T0010001","barcode":"${条形码2}","sales":0,"name":"${产品名称}","kind_value_ids":[988075],"kind_ids":[208520]}]}    '${GLOBAL_ENV}'=='auto'
+    ...    {"productInfo":{"detail_pic":"504987,504986,","detail":"<p>Auto:测试商品描述。。。</p>"},"product":{"product_type":1,"name":"${产品名称}","sales":"${销量}","covers_id":504987,"quota":"${限额}","sort":"0","sale_scope":"1","product_category_id":36717,"product_category_path":"/36717/","status":2,"postage_fee_type":0,"product_kind_ids":"243720;","show_sale_num":2,"prod_weight":"200"},"shareMessage":{"desc":"优惠多多,欢迎选购","title":"${产品名称}","file_cdn_path":"http://imgcache.vikduo.com/static/f5dd9217f985e4796717e33e41aabc1d.png","pic_id":504987},"kindBody":[{"firstName":"100g","firstRowSpan":1,"firstShow":true,"id":"100g","status":false},{"firstName":"200g","firstRowSpan":1,"firstShow":true,"id":"200g","status":false}],"skus":[{"status":1,"reserves":${库存},"market_price":"99","retail_price":"${价格}","sku_no":"T00001","barcode":"${条形码1}","sales":0,"name":"${产品名称}","kind_value_ids":[944670],"kind_ids":[243720]},{"status":1,"reserves":${库存},"market_price":"198","retail_price":"${价格}","sku_no":"T00002","barcode":"${条形码2}","sales":0,"name":"${产品名称}","kind_value_ids":[944671],"kind_ids":[243720]}]}    '${GLOBAL_ENV}'=='test'    {"productInfo":{"detail_pic":"504123,","detail":"<p>Test环境测试商品介绍。。。</p>"},"product":{"product_type":1,"name":"${产品名称}","sales":"${销量}","covers_id":504123,"quota":"${限额}","sort":"0","sale_scope":"1","product_category_id":52,"product_category_path":"/86/5/","status":2,"postage_fee_type":0,"product_kind_ids":"242557;","show_sale_num":2,"prod_weight":"128"},"shareMessage":{"desc":"优惠多多,欢迎选购","title":"${产品名称}","file_cdn_path":"http://imgcache.vikduo.com/static/8fc81b1c0c17dcfef440bfe4d5fbd804.jpg","pic_id":504123},"kindBody":[{"firstName":"M","firstRowSpan":1,"firstShow":true,"id":"M","status":false},{"firstName":"S","firstRowSpan":1,"firstShow":true,"id":"S","status":false}],"skus":[{"status":1,"reserves":${库存},"market_price":"128","retail_price":"${价格}","sku_no":"T0000006","barcode":"${条形码1}","sales":0,"name":"${产品名称}","kind_value_ids":[943490],"kind_ids":[242557]},{"status":1,"reserves":${库存},"market_price":"128","retail_price":"${价格}","sku_no":"T0000006","barcode":"${条形码2}","sales":0,"name":"${产品名称}","kind_value_ids":[943489],"kind_ids":[242557]}]}
+    ${errmsg}    商品.添加商品    ${args}
+    ${product}    Get From Dictionary    ${errmsg}    product
+    ${id}    Get From Dictionary    ${product}    id
+    Run Keyword If    ${上架}==True    商品.商品上架    ${id}
+    Run Keyword If    ${上架}==True    Log    上架成功!
+    ...    ELSE    Log    添加成功,未上架
+    #
+    [Return]    ${errmsg}
+
+获取会员优惠信息
+    [Arguments]    ${id}
+    ${errmsg}    会员.会员详情    ${id}
+    ${user_info}    会员.客户详情    ${GLOBAL_CONFIG.user_id}
+    ####返回信息拆解
+    ${member_no}    Get From Dictionary    ${errmsg}    member_no
+    ${wxUserInfos}    Get From Dictionary    ${errmsg}    wxUserInfos
+    ${memberGrade}    Get From Dictionary    ${errmsg}    memberGrade
+    ${memberGroup}    Get From Dictionary    ${errmsg}    memberGroup
+    ${shopAgent}    Get From Dictionary    ${wxUserInfos}    shopAgent
+    ${shopAgent_len}    Get Length    ${shopAgent}
+    ${shopInfo}    Get From Dictionary    ${wxUserInfos}    shopInfo
+    ${shopInfo_len}    Get Length    ${shopInfo}
+    ${belongStaff}    Get From Dictionary    ${wxUserInfos}    belongStaff
+    ${belongStaff_len}    Get Length    ${belongStaff}
+    ${belongToFxMember}    Get From Dictionary    ${wxUserInfos}    belongToFxMember
+    ${belongToFxMember_len}    Get Length    ${belongToFxMember}
+    ${memberCardActivate}    Get From Dictionary    ${errmsg}    memberCardActivate    #会员卡信息
+    ####优惠信息
+    ${优惠信息}    Create Dictionary
+    ${会员卡编号_API}    Get From Dictionary    ${errmsg}    member_no
+    ${会员卡状态_API}    Get From Dictionary    ${errmsg}    member_card_activate_id
+    ${会员卡状态_API}    Set Variable If    ${会员卡状态_API}==1    正常    ${会员卡状态_API}==2    禁止
+    ${会员等级_API}    Get From Dictionary    ${memberGrade}    name
+    ${会员成长值_API}    Get From Dictionary    ${errmsg}    growth
+    ${会员折扣_API}    Get From Dictionary    ${memberGrade}    discount    #返回值是10倍
+    ${会员折扣_API}    Evaluate    ${会员折扣_API}*0.1
+    ${账户积分_API}    Get From Dictionary    ${wxUserInfos}    point
+    ${卡券列表_API_str}    Get From Dictionary    ${memberCardActivate}    gift_card_ids
+    ${卡券列表_API}    Evaluate    list(${卡券列表_API_str})    \    #转换为list
+    ${红包数量}    Get From Dictionary    ${user_info}    redpack
+    Set To Dictionary    ${优惠信息}    折扣=${会员折扣_API}    积分=${账户积分_API}    卡券=${卡券列表_API}    红包数量=${红包数量}
+    [Return]    ${优惠信息}
+
+获取一个特定条件卡券
+    [Arguments]    ${stock}=0
+    [Documentation]    注：默认获取库存大于0的商品，并已上架的商品
+    ...    ${status}为商品状态：1为开启状态，2为关闭状态
+    ...    ${reserves}为库存数量
+    ...    ${quota}为商品每人限制购买数量,0为不限制数量
+    ${errmsg}    营销.获取卡券列表
+    ${data}    Get From Dictionary    ${errmsg}    data
+    : FOR    ${card}    IN    @{data}
+    \    ${id}    Get From Dictionary    ${card}    id
+    \    ${stock_api}    Get From Dictionary    ${card}    stock
+    \    Run Keyword If    ${stock_api}>=${stock}    Exit For Loop
+    ##查找结果判断
+    ${flag}    Evaluate    ${stock_api}>=${stock}
+    Run Keyword If    ${flag}==False    Fail    分页第1页未找到符合条件的卡券！
+    Log    找到符合条件的卡券！
+    [Return]    ${card}
+
+添加并派发一张卡券
+    [Arguments]    ${User_ID}
+    ###添加卡券
+    ${title}    随机字符    【测试卡券】    12
+    ${quantity}    Evaluate    random.randint(20,500)    random
+    ${args}    Set Variable    {"brand_name":"【测试商户】","title":"${title}","logo_url":"http://imgcache.vikduo.com/static/1b6549eaca4feeaf27fab34e16b84e2b.jpg","color":"#55bd47","date_info_type":2,"begin":0,"end":1,"quantity":"${quantity}","get_limit":"10","can_give_friend":2,"code_type":"1","notice":"这是引导提示信息！","description":"这是使用须知介绍。。。","service_phone":"13924628477","card_type":1,"assign":-1,"wx_card_type":1,"card_money":500,"money_limit":800,"card_discount":0,"exchange_content_text":"","product_ids":"","deal_detail":"价值5元代金券1张，全场满8元可用"}
+    ${errmsg}    营销.添加卡券    ${args}
+    ${card_id}    Get From Dictionary    ${errmsg}    id
+    ###
+    ${errmsg}    营销.手动派发卡券    ${User_ID}    ${card_id}
+
+获取指定价格下可用卡券数量
+    [Arguments]    ${order_id}    ${price}
+    [Documentation]    说明：获取指定价格下可用卡券数量
+    ...
+    ...    返回值为None则无可用卡券，正常返回一个卡券列表
+    ...
+    ...    参数：
+    ...
+    ...    order_id: 订单ID
+    ...
+    ...    price: 订单价格（去除满减及会员折扣优惠后的价格）
+    ${errmsg}    WX_订单可用卡券    ${order_id}
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${len}    Get Length    ${data}
+    ${price}    Evaluate    ${price}*100
+    ${cards}    Run Keyword If    ${len}!=0    _获取指定价格下可用卡券数量_loop    ${data}    ${price}
+    ...    ELSE    Create List
+    #
+    [Return]    ${cards}
+
+_获取指定价格下可用卡券数量_loop
+    [Arguments]    ${data}    ${price}
+    ${cards}    Create List
+    : FOR    ${card}    IN    @{data}
+    \    ${money_limit}    Get From Dictionary    ${card}    money_limit
+    \    Run Keyword If    ${money_limit}<=${price}    Append To List    ${cards}    ${card}
+    Log    ${cards}
+    #
+    [Return]    ${cards}
+
+添加一个满减活动
+    [Arguments]    ${开启}=1    ${满}=20    ${减}=2    ${不封顶}=1
+    [Documentation]    返回值：活动ID
+    ...
+    ...    <参数说明>：
+    ...
+    ...    ${开启}=1默认值添加后并开启活动，其它值不开启；
+    ...
+    ...    ${满}：即满足订单的金额要求 如：20
+    ...
+    ...    ${减}：达到金额要求后的减额，如：2
+    ...
+    ...    ${不封顶}：默认值1不封顶，其它值只减额一次
+    ${name}    随机字符    满减测试
+    ${start_time}    Get Time    epoch
+    ${start_time}    Evaluate    ${start_time}-(60*10)
+    ${end_time}    Evaluate    ${start_time}+(3600*5)
+    ${满}    Evaluate    ${满}*100
+    ${减}    Evaluate    ${减}*100
+    ${params_json}    Set Variable    {"name":"${name}","is_relate_all":1,"start_time":${start_time},"end_time":${end_time},"conditions":[{"condition_type":1,"level":1,"condition_min":${满},"strategys":[{"reduction_type":1,"amount":${减},"discount":"","point":"","card_type_id":"","red_packet_id":"","is_all_area":1,"area_id":"","area_cn":"","is_limit":${不封顶}}]}],"products":[]}
+    #
+    ${errmsg}    添加满减活动    ${params_json}
+    ${id}    Get From Dictionary    ${errmsg}    id
+    Run Keyword If    ${开启}==1    开启满减活动    ${id}
+    Log    成功添加并开启一个满减活动。。。
+    #
+    [Return]    ${id}
+
+检测并关闭开启的满减活动
+    ${errmsg}    满减活动列表
+    ${data}    Get From Dictionary    ${errmsg}    data
+    : FOR    ${each}    IN    @{data}
+    \    ${deleted}    Get From Dictionary    ${each}    deleted
+    \    ${id}    Get From Dictionary    ${each}    id
+    \    ${reduction_id}    Set Variable If    ${deleted}==1    ${id}    None
+    \    Exit For Loop If    ${deleted}==1
+    Run Keyword If    ${reduction_id}!=None    关闭满减活动    ${reduction_id}
+
+创建一个订单并支付
+    [Arguments]    ${分店模式}=0
+    #添加商品
+    ${product_resp}    添加一个商品    上架=True
+    ${product}    Get From Dictionary    ${product_resp}    product
+    ${product_id}    Get From Dictionary    ${product}    id
+    #${errmsg}    商品详情    ${id}
+    ${product_name}    Get From Dictionary    ${product}    name
+    ${skus}    Get From Dictionary    ${product_resp}    skus
+    ${sku_id}    Get From Dictionary    ${skus[0]}    id
+    #分店模式
+    Run Keyword If    ${分店模式}==1    开启分店模式
+    ...    ELSE    关闭分店模式
+    Run Keyword If    ${分店模式}==1    分店商品激活    ${product_id}    ${GLOBAL_CONFIG.shop_sub_id}
+    #创建订单
+    ${order_resp}    WX_创建普通订单    ${product_id}    ${sku_id}
+    ${order}    Get From Dictionary    ${order_resp}    order
+    ${order_id}    Get From Dictionary    ${order}    id
+    ${errmsg}    订单详情    ${order_id}
+    #解析订单数据
+    ${order_id}    Get From Dictionary    ${errmsg}    id
+    ${pay_type}    Evaluate    3
+    ${amount}    Set Variable    Todo...
+    ${r_points}    Get From Dictionary    ${errmsg}    r_points
+    ${customer_mark}    Get From Dictionary    ${errmsg}    customer_mark
+    #
+    ${net_weight_key}    Convert To String    orderDetails[0][kinds][总净含量]
+    ${orderDetails}    Get From Dictionary    ${errmsg}    orderDetails
+    ${orderDetails_id}    Get From Dictionary    ${orderDetails[0]}    id
+    ${product_id}    Get From Dictionary    ${orderDetails[0]}    product_id
+    ${product_name}    Get From Dictionary    ${orderDetails[0]}    product_name
+    ${product_sku_id}    Get From Dictionary    ${orderDetails[0]}    product_sku_id
+    ${product_sku_name}    Get From Dictionary    ${orderDetails[0]}    product_sku_name
+    ${price}    Get From Dictionary    ${orderDetails[0]}    price
+    ${cost_price}    Get From Dictionary    ${orderDetails[0]}    cost_price
+    ${reduction_discount}    Get From Dictionary    ${orderDetails[0]}    reduction_discount
+    ${reduction_content}    Get From Dictionary    ${orderDetails[0]}    reduction_content
+    ${member_discount_num}    Get From Dictionary    ${orderDetails[0]}    member_discount_num
+    ${num}    Get From Dictionary    ${orderDetails[0]}    num
+    ${prod_weight}    Get From Dictionary    ${orderDetails[0]}    prod_weight
+    ${product_img}    Get From Dictionary    ${orderDetails[0]}    product_img
+    #
+    ${kinds}    Get From Dictionary    ${orderDetails[0]}    kinds
+    #${net_weight}    Get From Dictionary    ${kinds}    总净含量
+    ${shop_id}    Get From Dictionary    ${orderDetails[0]}    shop_id
+    ${shop_sub_id}    Get From Dictionary    ${orderDetails[0]}    shop_sub_id
+    ${barcode}    Get From Dictionary    ${orderDetails[0]}    barcode
+    ${sku_no}    Get From Dictionary    ${orderDetails[0]}    sku_no
+    ${comment_status}    Get From Dictionary    ${orderDetails[0]}    comment_status
+    ${postage_fee_type}    Get From Dictionary    ${orderDetails[0]}    postage_fee_type
+    ${created}    Get From Dictionary    ${orderDetails[0]}    created
+    ${modified}    Get From Dictionary    ${orderDetails[0]}    modified
+    ${policy_type}    Get From Dictionary    ${orderDetails[0]}    policy_type
+    ${policy_value}    Get From Dictionary    ${orderDetails[0]}    policy_value
+    ${brokerage}    Get From Dictionary    ${orderDetails[0]}    brokerage
+    ${policy_level_id}    Get From Dictionary    ${orderDetails[0]}    policy_level_id
+    #
+    ${productImg}    Get From Dictionary    ${orderDetails[0]}    productImg
+    ${img_id}    Get From Dictionary    ${productImg}    id
+    ${img_name}    Get From Dictionary    ${productImg}    name
+    ${img_desc}    Get From Dictionary    ${productImg}    desc
+    ${img_category_id}    Get From Dictionary    ${productImg}    category_id
+    ${img_tag_id}    Get From Dictionary    ${productImg}    tag_id
+    ${file_cdn_path}    Get From Dictionary    ${productImg}    file_cdn_path
+    ${file_type}    Get From Dictionary    ${productImg}    file_type
+    ${img_shop_id}    Get From Dictionary    ${productImg}    shop_id
+    ${img_shop_sub_id}    Get From Dictionary    ${productImg}    shop_sub_id
+    ${img_created}    Get From Dictionary    ${productImg}    created
+    ${img_modified}    Get From Dictionary    ${productImg}    modified
+    ${img_deleted}    Get From Dictionary    ${productImg}    deleted
+    ${can_use_member_discount}    Get From Dictionary    ${orderDetails[0]}    can_use_member_discount
+    #订单支付
+    ${args}    Create Dictionary
+    ${data}    Create Dictionary
+    Set To Dictionary    ${args}    id=${order_id}    orderPayInfo[0][pay_type]=${pay_type}    orderPayInfo[0][amount]=${amount}    orderDetails[0][id]=${orderDetails_id}    orderDetails[0][order_id]=${order_id}
+    ...    orderDetails[0][product_id]=${product_id}
+    Set To Dictionary    ${args}    orderDetails[0][product_name]=${product_name}    orderDetails[0][product_sku_id]=${product_sku_id}    orderDetails[0][product_sku_name]=${product_sku_name}    orderDetails[0][price]=${price}    orderDetails[0][cost_price]=${cost_price}
+    Set To Dictionary    ${args}    orderDetails[0][reduction_discount]=${reduction_discount}    orderDetails[0][reduction_content]=${reduction_content}    orderDetails[0][member_discount_num]=${member_discount_num}    orderDetails[0][num]=${num}    orderDetails[0][prod_weight]=${prod_weight}
+    Set To Dictionary    ${args}    orderDetails[0][product_img]=${product_img}    orderDetails[0][shop_id]=${shop_id}    orderDetails[0][shop_sub_id]=${shop_sub_id}    orderDetails[0][barcode]=${barcode}    #orderDetails[0][kinds][总净含量]=${net_weight}
+    Set To Dictionary    ${args}    orderDetails[0][sku_no]=${sku_no}    orderDetails[0][comment_status]=${comment_status}    orderDetails[0][postage_fee_type]=${postage_fee_type}    orderDetails[0][created]=${created}    orderDetails[0][modified]=${modified}
+    Set To Dictionary    ${args}    orderDetails[0][policy_type]=${policy_type}    orderDetails[0][policy_value]=${policy_value}    orderDetails[0][brokerage]=${brokerage}    orderDetails[0][policy_level_id]=${policy_level_id}
+    Set To Dictionary    ${args}    orderDetails[0][productImg][id]=${img_id}    orderDetails[0][productImg][name]=${img_name}    orderDetails[0][productImg][desc]=${img_desc}    orderDetails[0][productImg][category_id]=${img_category_id}    orderDetails[0][productImg][tag_id]=${img_tag_id}
+    Set To Dictionary    ${args}    orderDetails[0][productImg][file_cdn_path]=${file_cdn_path}    orderDetails[0][productImg][file_type]=${file_type}    orderDetails[0][productImg][shop_id]=${img_shop_id}    orderDetails[0][productImg][shop_sub_id]=${img_shop_sub_id}    orderDetails[0][productImg][created]=${img_created}
+    Set To Dictionary    ${args}    orderDetails[0][productImg][modified]=${img_modified}    orderDetails[0][productImg][deleted]=${img_deleted}    orderDetails[0][can_use_member_discount]=${can_use_member_discount}
+    Set To Dictionary    ${args}    r_points=${r_points}    customer_mark=${customer_mark}    member_discount=1
+    #Log    Args: ${args}
+    ${errmsg}    订单支付    ${args}
+    Log    【状态】：订单已支付，待发货...
+    ${infos}    Create Dictionary    product_id=${product_id}    product_name=${product_name}    order_id=${order_id}    args=${args}
+    [Return]    ${infos}
+
+创建一个订单
+    [Arguments]    ${分店模式}=0
+    #添加商品
+    ${product_resp}    添加一个商品    上架=True
+    ${product}    Get From Dictionary    ${product_resp}    product
+    ${product_id}    Get From Dictionary    ${product}    id
+    #${errmsg}    商品详情    ${id}
+    ${product_name}    Get From Dictionary    ${product}    name
+    ${skus}    Get From Dictionary    ${product_resp}    skus
+    ${sku_id}    Get From Dictionary    ${skus[0]}    id
+    #分店模式
+    Run Keyword If    ${分店模式}==1    开启分店模式
+    Run Keyword If    ${分店模式}==1    分店商品激活    ${product_id}    ${GLOBAL_CONFIG.shop_sub_id}
+    #商品详情
+    #创建订单
+    ${order_resp}    WX_创建普通订单    ${product_id}    ${sku_id}
+    ${order}    Get From Dictionary    ${order_resp}    order
+    ${order_id}    Get From Dictionary    ${order}    id
+    ${errmsg}    订单详情    ${order_id}
+    #解析订单数据
+    ${infos}    Create Dictionary    product_id=${product_id}    product_name=${product_name}    order_id=${order_id}
+    [Return]    ${infos}
+
+客户优惠信息
+    [Arguments]    ${user_id}
+    [Documentation]    获取用户可用的红包卡券及积分数
+    ${user_info}    会员.客户详情    ${user_id}
+    ${model}    Get From Dictionary    ${user_info}    model
+    ${红包}    Get From Dictionary    ${user_info}    redpack
+    ${卡券}    Get From Dictionary    ${user_info}    card
+    ${积分}    Get From Dictionary    ${model}    point
+    ${优惠信息}    Create Dictionary
+    Set To Dictionary    ${优惠信息}    红包=${红包}    卡券=${卡券}    积分=${积分}
+    [Return]    ${优惠信息}

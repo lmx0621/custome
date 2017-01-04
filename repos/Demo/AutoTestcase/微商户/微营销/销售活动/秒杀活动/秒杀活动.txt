@@ -1,0 +1,43 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Setup        进入子菜单
+Resource          ../../../公共库/操作接口.txt
+
+*** Test Cases ***
+秒杀活动页面
+    page should contain link    添加活动
+    page should contain link    首页
+    page should contain link    末页
+    page should contain link    «
+    page should contain link    »
+    page should contain link    2
+    page should contain element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[4]/ul[2]/li[1]/span/input
+    table header should contain    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table    活动单元名称
+    table header should contain    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table    活动类型
+    table header should contain    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table    关联商品数
+    table header should contain    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table    开始时间
+    table header should contain    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table    结束时间
+    table header should contain    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table    状态
+    table header should contain    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table    操作
+    table header should contain    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/table    活动单元名称
+
+添加活动
+    click link    link=添加活动
+    clear element text    name=title
+    press key    name=title    自动化秒杀测试
+    #click element    jquery=#home > div.col-sm-push-1.col-sm-7 > form > div:nth-child(3) > div > div > a > label
+    click element    xpath=//*[@id="home"]/div[2]/form/div[3]/div/div/a/label/span
+    Sleep    3
+    #click button    id=submitImage
+    #click element    xpath=//*[@id="myTab"]/li[1]/a
+    click image    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li[1]/a/img
+    click element    id=submitImage
+    Sleep    1
+    click element    id=btnConfirm
+    Sleep    3
+
+*** Keywords ***
+进入子菜单
+    click link    link=微营销
+    click link    link=秒杀活动

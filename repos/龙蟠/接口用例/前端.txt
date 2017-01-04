@@ -1,0 +1,154 @@
+*** Settings ***
+Suite Setup       微信登录
+Library           RequestsLibrary
+Resource          ../Resource/API/Common.txt
+Resource          ../Resource/配置参数.robot
+Library           String
+Library           json
+Library           Collections
+Resource          ../Resource/常用操作.robot
+Resource          ../Resource/API/前端/营销.txt
+Resource          ../Resource/API/API操作.txt
+
+*** Test Cases ***
+创建普通订单
+    [Tags]
+    #############
+    &{data}=    Create Dictionary    products[0][id]=265190    products[0][sku_id]=1098428    products[0][num]=1    pickup_type=1    #shop_id=97320
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    ${resp}    Post Request    wsh    /weishanghuzhushou/order/order-add-ajax    data=${data}    headers=${headers}
+    Log    Response:${resp.content}
+    #
+
+订单可用卡券
+    ${errmsg}    WX_订单可用卡券
+    ${data}    Get From Dictionary    ${errmsg}    data
+    ${len}    Get Length    ${data}
+
+获取指定价格可用卡券
+    ${cards}    获取指定价格下可用卡券数量    100
+    ${len}    Get Length    ${cards}
+
+*** Keywords ***
+获取微信用户ID
+    微信登录
+    ${resp}    Post Request    wsh    /members/list-ajax
+    ${预期返回码}    Set Variable    0
+    Log    Response:${resp.content}
+    ${会员列表响应}    loads    ${resp.content}
+    ${返回码}    Get From Dictionary    ${会员列表响应}    errcode
+    Log    errcode is:${返回码}
+    Should Be Equal As Strings    ${返回码}    ${预期返回码}
+    ${返回码信息}    Get From Dictionary    ${会员列表响应}    errmsg
+    ${列表数据}    Get From Dictionary    ${返回码信息}    data
+    ${会员列表数量}    Get Length    ${列表数据}
+    ${随机选择一个会员}    Evaluate    random.randint(1,${会员列表数量})    random
+    ${获取会员内容}    Get From List    ${列表数据}    ${随机选择一个会员}
+    ${获取微信内容信息}    Get From Dictionary    ${获取会员内容}    wxUserInfos
+    ${获取用户ID}    Get From Dictionary    ${获取微信内容信息}    id
+    log    ${获取用户ID}
+    [Return]    ${获取用户ID}
+
+创建普通订单
+    微信登录
+    #############
+    &{data}=    Create Dictionary    products[0][id]=265190    products[0][sku_id]=1098428    products[0][num]=1    pickup_type=1    #shop_id=97320
+    &{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    ${resp}    Post Request    wsh    /weishanghuzhushou/order/order-add-ajax    data=${data}    headers=${headers}
+    Log    Response:${resp.content}
+
+获取商品信息
+    ${resp}    Post Request    wsh    /product/list-ajax
+    ${预期返回码}    Set Variable    0
+    Log    Response:${resp.content}
+    ${商品列表响应}    loads    ${resp.content}
+    ${返回码}    Get From Dictionary    ${商品列表响应}    errcode
+    Log    errcode is:${返回码}
+    Should Be Equal As Strings    ${返回码}    ${预期返回码}
+    ${返回码信息}    Get From Dictionary    ${商品列表响应}    errmsg
+    ${列表数据}    Get From Dictionary    ${返回码信息}    data
+    ${商品列表数量}    Get Length    ${列表数据}
+    ${随机选择一个商品}    Evaluate    random.randint(1,${商品列表数量})    random
+    ${获取商品内容}    Get From List    ${列表数据}    ${随机选择一个商品}
+    ${获取产品SKU数组}    Get From Dictionary    ${获取商品内容}    productSkus
+    ${获取产品SKU}    Get From List    ${获取产品SKU数组}    0
+    LOG    ${获取产品SKU}
+    [Return]    ${获取产品SKU}
+
+订单详情
+    [Arguments]    ${订单状态}=0    #####${订单状态}=0全部订单    ${订单状态}=1待付款订单    ${订单状态}=2待发货订单    ${订单状态}=3待收货订单    ${订单状态}=4已完成订单
+    ...    # ${订单状态}=5售后订单    ${订单状态}=6已关闭订单    # 默认全部订单
+    #####获取待收货订单信息
+    &{headers}=    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    &{data}=    Create Dictionary    _status=${订单状态}    after_sales_status=2
+    ${resp}    Post Request    wsh    /order/list-ajax    data=${data}    headers=${headers}
+    ${预期返回码}    Set Variable    0
+    Log    Response:${resp.content}
+    ${商品订单列表响应}    loads    ${resp.content}
+    ${返回码}    Get From Dictionary    ${商品订单列表响应}    errcode
+    Log    errcode is:${返回码}
+    Should Be Equal As Strings    ${返回码}    ${预期返回码}
+    ${返回码信息}    Get From Dictionary    ${商品订单列表响应}    errmsg
+    ${列表数据}    Get From Dictionary    ${返回码信息}    data
+    ${商品订单列表数量}    Get Length    ${列表数据}
+    ##随机选择一个订单获取信息
+    ${数组下标}    Evaluate    int(${商品订单列表数量}-1)
+    ${随机选择一个订单}    Evaluate    random.randint(1,${数组下标})    random
+    ${获取订单内容}    Get From List    ${列表数据}    ${随机选择一个订单}
+    log    ${获取订单内容}
+    ##获取订单相关信息
+    ${订单号}    Get From Dictionary    ${获取订单内容}    order_no
+    ${微信昵称}    Get From Dictionary    ${获取订单内容}    user_name
+    ${商品总金额}    Get From Dictionary    ${获取订单内容}    total_price
+    ${应付金额}    Get From Dictionary    ${获取订单内容}    should_pay
+    ${实付金额}    Get From Dictionary    ${获取订单内容}    payed
+    ${订单状态}    Get From Dictionary    ${获取订单内容}    order_status
+    ${订单类型}    Get From Dictionary    ${获取订单内容}    order_type
+    ${支付时间}    Get From Dictionary    ${获取订单内容}    pay_time
+    ${时间戳}    Get From Dictionary    ${获取订单内容}    created
+    ${创建订单时间}    Get Time    \    ${时间戳}
+    ${配送方式}    Get From Dictionary    ${获取订单内容}    pickup_type    ####pickup_type=1 \ 快递配送    pickup_type=2 到店自提
+    ${提货码}    Get From Dictionary    ${获取订单内容}    pickup_code
+    ########
+    ${订单详情数据0}    Get From Dictionary    ${获取订单内容}    orderDetails
+    ${订单详情数据}    Get From List    ${订单详情数据0}    0
+    log    ${订单详情数据}
+    ${订单详情id}    Get From Dictionary    ${订单详情数据}    id
+    ${订单id号}    Get From Dictionary    ${订单详情数据}    order_id
+    ${商品id号}    Get From Dictionary    ${订单详情数据}    product_id
+    ${商品名称}    Get From Dictionary    ${订单详情数据}    product_name
+    ${商品sku_id号}    Get From Dictionary    ${订单详情数据}    product_sku_id
+    ${商品sku名称}    Get From Dictionary    ${订单详情数据}    product_sku_name
+    ${商品金额}    Get From Dictionary    ${订单详情数据}    price
+    ${商品数量}    Get From Dictionary    ${订单详情数据}    num
+    ####用户信息
+    ${用户详情}    Get From Dictionary    ${获取订单内容}    wxUserInfos
+    ${用户id}    Get From Dictionary    ${用户详情}    id
+    [Return]    ${用户id}    ${提货码}    ${订单id号}    ${配送方式}
+
+收货（快递配送）
+    [Arguments]    ${用户id}    ${订单id号}
+    微信登录    ${用户id}
+    &{data1}=    Create Dictionary    order_id=${订单id号}
+    &{headers1}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    ${resp}    Post Request    wsh1    /weishanghuzhushou/order/take-over-ajax    data=${data1}    headers=${headers1}
+    ${预期返回码}    Set Variable    0
+    Log    Response:${resp.content}
+    ${会员列表响应}    loads    ${resp.content}
+    ${返回码}    Get From Dictionary    ${会员列表响应}    errcode
+    Log    errcode is:${返回码}
+    Should Be Equal As Strings    ${返回码}    ${预期返回码}
+    LOG    收货成功
+
+收货（到店自提）
+    [Arguments]    ${订单ID}    ${提货码}
+    &{data}=    Create Dictionary    id=${订单ID}    pickup_code=${提货码}
+    &{headers}=    Create Dictionary    Content-Type=application/json    charset=UTF-8
+    ${resp}    Post Request    wsh    /order/staff-confirm-receipt    data=${data}    headers=${headers}
+    ${预期返回码}    Set Variable    0
+    Log    Response:${resp.content}
+    ${会员列表响应}    loads    ${resp.content}
+    ${返回码}    Get From Dictionary    ${会员列表响应}    errcode
+    Log    errcode is:${返回码}
+    Should Be Equal As Strings    ${返回码}    ${预期返回码}
+    LOG    收货成功

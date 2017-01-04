@@ -1,0 +1,342 @@
+*** Settings ***
+Documentation     商品分类无分页
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Library           Selenium2Library
+Resource          ../../../Resource/常用操作.robot
+Resource          ../../../Resource/功能菜单.robot
+Resource          ../../../Resource/配置参数.robot
+Library           AutoItLibrary
+Resource          ../../../Resource/API.robot
+
+*** Test Cases ***
+新增一条普通订单
+    [Setup]    点击链接菜单    微店铺
+    #统计未添加订单前订单总数
+    点击链接菜单    所有订单
+    ${全部订单总数}    获取列表总数    0
+    log    ${全部订单总数}
+    ${全部订单总数加1}    Evaluate    int(${全部订单总数}+1)
+    #统计待付款列表总数
+    Click Element    xpath=//*[@id="myTab"]/li[2]/a
+    Wait Until Page Contains    订单号
+    sleep    1
+    ${待付款订单总数}    获取列表总数    1
+    ${待付款订单总数加1}    Evaluate    int(${待付款订单总数}+1)
+    ####创建订单
+    ${返回响应}    订单_创建普通订单
+    ${订单信息}    Get From Dictionary    ${返回响应}    order
+    ${订单号}    Get From Dictionary    ${订单信息}    order_no
+    ${下单时间戳}    Get From Dictionary    ${订单信息}    created
+    ${下单时间}    Get Time    \    ${下单时间戳}
+    ${should_pay}    Get From Dictionary    ${订单信息}    should_pay
+    ${应付金额}    Evaluate    ${should_pay}/float(100)
+    ${order_status}    Get From Dictionary    ${订单信息}    order_status
+    ${订单状态}    Run Keyword If    ${order_status}==1    Set Variable    待付款
+    ...    ELSE IF    ${order_status}==2    Set Variable    待发货
+    ...    ELSE IF    ${order_status}==3    Set Variable    待收货
+    ...    ELSE IF    ${order_status}==4    Set Variable    已完成
+    ...    ELSE IF    ${order_status}==5    Set Variable    已关闭
+    ...    ELSE    Set Variable    售后中
+    ${微信昵称}    Get From Dictionary    ${订单信息}    user_name
+    ${支付方式}    Set Variable    未支付
+    ${pickup_type}    Get From Dictionary    ${订单信息}    pickup_type
+    ${配送方式}    Run Keyword If    ${pickup_type}==1    Set Variable    快递配送
+    ...    ELSE IF    ${pickup_type}==2    Set Variable    到店自提
+    ...    ELSE    Set Variable    ${EMPTY}
+    ${order_type}    Get From Dictionary    ${订单信息}    order_type
+    ${订单类型}    Run Keyword If    ${order_type}==1    Set Variable    普通订单
+    ...    ELSE IF    ${order_type}==2    Set Variable    秒杀订单
+    ...    ELSE IF    ${order_type}==3    Set Variable    pos收银
+    ...    ELSE IF    ${order_type}==4    Set Variable    pos订单
+    ...    ELSE IF    ${order_type}==5    Set Variable    扫码订单
+    ...    ELSE IF    ${order_type}==5    Set Variable    拼团订单
+    ...    ELSE    Set Variable    积分订单
+    ${orderDelivery}    Get From Dictionary    ${返回响应}    orderDelivery
+    ${收货人}    Get From Dictionary    ${orderDelivery}    consignee
+    ${手机号码}    Get From Dictionary    ${orderDelivery}    tel
+    ##统计添加订单后数据
+    点击链接菜单    所有订单
+    ${添加订单后全部订单总数}    获取列表总数    0
+    #添加订单后待付款列表总数
+    Click Element    xpath=//*[@id="myTab"]/li[2]/a
+    Wait Until Page Contains    订单号
+    sleep    1
+    ${待付款订单总数1}    获取列表总数    1
+    Should Be Equal As Strings    ${添加订单后全部订单总数}    ${全部订单总数加1}
+    Should Be Equal As Strings    ${待付款订单总数1}    ${待付款订单总数加1}
+    sleep    0.5
+    #搜索订单并校验
+    Input Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/div/div/div[1]/div[1]/div[2]/div[1]/input    ${订单号}
+    sleep    0.5
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/div/div/div[1]/div[1]/div[2]/div[7]/a
+    sleep    1
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[2]    ${订单号}
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[3]    ${下单时间}
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[4]    ${应付金额}
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[5]    ${订单状态}
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[6]    ${微信昵称}
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[7]    ${支付方式}
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[8]    ${配送方式}
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[9]    ${收货人}
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[10]    ${手机号码}
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[11]    ${订单类型}
+
+新增一条扫码订单
+    [Setup]    点击链接菜单    微店铺
+    #统计未添加订单前订单总数
+    点击链接菜单    所有订单
+    ${全部订单总数}    获取列表总数    0
+    log    ${全部订单总数}
+    ${全部订单总数加1}    Evaluate    int(${全部订单总数}+1)
+    #统计待付款列表总数
+    Click Element    xpath=//*[@id="myTab"]/li[2]/a
+    Wait Until Page Contains    订单号
+    sleep    1
+    ${待付款订单总数}    获取列表总数    1
+    ${待付款订单总数加1}    Evaluate    int(${待付款订单总数}+1)
+    ####创建订单
+    ${返回响应}    订单_创建扫码订单
+    ${order}    Get From Dictionary    ${返回响应}    order
+    ${id}    Get From Dictionary    ${order}    id
+    #获取订单详情
+    ${返回码信息}    订单_详情    ${id}
+    ##提取订单信息
+    ${订单号}    Get From Dictionary    ${返回码信息}    order_no
+    ${下单时间戳}    Get From Dictionary    ${返回码信息}    created
+    ${下单时间}    Get Time    \    ${下单时间戳}
+    ${应付金额}    Get From Dictionary    ${返回码信息}    should_pay
+    ${order_status}    Get From Dictionary    ${返回码信息}    order_status
+    ${订单状态}    Run Keyword If    ${order_status}==1    Set Variable    待付款
+    ...    ELSE IF    ${order_status}==2    Set Variable    待发货
+    ...    ELSE IF    ${order_status}==3    Set Variable    待收货
+    ...    ELSE IF    ${order_status}==4    Set Variable    已完成
+    ...    ELSE IF    ${order_status}==5    Set Variable    已关闭
+    ...    ELSE    Set Variable    售后中
+    ${微信昵称}    Get From Dictionary    ${返回码信息}    user_name
+    ${支付方式}    Get From Dictionary    ${返回码信息}    orderPayText
+    ${订单类型}    Get From Dictionary    ${返回码信息}    orderTypeText
+    #搜索订单并校验
+    Input Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/div/div/div[1]/div[1]/div[2]/div[1]/input    ${订单号}
+    sleep    0.5
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/div/div/div[1]/div[1]/div[2]/div[7]/a
+    sleep    1
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[2]    ${订单号}
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[3]    ${下单时间}
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[4]    ${应付金额}
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[5]    ${订单状态}
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[6]    ${微信昵称}
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[7]    ${支付方式}
+    字段校验    //div[@ng-show="toggleIndex == 1"]/div/table/tbody/tr[1]/td[11]    ${订单类型}
+    ##统计添加订单后数据
+    点击链接菜单    所有订单
+    ${添加订单后全部订单总数}    获取列表总数    0
+    #添加订单后待付款列表总数
+    Click Element    xpath=//*[@id="myTab"]/li[2]/a
+    Wait Until Page Contains    订单号
+    sleep    1
+    ${待付款订单总数1}    获取列表总数    1
+    Should Be Equal As Strings    ${添加订单后全部订单总数}    ${全部订单总数加1}
+    Should Be Equal As Strings    ${待付款订单总数1}    ${待付款订单总数加1}
+
+新增一条待发货订单
+    [Setup]    点击链接菜单    微店铺
+    #统计未添加订单前订单总数
+    点击链接菜单    所有订单
+    ${全部订单总数}    获取列表总数    0
+    log    ${全部订单总数}
+    ${全部订单总数加1}    Evaluate    int(${全部订单总数}+1)
+    #统计待发货列表总数
+    Click Element    xpath=//*[@id="myTab"]/li[3]/a
+    Wait Until Page Contains    订单号
+    sleep    1
+    ${待发货订单总数}    获取列表总数    2
+    ${待发货订单总数加1}    Evaluate    int(${待发货订单总数}+1)
+    ####创建订单
+    ${返回响应}    订单_货到付款订单
+    ${order}    Get From Dictionary    ${返回响应}    order
+    ${id}    Get From Dictionary    ${order}    id
+    #获取订单详情
+    ${订单信息}    订单_详情    ${id}
+    #${订单信息}    Get From Dictionary    ${返回码信息}    order
+    ${订单号}    Get From Dictionary    ${订单信息}    order_no
+    ${下单时间戳}    Get From Dictionary    ${订单信息}    created
+    ${下单时间}    Get Time    \    ${下单时间戳}
+    ${应付金额}    Get From Dictionary    ${订单信息}    should_pay
+    ${order_status}    Get From Dictionary    ${订单信息}    order_status
+    ${订单状态}    Run Keyword If    ${order_status}==1    Set Variable    待付款
+    ...    ELSE IF    ${order_status}==2    Set Variable    待收货
+    ...    ELSE IF    ${order_status}==3    Set Variable    待发货
+    ...    ELSE IF    ${order_status}==4    Set Variable    已完成
+    ...    ELSE IF    ${order_status}==5    Set Variable    已关闭
+    ...    ELSE    Set Variable    售后中
+    ${微信昵称}    Get From Dictionary    ${订单信息}    user_name
+    ${支付方式}    Set Variable    货到付款
+    ${pickup_type}    Get From Dictionary    ${订单信息}    pickup_type
+    ${配送方式}    Run Keyword If    ${pickup_type}==1    Set Variable    快递配送
+    ...    ELSE IF    ${pickup_type}==2    Set Variable    到店自提
+    ...    ELSE    Set Variable    ${EMPTY}
+    ${order_type}    Get From Dictionary    ${订单信息}    order_type
+    ${订单类型}    Run Keyword If    ${order_type}==1    Set Variable    普通订单
+    ...    ELSE IF    ${order_type}==2    Set Variable    秒杀订单
+    ...    ELSE IF    ${order_type}==3    Set Variable    pos收银
+    ...    ELSE IF    ${order_type}==4    Set Variable    pos订单
+    ...    ELSE IF    ${order_type}==5    Set Variable    扫码订单
+    ...    ELSE IF    ${order_type}==5    Set Variable    拼团订单
+    ...    ELSE    Set Variable    积分订单
+    ${orderDelivery}    Get From Dictionary    ${订单信息}    orderDelivery
+    ${收货人}    Get From Dictionary    ${orderDelivery}    consignee
+    ${手机号码}    Get From Dictionary    ${orderDelivery}    tel
+    ##统计添加订单后数据
+    点击链接菜单    所有订单
+    ${添加订单后全部订单总数}    获取列表总数    0
+    #添加订单后待发货列表总数
+    Click Element    xpath=//*[@id="myTab"]/li[3]/a
+    Wait Until Page Contains    订单号
+    sleep    1
+    ${待发货订单总数1}    获取列表总数    2
+    Should Be Equal As Strings    ${添加订单后全部订单总数}    ${全部订单总数加1}
+    Should Be Equal As Strings    ${待发货订单总数1}    ${待发货订单总数加1}
+    sleep    0.5
+    #搜索订单并校验
+    Input Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/div/div/div[1]/div[1]/div[2]/div[1]/input    ${订单号}
+    sleep    0.5
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/div/div/div[1]/div[1]/div[2]/div[7]/a
+    sleep    1
+    字段校验    //div[@ng-show="toggleIndex == 2"]/div/table/tbody/tr[1]/td[2]    ${订单号}
+    字段校验    //div[@ng-show="toggleIndex == 2"]/div/table/tbody/tr[1]/td[3]    ${下单时间}
+    字段校验    //div[@ng-show="toggleIndex == 2"]/div/table/tbody/tr[1]/td[4]    ${应付金额}
+    字段校验    //div[@ng-show="toggleIndex == 2"]/div/table/tbody/tr[1]/td[5]    ${订单状态}
+    字段校验    //div[@ng-show="toggleIndex == 2"]/div/table/tbody/tr[1]/td[6]    ${微信昵称}
+    字段校验    //div[@ng-show="toggleIndex == 2"]/div/table/tbody/tr[1]/td[7]    ${支付方式}
+    字段校验    //div[@ng-show="toggleIndex == 2"]/div/table/tbody/tr[1]/td[8]    ${配送方式}
+    字段校验    //div[@ng-show="toggleIndex == 2"]/div/table/tbody/tr[1]/td[9]    ${收货人}
+    字段校验    //div[@ng-show="toggleIndex == 2"]/div/table/tbody/tr[1]/td[10]    ${手机号码}
+    字段校验    //div[@ng-show="toggleIndex == 2"]/div/table/tbody/tr[1]/td[11]    ${订单类型}
+
+订单发货
+    [Setup]    点击链接菜单    微店铺
+    #统计未添加订单前订单总数
+    ${订单状态}    Set Variable    待收货
+    点击链接菜单    所有订单
+    ${全部订单总数}    获取列表总数    0
+    log    ${全部订单总数}
+    ${全部订单总数加1}    Evaluate    int(${全部订单总数}+1)
+    #统计待发货列表总数
+    Click Element    xpath=//*[@id="myTab"]/li[3]/a
+    Wait Until Page Contains    订单号
+    sleep    1
+    ${待发货订单总数}    获取列表总数    2
+    ${待发货订单总数加1}    Evaluate    int(${待发货订单总数}+1)
+    #统计待收货列表总数
+    Click Element    xpath=//*[@id="myTab"]/li[4]/a
+    Wait Until Page Contains    订单号
+    sleep    1
+    ${待收货订单总数}    获取列表总数    3
+    ${待收货订单总数加1}    Evaluate    int(${待收货订单总数}+1)
+    ####创建订单
+    ${返回响应}    订单_货到付款订单
+    ${order}    Get From Dictionary    ${返回响应}    order
+    ${id}    Get From Dictionary    ${order}    id
+    #获取订单详情
+    ${订单信息}    订单_详情    ${id}
+    ${订单号}    Get From Dictionary    ${订单信息}    order_no
+    ##统计添加订单后数据
+    点击链接菜单    所有订单
+    ${添加订单后全部订单总数}    获取列表总数    0
+    #添加订单后待发货列表总数
+    Click Element    xpath=//*[@id="myTab"]/li[3]/a
+    Wait Until Page Contains    订单号
+    sleep    1
+    ${待发货订单总数1}    获取列表总数    2
+    Should Be Equal As Strings    ${添加订单后全部订单总数}    ${全部订单总数加1}
+    Should Be Equal As Strings    ${待发货订单总数1}    ${待发货订单总数加1}
+    sleep    0.5
+    #搜索订单并校验
+    Input Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/div/div/div[1]/div[1]/div[2]/div[1]/input    ${订单号}
+    sleep    0.5
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/div/div/div[1]/div[1]/div[2]/div[7]/a
+    sleep    1
+    #点击发货图标
+    Click Element    //div[@ng-show="toggleIndex == 2"]/div/table/tbody/tr[1]/td[12]/div/a[@title="发货"]/i
+    sleep    1
+    #随机选择快递公司
+    ${物流名称}    随机选择下拉框    //*[@id="ji"]/form/div/table/tbody/tr[1]/td[2]/select
+    #输入物流单号
+    ${物流单号}    随机数字    10
+    Input Text    xpath=//*[@id="oddExpress_no"]    ${物流单号}
+    #输入备注
+    ${备注}    随机字符    【发货备注测试】    30
+    Input Text    xpath=//*[@id="ji"]/form/div/table/tbody/tr[2]/td[2]/div/div/textarea    ${备注}
+    #点击提交
+    Click Button    xpath=//*[@id="modal-footer"]/button
+    弹出信息校验    发货成功！
+    sleep    1
+    #统计待发货列表总数
+    Click Element    xpath=//*[@id="myTab"]/li[3]/a
+    Wait Until Page Contains    订单号
+    sleep    1
+    ${待发货订单总数1}    获取列表总数    2
+    #统计待收货列表总数
+    Click Element    xpath=//*[@id="myTab"]/li[4]/a
+    Wait Until Page Contains    订单号
+    sleep    1
+    ${待收货订单总数1}    获取列表总数    3
+    Should Be Equal As Strings    ${待发货订单总数1}    ${待发货订单总数}
+    Should Be Equal As Strings    ${待收货订单总数1}    ${待收货订单总数加1}
+    #搜索订单并校验
+    Input Text    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/div/div/div[1]/div[1]/div[2]/div[1]/input    ${订单号}
+    sleep    0.5
+    Click Element    xpath=//*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/div/div/div[1]/div[1]/div[2]/div[7]/a
+    sleep    1
+    字段校验    //div[@ng-show="toggleIndex == 3"]/div/table/tbody/tr[1]/td[5]    ${订单状态}
+    ###校验物流信息
+    Click Element    xpath=//div[@ng-show="toggleIndex == 3"]/div/table/tbody/tr[1]/td[12]/div/a[@title="物流"]/i
+    sleep    0.5
+    Select Window    title=订单详情
+    sleep    1
+    字段校验    //table/tbody/tr[1]/td/div[1]/strong    ${物流名称}
+    字段校验    //table/tbody/tr[1]/td/div[2]/strong    ${物流单号}
+    Click Element    //*[@id="myTab"]/li[4]/a
+    sleep    1
+    ${物流日志}    Get Text    //table/tbody/tr[1]/td[2]/div
+    Should Contain    ${物流日志}    订单发货>>
+    Should Contain    ${物流日志}    物流公司：${物流名称}
+    Should Contain    ${物流日志}    物流单号：${物流单号}
+    Should Contain    ${物流日志}    备注：${备注}
+    ###模拟手机前端校验
+    Open Browser    http://weishanghuzhushou.betanewwx.snsshop.net/weishanghuzhushou/oauth/testing?id=13723226    chrome
+    Maximize Browser Window
+    sleep    1
+    Click Element    //*[@id="category-wrap"]/footer/div/ul/li[5]
+    sleep    2
+    Click Element    //*[@id="container"]/div/div/div[2]/div/a[3]
+    字段校验    //*[@id="container"]/div[1]/div[2]/section/div/ul/li[1]/div[1]/div[1]/div/a/span[1]/em    ${订单号}
+    字段校验    //*[@id="container"]/div[1]/div[2]/section/div/ul/li[1]/div[1]/div[1]/div/a/span[2]/strong    ${订单状态}
+    Click Element    //*[@id="container"]/div[1]/div[2]/section/div/ul/li[1]/div[2]/a[1]
+    sleep    1
+    字段校验    //*[@id="container"]/div/section[1]/div/div[1]/p[1]/span[2]    货到付款
+    字段校验    //*[@id="container"]/div/section[1]/div/div[1]/p[2]/span[2]    ${物流名称}
+    字段校验    //*[@id="container"]/div/section[1]/div/div[1]/p[3]/span[2]    ${物流单号}
+
+*** Keywords ***
+获取列表总数
+    [Arguments]    ${i}=0
+    [Documentation]    ${i}=0 全部
+    ...    ${i}=1 待付款
+    ...    ${i}=2 待发款
+    ...    ${i}=3 待收款
+    ...    ${i}=4 已完成
+    ...    ${i}=5 已关闭
+    ...    ${i}=6 售后中
+    sleep    1
+    ${显示属性值}    Set Variable    ng-paginate ng-isolate-scope
+    ${获取属性值}    Get Element Attribute    xpath=//div[@page="page"]@class    #获取分页栏的属性
+    log    ${获取属性值}
+    ${单页数据统计}    Get Matching Xpath Count    xpath=//div[@ng-show="toggleIndex == ${i}"]/div/table/tbody/tr[contains(@ng-repeat,"list")]    #获取首页的数量
+    ${单页数据统计加1}    Evaluate    int(${单页数据统计}+1)
+    ${总数}=    Run Keyword If    '${获取属性值}'=='${显示属性值}'    Get Text    xpath=//div[@page="page"]/ul[2]/li[3]/span/span
+    ...    ELSE    Evaluate    ${单页数据统计}
+    sleep    0.5
+    [Return]    ${总数}

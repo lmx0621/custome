@@ -1,0 +1,151 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Library           Selenium2Library
+Resource          ../../Resource/功能菜单.robot
+Resource          ../../Resource/常用操作.robot
+Library           AutoItLibrary
+Resource          ../../Resource/配置参数.robot
+
+*** Test Cases ***
+直营店管理
+    [Tags]    ready
+    点击链接菜单    微分店
+    点击链接菜单    添加
+    click Element    xpath=//div/select[@ng-model="model.shop_type"]    #终端店分类下拉框
+    click Element    xpath=//div/select[@ng-model="model.shop_type"]/option[text()='直营店']    #终端店分类选择直营店
+    #随机字符
+    ${终端店名称}    随机字符    直营店
+    ${帐号}    随机数字2    Gander
+    ${管理员姓名}    随机字符    G
+    Input Text    name=name    ${终端店名称}
+    Input Text    name=user_name    ${帐号}
+    Input Text    name=password    123456
+    Input Text    name=real_name    ${管理员姓名}
+    #微信店铺分类
+    sleep    1
+    随机选择微信分类/商圈    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[1]
+    ${微信一级分类}    get text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[1]/option[${随机分类}]
+    sleep    1
+    随机选择微信分类/商圈    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[2]
+    ${微信二级分类}    get text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[2]/option[${随机分类}]
+    sleep    1
+    微信/商圈分类非一级    //*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[3]
+    log    ${总数}
+    ${微信三级分类}    Run Keyword If    '${总数}'=='1'    Set Variable    ${EMPTY}
+    ...    ELSE    Get Text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[6]/div/select[3]/option[${随机分类}]
+    #所属商圈
+    sleep    1
+    随机选择微信分类/商圈    //*[@id="provinceId"]
+    ${一级商圈}    Get Text    xpath=//*[@id="provinceId"]/option[${随机分类}]
+    sleep    1
+    微信/商圈分类非一级    //*[@id="cityId"]
+    ${二级商圈}    Get Text    xpath=//*[@id="cityId"]/option[${随机分类}]
+    sleep    1
+    微信/商圈分类非一级    //*[@id="districtId"]
+    ${三级商圈}    Get Text    xpath=//*[@id="districtId"]/option[${随机分类}]
+    sleep    1
+    微信/商圈分类非一级    //*[@id="circleId"]
+    ${四级商圈}    Run Keyword If    '${总数}'=='1'    Set Variable    其他商圈
+    ...    ELSE    Get Text    xpath=//*[@id="circleId"]/option[${随机分类}]
+    sleep    1
+    #电话
+    input text    name=phone    18664334600
+    sleep    1
+    #网址
+    input text    name=url    http://betanewwsh.snsshop.net
+    sleep    1
+    #店铺背景选择
+    Click Element    xpath=//div[1]/a/label/span[@data-title="点击上传图片..."]
+    Wait Until Page Contains Element    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li[8]/a/img
+    ${图片总数}    Get Matching Xpath Count    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li
+    log    ${图片总数}
+    ${随机图片}    Evaluate    random.randint(1,${图片总数})    random
+    sleep    1
+    Click Element    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li[${随机图片}]
+    sleep    1
+    Click Element    id=submitImage
+    sleep    1
+    input text    name=avgPrice    10
+    input text    name=shopInfoRecommend    暂无
+    input text    name=shopInfoSpecial    暂无
+    input text    name=shopInfoDescription    欢迎光临
+    input text    name=address    广东省深圳市南山区科技园
+    input text    id=suggestId    广东省深圳市南山区科技园
+    sleep    0.5
+    Click Element    id=positioning
+    sleep    1
+    Click Button    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/form/div[17]/div/button    #保存提交
+    sleep    5
+    ${保存校验}    Confirm Action
+    Should Be Equal As Strings    ${保存校验}    提交成功
+    sleep    0.5
+    input text    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div/div/div[1]/div/div[3]/input    ${终端店名称}
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div/div/div[1]/div/div[3]/span/a/i    #点击搜索按钮
+    sleep    0.5
+    对比校验    xpath=//tbody/tr/td[@ng-bind="list.shopInfo.name"]    ${终端店名称}
+    #再次详细校验
+    Click Element    xpath=//*[@id="main-container"]/div/div[2]/div[2]/div/div/div/div/div[3]/div/form/table/tbody/tr[1]/td[11]/a[2]/i    #查看门店详细
+    sleep    5
+    Select Window    title=终端店信息
+    sleep    1
+    Page Should Contain    ${微信一级分类}，${微信二级分类}
+    对比校验    xpath=//*[@id="home"]/form/div[5]/div/label    ${一级商圈}，${二级商圈}，${三级商圈}，${四级商圈}
+    对比校验    xpath=//*[@id="home"]/form/div[7]/div/label    18664334600
+    对比校验    xpath=//*[@id="home"]/form/div[8]/div/label    10
+    对比校验    xpath=//*[@id="home"]/form/div[9]/div/label    暂无
+    对比校验    xpath=//*[@id="home"]/form/div[10]/div/label    暂无
+    对比校验    xpath=//*[@id="home"]/form/div[18]/div/label    欢迎光临
+    对比校验    xpath=//*[@id="home"]/form/div[19]/div/label    广东省深圳市南山区科技园    #${test}    Get Text    xpath=//tbody/tr/td[@ng-bind="list.shopInfo.name"]    #Run Keyword If
+    ...    # '${test}' == 'Gander'    log
+    select window    title=终端店管理
+    点击链接菜单    终端店登录
+    sleep    1
+    select window    title=终端店后台管理系统
+    input text    id=staff_id    ${帐号}@weishanghuzhushou
+    input text    id=password    123456
+    input text    id=captcha    111
+    Click Button    id=login
+    对比校验    xpath=/html/body/div[1]/div/div/div[1]/div/div/h4    ${终端店名称}
+
+*** Keywords ***
+店铺背景选择
+    sleep    1
+    Click Element    xpath=//div[1]/a/label/span[@data-title="点击上传图片..."]
+    sleep    1
+    ${随机tab选择}    Evaluate    random.randint(1,2)    random
+    log    ${随机tab选择}
+    sleep    1
+    Run Keyword If    '${随机tab选择}'=='上传本地图片'    上传本地图片
+    ...    ELSE    从图库选择
+    Click Element    xpath=//*[@id="imagewidth"]/div[2]/div/div/div[1]/ul/li[${随机tab选择}]
+
+上传本地图片
+    sleep    1
+    Click Element    xpath=//*[@id="SWFUpload_0"]
+    ${x}    Control Get Pos X    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]
+    ${y}    Control Get Pos Y    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]
+    ${width}    Control Get Pos Width    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]
+    ${heigth}    Control Get Pos Height    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]
+    ${xx}    Evaluate    ${width}-20
+    ${yy}    Evaluate    ${y}-10
+    ${text}    Control Get Text    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]
+    sleep    1
+    Control Click    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]    \    ${xx}    ${yy}
+    Send    H:\test-图片\640320
+    Control Click    打开    \    [CLASS:ToolbarWindow32; INSTANCE:3]
+    sleep    3
+    Control Click    打开    \    [CLASS:Edit; INSTANCE:1]
+    Send    11.jpg
+    sleep    1
+    Control Click    打开    \    [CLASS:Button; INSTANCE:1]
+
+从图库选择
+    sleep    5
+    ${图片总数}    Get Matching Xpath Count    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li
+    log    ${图片总数}
+    ${随机图片}    Evaluate    random.randint(1,${图片总数})    random
+    sleep    1
+    Click Element    xpath=//*[@id="select_ajax_form"]/div[3]/div/ul/li[${随机图片}]
+    sleep    1
+    Click Element    id=submitImage

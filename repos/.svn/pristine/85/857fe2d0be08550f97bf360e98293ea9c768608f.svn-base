@@ -1,0 +1,26 @@
+*** Settings ***
+Suite Setup       API登录
+Library           RequestsLibrary
+Resource          Lib/通用操作.robot
+Resource          Lib/配置参数.robot
+Library           String
+Library           json
+Library           Collections
+
+*** Test Cases ***
+工作台数据
+    [Tags]    ready
+    ${resp}    Post Request    wsh    /data-center/workbench-count-data-ajax
+    Log    Response:${resp.content}
+    ${str}    Get Substring    ${resp.content}    3
+    ${js}    loads    ${str}
+    ${errcode}    Get From Dictionary    ${js}    errcode
+    ${errmsg}    Get From Dictionary    ${js}    errmsg
+    Log    errcode is:${errcode}
+    Log    Resp:${resp.content}
+    #Log    scan_limit_amount:${scan_limit}
+    Run Keyword If    ${errcode}==0    Log    Success
+    ...    ELSE    Log    Failed
+    ###
+    ${uv}    Get From Dictionary    ${errmsg}    uv
+    ${pv}    Get From Dictionary    ${errmsg}    pv

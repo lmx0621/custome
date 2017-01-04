@@ -1,0 +1,52 @@
+*** Settings ***
+Documentation     商品分类无分页
+Suite Setup       登录
+Suite Teardown
+Test Teardown
+Library           Selenium2Library
+Resource          ../../../Resource/常用操作.robot
+Resource          ../../../Resource/功能菜单.robot
+Resource          ../../../Resource/配置参数.robot
+Library           AutoItLibrary
+Resource          ../../../Resource/API.robot
+
+*** Test Cases ***
+ss
+    Comment    微信登录
+    Comment    &{data}=    Create Dictionary    _status=3
+    Comment    #&{headers}=    Create Dictionary    Content-Type=application/x-www-form-urlencoded
+    Comment    ${resp}    Post Request    wx    /weishanghuzhushou/order/list    data=${data}    #headers=${headers}
+    Comment    Log    Response:${resp.content}
+    Open Browser    http://weishanghuzhushou.betanewwx.snsshop.net/weishanghuzhushou/oauth/testing?id=13723226    chrome
+    Maximize Browser Window
+    sleep    1
+    Click Element    //*[@id="category-wrap"]/footer/div/ul/li[5]
+    sleep    2
+    Click Element    //*[@id="container"]/div/div/div[2]/div/a[3]
+    ${订单号}    Get Text    //*[@id="container"]/div[1]/div[2]/section/div/ul/li[1]/div[1]/div[1]/div/a/span[1]/em
+    ${订单状态}    Get Text    //*[@id="container"]/div[1]/div[2]/section/div/ul/li[1]/div[1]/div[1]/div/a/span[2]/strong
+    Click Element    //*[@id="container"]/div[1]/div[2]/section/div/ul/li[1]/div[2]/a[1]
+    sleep    1
+    ${支付方式}    Get Text    //*[@id="container"]/div/section[1]/div/div[1]/p[1]/span[2]
+    ${物流公司}    Get Text    //*[@id="container"]/div/section[1]/div/div[1]/p[2]/span[2]
+    ${快递单号}    Get Text    //*[@id="container"]/div/section[1]/div/div[1]/p[3]/span[2]
+
+11
+    [Setup]    登录
+    ####进入页面
+    点击链接菜单    微会员
+    ${sub}    Set Variable    会员列表
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"会员列表")]
+    Sleep    1
+    ####会员列表-查看会员详情
+    ${当前页数量}    Get Matching Xpath Count    //*[@id="integralTable"]/tbody/tr[@ng-repeat="i in lists track by $index"]
+    ${rand}    Evaluate    random.randint(1,${当前页数量})    random
+    ##获取ID
+    ${href}    Get Element Attribute    //*[@id="integralTable"]/tbody/tr[${rand}]/td/div[@class="action-buttons"]/a[@title="查看"]@href
+    ${match}    Get Regexp Matches    ${href}    (?<=\\bu_id=)\\w+\\b
+    ${id}    Set Variable    ${match[0]}
+    [Teardown]    关闭浏览器
+
+请求
+    微信手机端登录(pc版)

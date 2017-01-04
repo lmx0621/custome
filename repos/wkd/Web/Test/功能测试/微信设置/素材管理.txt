@@ -1,0 +1,625 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Resource          ../../Resource/常用操作.robot
+Library           Selenium2Library
+Resource          ../../Resource/API.robot
+Library           AutoItLibrary
+
+*** Test Cases ***
+微信图文_添加
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    图文素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    1
+    ####添加微信图文
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/div/div/div[1]/a[1]
+    Sleep    2
+    ####生成参数
+    ${标题}    随机字符    【微信图文】    12
+    ${是否在正文展示封面}    Generate Random String    1    01
+    ${摘要}    随机字符    【摘要】    60
+    ${作者}    随机字符    作者    8
+    ${作者rand}    Generate Random String    1    01
+    ${正文}    随机字符    【正文】    200
+    ${原文地址}    随机URL
+    ${原文Rand}    Generate Random String    1    01
+    ####输入参数
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/div[3]/div/div/form/div/div[1]/div/input    ${标题}
+    Sleep    1
+    Run Keyword If    ${作者rand}==1    Input Text    //*[@id="main-container"]//form//input[@ng-model="items[itemIndex].author"]    ${作者}
+    Sleep    1
+    图文封面    //a[text()="选择图片"]
+    Sleep    1
+    Run Keyword If    ${是否在正文展示封面}==1    Click Element    //input[@ng-click="choosePicter($event)"]
+    Sleep    1
+    Input Text    //textarea[@placeholder="单条图文才显示摘要"]    ${摘要}
+    Sleep    1
+    ##正文
+    文本编辑器输入
+    ##原文地址
+    Run Keyword If    ${原文Rand}==1    Input Text    //input[@type="url" and starts-with(@placeholder,"http://")]    ${原文地址}
+    Sleep    1
+    Mouse Out    //input[@type="url" and starts-with(@placeholder,"http://")]
+    Sleep    1
+    ####保存
+    Click Element    id=submit
+    Sleep    2
+    Wait Until Keyword Succeeds    10    2    弹出信息校验
+    Sleep    3
+    ####结果校验
+    Page Should Contain Element    //*[@id="js-wxtwInfo"]/li[1]/div[4]/div/span[text()="${标题}"]
+
+微信图文_编辑
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    图文素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    1
+    ####编辑微信图文
+    #${el}    Get Webelement    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/div[3]/ul/li/div/div[5]/div/span[starts-with(text(),"【微信图文】")]
+    #${text}    Get Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/div[3]/ul/li/div/div[5]/div/span[starts-with(text(),"【微信图文】")]/ancestor::ul[1]/li/div/div[5]/div/span[2]
+    Click Element    //*[@id="js-wxtwInfo"]/li/div[4]/div/span[starts-with(text(),"【微信图文】")]/ancestor::li[1]/div[2]/div[2]/a[5]
+    Sleep    2
+    ####生成参数
+    ${标题}    随机字符    【微信图文】改    12
+    ${是否在正文展示封面}    Generate Random String    1    01
+    ${摘要}    随机字符    【摘要】改    60
+    ${作者}    随机字符    作者    8
+    ${作者rand}    Generate Random String    1    01
+    ${正文}    随机字符    【正文】改    200
+    ${原文地址}    随机URL
+    ${原文Rand}    Generate Random String    1    1
+    ####输入参数
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/div[3]/div/div/form/div/div[1]/div/input    ${标题}
+    Sleep    1
+    图文封面    //a[text()="重新选择"]
+    Sleep    1
+    Run Keyword If    ${是否在正文展示封面}==1    Click Element    //input[@ng-click="choosePictere($event)"]
+    Sleep    1
+    Input Text    //textarea[@placeholder="单条图文才显示摘要"]    ${摘要}
+    Sleep    1
+    文本编辑器输入
+    Run Keyword If    ${原文Rand}==1    Input Text    //input[@type="url" and starts-with(@placeholder,"http://")]    ${原文地址}
+    Sleep    1
+    Mouse Out    //input[@type="url" and starts-with(@placeholder,"http://")]
+    Sleep    3
+    Click Element    id=submit
+    Sleep    1
+    Wait Until Keyword Succeeds    15 sec    3 sec    弹出信息校验
+    #Capture Page Screenshot
+    Sleep    3
+    ####结果校验
+    字段校验    //*[@id="js-wxtwInfo"]/li/div[4]/div/span[starts-with(text(),"【微信图文】")]/ancestor::li[1]/div[4]/div/span[2]    ${标题}
+
+微信图文_删除
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    图文素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    1
+    ####删除微信图文
+    ${标题}    Get Text    //*[@id="js-wxtwInfo"]/li/div[4]/div/span[starts-with(text(),"【微信图文】")]/ancestor::li[1]/div[4]/div/span[2]
+    Click Element    //*[@id="js-wxtwInfo"]/li/div[4]/div/span[starts-with(text(),"【微信图文】")]/ancestor::li[1]/div[2]/div[2]/a[@title="删除" and not(contains(@class,'ng-hide'))]
+    Sleep    2
+    确认
+    弹出信息校验
+    Sleep    1.5
+    ####结果校验
+    Page Should Not Contain Element    //*[@id="js-wxtwInfo"]/li/div[4]/div/span[text()="${标题}"]
+    Log    Success!
+
+微信图文_二维码
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    图文素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    2
+    ####查看二维码
+    查看二维码_弹出窗    //*[@id="js-wxtwInfo"]/li/div[4]/div/span[starts-with(text(),"【微信图文】")]/ancestor::li[1]/div[2]/div[2]/a[contains(@title,"查看二维码") and not(contains(@class,'ng-hide'))]
+    ####结果校验
+    Log    Success!
+    Sleep    2
+
+商户图文_添加
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    图文素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    1
+    ####添加微商户图文
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/div/div/div[1]/a[2]/div
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[text()="新增微商户图文"]
+    Sleep    1
+    ####生成参数
+    ${标题}    随机字符    【商户图文】    12
+    ${封面}    Generate Random String    1    01
+    ${摘要}    随机字符    【摘要】    60
+    ${图文外链类型}    Generate Random String    1    2
+    ####输入参数
+    Input Text    //form[@name="myform"]//input[@type="text" and @prompt-msg="titlePromptMsg"]    ${标题}
+    #Input Text    xpath=/html/body/div[3]/div/div[2]/div[2]/div[1]/div/div[3]/div/div/form/div/div[1]/div/input    ${标题}
+    Sleep    1
+    选择图片    //a[text()="选择图片"]
+    Input Text    //form[@name="myform"]//textarea[@name="description"]    ${摘要}
+    Sleep    1
+    Select From List By Value    //form[@name="myform"]/div/div[4]/select    ${图文外链类型}
+    Run Keyword If    ${图文外链类型}==2    选择营销模板
+    Sleep    3
+    ####保存
+    Click Link    保存
+    Sleep    1.5
+    弹出信息校验
+    Sleep    2
+    ####结果校验
+    Page Should Contain Element    //*[@id="js-wxtwInfo"]/li[1]/div[4]/div/span[text()="${标题}"]
+
+商户图文_编辑
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    图文素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    1
+    ####添加微商户图文
+    Click Element    //*[@id="js-wxtwInfo"]/li/div[4]/div/span[starts-with(text(),"【商户图文】")]/ancestor::li[1]/div[2]/div[2]/a[contains(@title,"编辑") and not(contains(@class,'ng-hide'))]
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[text()="修改微商户图文"]
+    Sleep    1
+    ####生成参数
+    ${标题}    随机字符    【商户图文】改    12
+    ${封面}    Generate Random String    1    01
+    ${摘要}    随机字符    【摘要】改    60
+    ${图文外链类型}    Generate Random String    1    2
+    ####输入参数
+    Input Text    //form[@name="myform"]//input[@type="text" and @prompt-msg="titlePromptMsg"]    ${标题}
+    #Input Text    xpath=/html/body/div[3]/div/div[2]/div[2]/div[1]/div/div[3]/div/div/form/div/div[1]/div/input    ${标题}
+    Sleep    1
+    选择图片    //a[text()="重新选择"]
+    Input Text    //form[@name="myform"]//textarea[@name="description"]    ${摘要}
+    Sleep    1
+    Select From List By Value    //form[@name="myform"]/div/div[4]/select    ${图文外链类型}
+    Run Keyword If    ${图文外链类型}==2    Click Element    //form[@name="myform"]/div/div[6]/div/p/a
+    Run Keyword If    ${图文外链类型}==2    选择营销模板
+    Sleep    3
+    ####保存
+    Click Link    保存
+    Sleep    1.5
+    弹出信息校验
+    Sleep    2
+    ####结果校验
+    Page Should Contain Element    //*[@id="js-wxtwInfo"]/li/div[4]/div/span[starts-with(text(),"${标题}")]/ancestor::li[1]/div[4]/div/span[2]
+
+商户图文_删除
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    图文素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    1
+    ####微商户图文
+    ${标题}    Get Text    //*[@id="js-wxtwInfo"]/li/div[4]/div/span[starts-with(text(),"【商户图文】")]/ancestor::li[1]/div[4]/div/span[2]
+    Click Element    //*[@id="js-wxtwInfo"]/li/div[4]/div/span[starts-with(text(),"【商户图文】")]/ancestor::li[1]/div[2]/div[2]/a[@title="删除" and not(contains(@class,'ng-hide'))]
+    Sleep    2
+    确认
+    弹出信息校验
+    Sleep    1.5
+    ####结果校验
+    Page Should Not Contain Element    //*[@id="js-wxtwInfo"]/li/div[4]/div/span[text()="${标题}"]
+    Log    Success!
+
+商户图文_二维码
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    图文素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    2
+    ####查看二维码
+    查看二维码_商户图文    //*[@id="js-wxtwInfo"]/li/div[4]/div/span[starts-with(text(),"【商户图文】")]/ancestor::li[1]/div[2]/div[2]/a[contains(@title,"查看二维码") and not(contains(@class,'ng-hide'))]
+    ####结果校验
+    Log    Success!
+    Sleep    2
+
+图文素材_按标题搜索
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    图文素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    2
+    ####图文标题搜索
+    ${keywords}    Create List    不存在的数据    商户图文    微信图文    图文    测试
+    ...    玄姬
+    ${rand}    Generate Random String    1    012345
+    ${keyword}    Set Variable    ${keywords[${rand}]}
+    Select From List By Label    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/div/div/div[2]/div/select[1]    图文标题
+    Sleep    1
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/div/div/div[2]/div/input    ${keyword}
+    Sleep    1
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/div/div/div[2]/div/span/a    #搜索
+    Sleep    2
+    ####结果校验
+    Run Keyword If    '${keyword}'=='不存在的数据'    Element Should Be Visible    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/div[3]/div[contains(text(),"没有") and contains(text(),"数据")]
+    ${查无数据}    Run Keyword And Return Status    Element Should Be Visible    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/div[3]/div[contains(text(),"没有") and contains(text(),"数据")]
+    Run Keyword If    ${查无数据}!=True    图文查询结果校验_标题    ${keyword}
+    ...    ELSE    Log    没有查到数据
+    Log    Success!
+    Sleep    2
+
+图文素材_按类型搜索
+    [Documentation]    Bug
+    [Tags]    ready    bug
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    图文素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    2
+    ####图文类型搜索
+    Select From List By Label    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/div/div/div[2]/div/select[1]    图文类型
+    Sleep    1
+    ##商户图文
+    Select From List By Label    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/div/div/div[2]/div/select[2]    微商户图文
+    Sleep    1
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/div/div/div[2]/div/span/a    #搜索
+    Sleep    2
+    ##结果校验
+    ${查无数据}    Run Keyword And Return Status    Element Should Be Visible    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/div[3]/div[contains(text(),"没有") and contains(text(),"数据")]
+    Run Keyword If    ${查无数据}!=True    图文查询结果校验_类型    微商户图文
+    ...    ELSE    Log    没有查到数据
+    Log    Success!
+    Sleep    2
+    ##微信图文
+    Select From List By Label    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/div/div/div[2]/div/select[2]    微信图文
+    Sleep    1
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/div/div/div[2]/div/span/a    #搜索
+    Sleep    2
+    ##结果校验
+    ${查无数据}    Run Keyword And Return Status    Element Should Be Visible    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/div[3]/div[contains(text(),"没有") and contains(text(),"数据")]
+    Run Keyword If    ${查无数据}!=True    图文查询结果校验_类型    微信图文
+    Log    Success!
+    Sleep    2
+
+文本素材_添加
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    文本素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    1
+    ####添加文本素材
+    Click Link    添加文本
+    Sleep    2
+    ####生成参数
+    ${文本标签}    随机字符    【文本素材】    12
+    ${文本内容}    Generate Random String    1    01
+    ####输入参数
+    Input Text    //*[@id="newtextbox"]/div/div/div[2]/div/div/form/div[1]/div/input    ${文本标签}
+    Sleep    1
+    ##表情    Todo
+    ##文字
+    文本编辑器输入
+    Sleep    1
+    Click Element    //*[@id="newtextbox"]/div/div/div[2]/div/div/form/div[1]/div/input
+    Sleep    1
+    Click Element    id=submit
+    Sleep    2
+    弹出信息校验
+    Sleep    2
+    ####结果校验
+    Page Should Contain Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/div/div/table/tbody/tr/td/span[starts-with(text(),"${文本标签}")]
+
+文本素材_编辑
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    文本素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    1
+    ####添加文本素材
+    Click Link    添加文本
+    Sleep    2
+    ####生成参数
+    ${文本标签}    随机字符    【文本素材】    12
+    ${文本内容}    Generate Random String    1    01
+    ####输入参数
+    Input Text    //*[@id="newtextbox"]/div/div/div[2]/div/div/form/div[1]/div/input    ${文本标签}
+    Sleep    1
+    ##表情    Todo
+    ##文字
+    文本编辑器输入
+    Sleep    1
+    Click Element    //*[@id="newtextbox"]/div/div/div[2]/div/div/form/div[1]/div/input
+    Sleep    1
+    Click Element    id=submit
+    Sleep    2
+    弹出信息校验
+    Sleep    2
+    ####结果校验
+    Page Should Contain Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/div/div/table/tbody/tr/td/span[starts-with(text(),"${文本标签}")]
+
+文本素材_删除
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    文本素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    1
+    ####添加文本素材
+    Click Link    添加文本
+    Sleep    2
+    ####生成参数
+    ${文本标签}    随机字符    【文本素材】    12
+    ${文本内容}    Generate Random String    1    01
+    ####输入参数
+    Input Text    //*[@id="newtextbox"]/div/div/div[2]/div/div/form/div[1]/div/input    ${文本标签}
+    Sleep    1
+    ##表情    Todo
+    ##文字
+    文本编辑器输入
+    Sleep    1
+    Click Element    //*[@id="newtextbox"]/div/div/div[2]/div/div/form/div[1]/div/input
+    Sleep    1
+    Click Element    id=submit
+    Sleep    2
+    弹出信息校验
+    Sleep    2
+    ####结果校验
+    Page Should Contain Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/div/div/table/tbody/tr/td/span[starts-with(text(),"${文本标签}")]
+
+文本素材_搜索
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    文本素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    1
+    ####添加文本素材
+    Click Link    添加文本
+    Sleep    2
+    ####生成参数
+    ${文本标签}    随机字符    【文本素材】    12
+    ${文本内容}    Generate Random String    1    01
+    ####输入参数
+    Input Text    //*[@id="newtextbox"]/div/div/div[2]/div/div/form/div[1]/div/input    ${文本标签}
+    Sleep    1
+    ##表情    Todo
+    ##文字
+    文本编辑器输入
+    Sleep    1
+    Click Element    //*[@id="newtextbox"]/div/div/div[2]/div/div/form/div[1]/div/input
+    Sleep    1
+    Click Element    id=submit
+    Sleep    2
+    弹出信息校验
+    Sleep    2
+    ####结果校验
+    Page Should Contain Element    //*[@id="main-container"]/div[1]/div[2]/div[2]/div/div/div[3]/div/div/table/tbody/tr/td/span[starts-with(text(),"${文本标签}")]
+
+图片素材_添加
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    图片素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    1
+    ####添加文本素材
+    Click Link    添加图片
+    Sleep    2
+    ####生成参数
+    ${标题}    随机字符    【图片素材】    12
+    ####输入参数
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/form/div[2]/div/div/div[1]/div/input    ${标题}
+    Sleep    1
+    上传图片
+    Wait Until Keyword Succeeds    30    3    弹出信息校验
+    Wait Until Page Contains Element    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/form/div[2]/div/div/div[2]/div/div[2]/img
+    Wait Until Element Is Visible    //*[@id="main-container"]/div/div[2]/div[2]/div[1]/div/form/div[2]/div/div/div[2]/div/div[2]/img
+    Sleep    1
+    ####保存
+    Click Element    id=submit
+    Sleep    1.5
+    弹出信息校验
+    ####结果校验
+    Page Should Contain Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[2]/div/div[1]/ul/li[1]/h3[text()="${标题}"]
+
+图片素材_编辑
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    图片素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    1
+    ####修改图片素材
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[2]/div/div[1]/ul/li/h3[starts-with(text(),"【图片素材】")]/parent::li[1]/div[3]/a[1]
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[text()="编辑图片素材"]
+    Sleep    1
+    ####生成参数
+    ${标题}    随机字符    【图片素材】改    12
+    ####输入参数
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/form/div/div/div[2]/div[2]/div/div/div[1]/div/input    ${标题}
+    Sleep    1
+    上传图片
+    Wait Until Keyword Succeeds    30    3    弹出信息校验
+    Wait Until Page Contains Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/form/div/div/div[2]/div[2]/div/div/div[2]/div/div[2]/img
+    Wait Until Element Is Visible    //*[@id="main-container"]/div/div[2]/div[2]/div/div[1]/form/div/div/div[2]/div[2]/div/div/div[2]/div/div[2]/img
+    Sleep    1
+    ####保存
+    Click Element    id=submit
+    Sleep    1.5
+    弹出信息校验
+    ####结果校验
+    Page Should Contain Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[2]/div/div[1]/ul/li/h3[text()="${标题}"]
+
+图片素材_删除
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    图片素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    1
+    ####删除图片素材
+    ${标题}    Get Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[2]/div/div[1]/ul/li/h3[starts-with(text(),"【图片素材】")]/parent::li[1]/h3
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[2]/div/div[1]/ul/li/h3[starts-with(text(),"【图片素材】")]/parent::li[1]/div[3]/a[2]
+    Wait Until Element Is Visible    //div[@i="dialog"]/table[@class="ui-dialog-grid"]/tbody/tr/td/div[text()="删除提示"]
+    Sleep    1
+    确认
+    Sleep    1.5
+    弹出信息校验
+    ####结果校验
+    Page Should Not Contain Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[2]/div/div[1]/ul/li/h3[starts-with(text(),"${标题}")]
+
+图片素材_搜索
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    图片素材
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"素材")]
+    Sleep    1
+    ####搜索图片素材
+    ${keywords}    Create List    不存在的数据    图片素材    11    测试
+    ${rand}    Generate Random String    1    0123
+    ${keyword}    Set Variable    ${keywords[${rand}]}
+    Input Text    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/div[2]/div/div/div/input    ${keyword}
+    Sleep    1
+    Click Element    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[1]/div[2]/div/div/div/span/a    #搜索
+    Sleep    2
+    ####结果校验
+    图片搜索结果校验    ${keyword}
+    Sleep    1
+
+*** Keywords ***
+随机URL
+    ${后缀}    Create List    com    net    cn    com.cn
+    ${后缀Rand}    Generate Random String    1    0123
+    ${域名}    Generate Random String    8    [LOWER]
+    ${URL}    Set Variable    http://www.${域名}.${后缀[${后缀Rand}]}
+    [Return]    ${URL}
+
+图文封面
+    [Arguments]    ${选择按钮}    ${确定按钮}=//*[@id="insertImageMaterial"]/div/div/div[3]/a[2]
+    ####选择图文封面
+    Click Element    ${选择按钮}
+    Sleep    2
+    ${els}    Get Webelements    //*[@id="mytabPane"]/div[2]/ul/li
+    ${len}    Get Length    ${els}
+    ${len}    Evaluate    ${len}-2
+    ${图片}    Evaluate    random.randint(1,${len})    random
+    Click Element    //*[@id="mytabPane"]/div[2]/ul/li[${图片}]/img
+    Sleep    1
+    Click Element    ${确定按钮}
+
+文本编辑器输入
+    [Arguments]    ${iframeID}=ueditor_0
+    Select Frame    id=${iframeID}
+    ####输入内容
+    ${文本}    随机字符    【测试文本】    200
+    ${text}    Get Text    //html/body/p
+    Execute Javascript    var el=document.getElementsByTagName("p")[0];el.innerHTML = "${文本}";
+    Sleep    1
+    Click Element    //html/body/p
+    Sleep    1
+    Mouse Out    //html/body/p
+    Sleep    1
+    ${text2}    Get Text    //html/body/p
+    Unselect Frame
+    Sleep    1
+
+选择营销模板
+    ####选择营销模板
+    Wait Until Page Contains Element    //*[@id="activityModal"]/div/div/div[1]/h4[text()="选择模板"]
+    Sleep    1
+    ${lis}    Get Webelements    //*[@id="tabPane"]/div/div[2]/ul/li
+    ${len}    Get Length    ${lis}
+    ${x}    Evaluate    random.randint(1,${len})    random
+    Click Element    //*[@id="tabPane"]/div/div[2]/ul/li[${x}]
+    Sleep    1
+    Click Element    //*[@id="activityModal"]/div/div/div[2]/div[2]/a[2]    #确定
+    Sleep    2
+
+查看二维码_商户图文
+    [Arguments]    ${locator}
+    ####查看二维码
+    Click Element    ${locator}
+    Wait Until Page Contains Element    //h4[contains(text(),"二维码")]
+    Sleep    1
+    Wait Until Element Is Visible    //*[@id="queryy"]/div/div/div[2]/div/div/img[starts-with(@src,"https://mp.weixin.qq.com/cgi-bin/showqrcode")]
+    Sleep    1
+    Click Element    //*[@id="queryy"]/div/div/div[1]/a
+    Sleep    2
+
+图文查询结果校验_标题
+    [Arguments]    ${keyword}
+    ${els1}    Get Webelements    //*[@id="js-wxtwInfo"]/li
+    ${len1}    Get Length    ${els1}
+    ${els2}    Get Webelements    //*[@id="js-wxtwInfo"]/li/div[4]/div/span[contains(text(),"${keyword}")]
+    ${len2}    Get Length    ${els2}
+    Should Be Equal As Integers    ${len1}    ${len2}
+
+图文查询结果校验_类型
+    [Arguments]    ${类型}
+    ${els1}    Get Webelements    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/div[3]/ul
+    ${len1}    Get Length    ${els1}
+    ${els2}    Get Webelements    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[3]/div[3]/ul/li/div/div[1]/span[contains(text(),"${类型}")]
+    ${len2}    Get Length    ${els2}
+    Should Be Equal As Integers    ${len1}    ${len2}
+
+上传图片
+    [Arguments]    ${locator}=id=SWFUpload_0
+    ####图片上传
+    ####生成参数
+    ${分组}    Generate Random String    1    0123456789
+    @{图片}    Create List    test1.jpg    测试图片.png    test2.png    test3.png    testQQ截图2016.png
+    ...    QQ截图20160722114026ssssssssssssssssss_long.png    116x116.png
+    ${随机图片}    Generate Random String    1    0123456
+    ####输入参数
+    Click Element    ${locator}
+    Sleep    2
+    Sleep    1
+    ${x}    Control Get Pos X    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]
+    ${y}    Control Get Pos Y    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]
+    ${width}    Control Get Pos Width    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]
+    ${heigth}    Control Get Pos Height    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]
+    ${xx}    Evaluate    ${width}-20
+    ${yy}    Evaluate    ${y}-10
+    ${text}    Control Get Text    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]
+    Sleep    1
+    Control Click    打开    \    [CLASS:ToolbarWindow32; INSTANCE:2]    \    2    ${xx}
+    ...    ${yy}
+    Sleep    1
+    Send    C:\\Temp\\Pics
+    Sleep    1
+    Control Click    打开    ${EMPTY}    [CLASS:ToolbarWindow32; INSTANCE:3]    LEFT
+    Sleep    1
+    Control Send    打开    ${EMPTY}    [CLASS:Edit; INSTANCE:1]    ${图片[${随机图片}]}
+    Sleep    1
+    Control Click    打开    ${EMPTY}    [CLASS:Button; INSTANCE:1]    LEFT
+    Sleep    1
+
+图片搜索结果校验
+    [Arguments]    ${keyword}
+    ${els1}    Get Webelements    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[2]/div/div[1]/ul/li
+    ${len1}    Get Length    ${els1}
+    ${els2}    Get Webelements    //*[@id="main-container"]/div/div[2]/div[2]/div/div/div[2]/div/div[1]/ul/li/h3[contains(text(),"${keyword}")]
+    ${len2}    Get Length    ${els2}
+    Should Be Equal As Integers    ${len1}    ${len2}

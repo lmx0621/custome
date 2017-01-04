@@ -1,0 +1,133 @@
+*** Settings ***
+Suite Setup       登录
+Suite Teardown    关闭浏览器
+Test Teardown     失败重启
+Resource          ../../Resource/常用操作.robot
+Library           Selenium2Library
+Resource          ../../Resource/API.robot
+Library           AutoItLibrary
+
+*** Test Cases ***
+消息_收藏
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    用户消息
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"消息管理")]
+    Sleep    1
+    ####消息管理-收藏
+    ${els}    Get Webelements    //tr[@ng-repeat="list in \ listArray[0]"]
+    ${len}    Get Length    ${els}
+    ${rand}    Evaluate    random.randint(1,${len})    random
+    ##获取消息参数
+    ${发送者}    Get Text    //tr[@ng-repeat="list in \ listArray[0]"][${rand}]/td[@ng-bind="list.to_user_name"]
+    ${消息内容}    Get Text    //tr[@ng-repeat="list in \ listArray[0]"][${rand}]/td[@ng-bind="list.content"]
+    ${发送时间}    Get Text    //tr[@ng-repeat="list in \ listArray[0]"][${rand}]/td[@ng-bind="list.created * 1000 | date:'yyyy-MM-dd HH:mm:ss'"]
+    Click Element    //tr[@ng-repeat="list in \ listArray[0]"][${rand}]//a[@title="收藏" and not(contains(@class,"ng-hide"))]
+    Sleep    1
+    弹出信息校验
+    ####结果校验
+    Click Link    已收藏
+    Sleep    2
+    ${class}    Get Element Attribute    //ul[@id="myTab"]/li[@ng-class="{'active': toggleIndex == 1}"]@class
+    Should Match Regexp    ${class}    active
+    Page Should Contain Element    //tr[@ng-repeat="list in \ listArray[1]"]/td[text()="${发送时间}"]/parent::tr[1]/td[text()="${发送者}"]/parent::tr[1]/td[text()="${消息内容}"]
+    Pass Execution    Test
+
+消息_取消收藏
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    用户消息
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"消息管理")]
+    Sleep    1
+    ####消息管理-收藏
+    Click Link    已收藏
+    Sleep    2
+    取消收藏
+
+消息_回复&查看对话
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    用户消息
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"消息管理")]
+    Sleep    1
+    ####消息管理-回复
+    ${回复内容}    随机字符    【测试】    30
+    ${els}    Get Webelements    //tr[@ng-repeat="list in \ listArray[0]"]
+    ${len}    Get Length    ${els}
+    ${rand}    Evaluate    random.randint(1,${len})    random
+    Click Element    //tr[@ng-repeat="list in \ listArray[0]"][${rand}]//a[@ng-click="reply($index, list)" and @title="回复"]
+    Wait Until Element Is Visible    //*[@id="reply"]//h4[text()="回复消息"]
+    Sleep    1
+    Input Text    id=textarea    ${回复内容}
+    Sleep    1
+    Click Element    saveReply
+    Sleep    1.5
+    弹出信息校验
+    ####结果校验
+    ##查看对话    //tr[@ng-repeat="list in \ listArray[0]"][${rand}]//a[@title="查看对话"]
+    Click Element    //tr[@ng-repeat="list in \ listArray[0]"][${rand}]//a[@title="查看对话"]
+    Sleep    1.5
+    Wait Until Element Is Visible    //*[@id="message"]/div/div/form/div[1]/h4[text()="消息"]
+    Page Should Contain Element    //*[@id="message"]//tr[@ng-repeat="list in mamama"]/td[text()="${回复内容}"]
+    ##确定
+    Click Element    //div[@class="modal-footer"]/a[@data-dismiss="modal" and text()="确定"]
+
+消息_按状态查看
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    用户消息
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"消息管理")]
+    Sleep    1
+    ####消息管理-按状态查看
+    ##未读
+    Select From List By Label    //select[@ng-change="changeClack(flag)"]    未读
+    Sleep    3
+    ##校验
+    Page Should Contain Element    //tr[@ng-repeat="list in \ listArray[0]"]//span[text()="未读" and not(text()="已读")]
+    ##已读
+    Select From List By Label    //select[@ng-change="changeClack(flag)"]    已读
+    Sleep    3
+    ##校验
+    Page Should Contain Element    //tr[@ng-repeat="list in \ listArray[0]"]//span[text()="已读" and not(text()="未读")]
+
+消息_标记已读
+    [Documentation]    注：如果当前没有未读消息则直接Pass
+    [Tags]    ready
+    ####进入页面
+    点击链接菜单    微信设置
+    ${sub}    Set Variable    用户消息
+    点击链接菜单    ${sub}
+    Wait Until Page Contains Element    //*[@id="breadcrumbs"]/ul/li[contains(text(),"消息管理")]
+    Sleep    1
+    ####消息管理-标记已读
+    ${flag}    Run Keyword And Return Status    Page Should Contain Element    //tr[@ng-repeat="list in \ listArray[0]"]//span[text()="未读"]
+    ${els}    Run Keyword If    ${flag}==True    Get Webelements    //tr[@ng-repeat="list in \ listArray[0]"]//span[text()="未读"]
+    ...    ELSE    Pass Execution    当前页面没有未读消息
+    ${len}    Get Length    ${els}
+    Click Element    //button[@ng-click="readEnd()" and text()="全部标记为已读"]
+    Sleep    2
+    Page Should Not Contain Element    //tr[@ng-repeat="list in \ listArray[0]"]//span[text()="未读"]
+
+*** Keywords ***
+取消收藏
+    ####取消收藏
+    ${els}    Get Webelements    //tr[@ng-repeat="list in \ listArray[1]"]
+    ${len}    Get Length    ${els}
+    ${rand}    Evaluate    random.randint(1,${len})    random
+    Click Element    //tr[@ng-repeat="list in \ listArray[1]"][${rand}]//a[@title="取消收藏" and not(contains(@class,"ng-hide"))]
+    Sleep    1
+    弹出信息校验
+    ##获取消息参数
+    ${发送者}    Get Text    //tr[@ng-repeat="list in \ listArray[1]"][${rand}]/td[@ng-bind="list.to_user_name"]
+    ${消息内容}    Get Text    //tr[@ng-repeat="list in \ listArray[1]"][${rand}]/td[@ng-bind="list.content"]
+    ${发送时间}    Get Text    //tr[@ng-repeat="list in \ listArray[1]"][${rand}]/td[@ng-bind="list.created * 1000 | date:'yyyy-MM-dd HH:mm:ss'"]
+    ####结果校验
+    Page Should Contain Element    //tr[@ng-repeat="list in \ listArray[1]"][${rand}]//a[@title="取消收藏" and contains(@class,"ng-hide")]
